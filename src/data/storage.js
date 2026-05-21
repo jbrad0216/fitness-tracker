@@ -16,6 +16,7 @@ export function load(key, fallback = null) {
 export function save(key, value) {
   try {
     localStorage.setItem(getKey(key), JSON.stringify(value));
+    saveBackup();
     return true;
   } catch {
     return false;
@@ -35,7 +36,7 @@ export function exportAllData() {
   const data = {};
   for (let i = 0; i < localStorage.length; i++) {
     const key = localStorage.key(i);
-    if (key && key.startsWith(PREFIX)) {
+    if (key && key.startsWith(PREFIX) && !key.startsWith(`${PREFIX}backup-`)) {
       try {
         data[key] = JSON.parse(localStorage.getItem(key));
       } catch {
@@ -69,4 +70,97 @@ export function clearAllData() {
     if (key && key.startsWith(PREFIX)) keys.push(key);
   }
   keys.forEach(k => localStorage.removeItem(k));
+}
+
+// Auto-backup: saves a daily snapshot, keeps last 7 days
+let backupThrottleTimer = null;
+function saveBackup() {
+  if (backupThrottleTimer) return;
+  backupThrottleTimer = setTimeout(() => {
+    backupThrottleTimer = null;
+    try {
+      const today = new Date().toISOString().split('T')[0];
+      const backupKey = `${PREFIX}backup-${today}`;
+      const snapshot = {};
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && key.startsWith(PREFIX) && !key.startsWith(`${PREFIX}backup-`)) {
+          try {
+            snapshot[key] = JSON.parse(localStorage.getItem(key));
+          } catch {
+            snapshot[key] = localStorage.getItem(key);
+          }
+        }
+      }
+      localStorage.setItem(backupKey, JSON.stringify(snapshot));
+      pruneOldBackups();
+    } catch {
+      // ignore backup failures
+    }
+  }, 5000);
+}
+
+function pruneOldBackups() {
+  const backupPrefix = `${PREFIX}backup-`;
+  const backupKeys = [];
+  for (let i = 0; i < localStorage.length; i++) {
+    const key = localStorage.key(i);
+    if (key && key.startsWith(backupPrefix)) {
+      backupKeys.push(key);
+    }
+  }
+  backupKeys.sort();
+  while (backupKeys.length > 7) {
+    localStorage.removeItem(backupKeys.shift());
+  }
+}
+
+// Get list of available backup dates
+export function getBackupDates() {
+  const backupPrefix = `${PREFIX}backup-`;
+  const dates = [];
+  for (let i = 0; i < localStorage.length; i++) {
+    const key = localStorage.key(i);
+    if (key && key.startsWith(backupPrefix)) {
+      dates.push(key.replace(backupPrefix, ''));
+    }
+  }
+  return dates.sort().reverse();
+}
+
+// Restore from a backup date
+export function restoreBackup(date) {
+  try {
+    const backupKey = `${PREFIX}backup-${date}`;
+    const raw = localStorage.getItem(backupKey);
+    if (!raw) return false;
+    const snapshot = JSON.parse(raw);
+    // Clear current non-backup data
+    const keysToRemove = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key && key.startsWith(PREFIX) && !key.startsWith(`${PREFIX}backup-`)) {
+        keysToRemove.push(key);
+      }
+    }
+    keysToRemove.forEach(k => localStorage.removeItem(k));
+    // Restore
+    for (const [key, value] of Object.entries(snapshot)) {
+      if (key.startsWith(PREFIX)) {
+        localStorage.setItem(key, JSON.stringify(value));
+      }
+    }
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+// Get days since last export (stored in ft_last-export)
+export function getLastExportDate() {
+  return load('last-export', null);
+}
+
+export function markExported() {
+  localStorage.setItem(getKey('last-export'), JSON.stringify(new Date().toISOString().split('T')[0]));
 }

@@ -1,6 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Card, CardTitle, Input, Button, Label } from './UI';
 import { DEFAULT_SETTINGS } from '../hooks/useSettings';
+import { exportAllData, markExported, getLastExportDate, getBackupDates, restoreBackup } from '../data/storage';
 
 function WorkoutEditor({ label, exercises, onUpdate, onRemove, onMove, onAdd }) {
   const [newEx, setNewEx] = useState({ name: '', sets: '3', reps: '12', defaultWeight: '' });
@@ -122,10 +123,47 @@ function WorkoutEditor({ label, exercises, onUpdate, onRemove, onMove, onAdd }) 
 
 export function SettingsTab({ settings, updateSettings, resetSettings, templates, workoutOps, notify }) {
   const [form, setForm] = useState({ ...settings });
+  const [showBackups, setShowBackups] = useState(false);
+  const [backupDates, setBackupDates] = useState([]);
 
   useEffect(() => {
     setForm({ ...settings });
   }, [settings]);
+
+  const lastExport = useMemo(() => getLastExportDate(), []);
+  const daysSinceExport = lastExport
+    ? Math.floor((new Date() - new Date(lastExport)) / 86400000)
+    : null;
+  const exportWarning = daysSinceExport === null || daysSinceExport >= 7;
+
+  const handleExport = () => {
+    const data = exportAllData();
+    const blob = new Blob([data], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `fitness-backup-${new Date().toISOString().split('T')[0]}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+    markExported();
+    notify('Data exported');
+  };
+
+  const handleShowBackups = () => {
+    setBackupDates(getBackupDates());
+    setShowBackups(b => !b);
+  };
+
+  const handleRestore = (date) => {
+    if (!window.confirm(`Restore data from ${date}? Current data will be overwritten.`)) return;
+    const ok = restoreBackup(date);
+    if (ok) {
+      notify('Restored — refreshing...');
+      setTimeout(() => window.location.reload(), 1000);
+    } else {
+      notify('Restore failed');
+    }
+  };
 
   const handleSave = () => {
     updateSettings({
@@ -162,7 +200,7 @@ export function SettingsTab({ settings, updateSettings, resetSettings, templates
       {/* Data Warning */}
       <div className="rounded-xl bg-amber-500/10 border border-amber-500/30 px-4 py-3 mb-3">
         <p className="text-xs text-amber-400/90 leading-relaxed">
-          ⚠️ Your data is stored locally on this device only. Export regularly via Stats to save a backup.
+          ⚠️ Your data is stored locally on this device only. Use Export Data below to save a backup file.
         </p>
       </div>
 
@@ -229,6 +267,55 @@ export function SettingsTab({ settings, updateSettings, resetSettings, templates
         <Button onClick={handleSave} className="flex-1">Save Settings</Button>
         <Button onClick={handleReset} variant="danger" className="flex-1">Reset Defaults</Button>
       </div>
+
+      {/* Backup & Export */}
+      <Card>
+        <CardTitle>Data & Backup</CardTitle>
+
+        {exportWarning && (
+          <div className="bg-amber-500/10 border border-amber-500/30 rounded-xl px-3 py-2 mb-3">
+            <p className="text-xs text-amber-400/80">
+              {lastExport
+                ? `⚠️ Last export was ${daysSinceExport} days ago. Export soon.`
+                : '⚠️ You haven\'t exported your data yet.'}
+            </p>
+          </div>
+        )}
+
+        <Button onClick={handleExport} className="w-full mb-2">
+          📥 Export All Data (JSON)
+        </Button>
+
+        <button
+          onClick={handleShowBackups}
+          className="w-full text-sm text-white/50 bg-transparent border border-white/[0.08]
+            rounded-xl py-2.5 cursor-pointer mb-2"
+        >
+          {showBackups ? 'Hide' : '🕐 Restore from Backup'}
+        </button>
+
+        {showBackups && (
+          <div className="mt-1">
+            {backupDates.length === 0 ? (
+              <p className="text-xs text-white/30 text-center py-2">No backups yet</p>
+            ) : (
+              backupDates.map(date => (
+                <div key={date} className="flex justify-between items-center py-2
+                  border-b border-white/[0.06] last:border-0">
+                  <span className="text-sm text-white/60">{date}</span>
+                  <button
+                    onClick={() => handleRestore(date)}
+                    className="text-xs px-3 py-1 rounded-lg bg-blue-500/15 text-blue-400
+                      border-none cursor-pointer"
+                  >
+                    Restore
+                  </button>
+                </div>
+              ))
+            )}
+          </div>
+        )}
+      </Card>
 
       {/* Workout Templates */}
       <Card>
