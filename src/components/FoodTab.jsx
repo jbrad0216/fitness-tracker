@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { QUICK_FOODS } from '../data/constants';
 import { Card, CardTitle, Input, Button, Label } from './UI';
+import { useFoodSearch } from '../hooks/useFoodSearch';
 
 const CATEGORIES = [
   { id: 'breakfast', label: 'Breakfast' },
@@ -95,18 +96,94 @@ function LongPressDeleteButton({ onDelete }) {
   );
 }
 
+function FoodSearchDropdown({ onSelect }) {
+  const { query, setQuery, results, loading, error, clear } = useFoodSearch();
+  const [open, setOpen] = useState(false);
+
+  const handleSelect = (item) => {
+    onSelect(item);
+    clear();
+    setOpen(false);
+  };
+
+  return (
+    <div className="relative mb-2">
+      <div className="relative">
+        <Input
+          type="text"
+          value={query}
+          onChange={e => { setQuery(e.target.value); setOpen(true); }}
+          onFocus={() => setOpen(true)}
+          placeholder="Search food database (USDA)..."
+        />
+        {loading && (
+          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-white/30 text-xs">
+            Searching...
+          </span>
+        )}
+        {query && !loading && (
+          <button
+            onClick={() => { clear(); setOpen(false); }}
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-white/30 bg-transparent border-none cursor-pointer text-sm"
+          >✕</button>
+        )}
+      </div>
+      {error && (
+        <p className="text-[11px] text-amber-400/70 mt-1">{error}</p>
+      )}
+      {open && results.length > 0 && (
+        <div className="absolute z-30 w-full mt-1 rounded-xl bg-[#1a1d27] border border-white/[0.1]
+          shadow-2xl max-h-72 overflow-y-auto">
+          {results.map(item => (
+            <button
+              key={item.id}
+              onClick={() => handleSelect(item)}
+              className="flex justify-between w-full py-3 px-4 border-b border-white/[0.06]
+                last:border-0 bg-transparent text-left cursor-pointer active:bg-white/[0.05]"
+            >
+              <div className="flex-1 min-w-0 pr-2">
+                <div className="text-sm text-white/90 truncate">{item.name}</div>
+                {item.brand && <div className="text-[11px] text-white/35 truncate">{item.brand}</div>}
+                <div className="text-[11px] text-white/40 mt-0.5">
+                  {item.fat}g fat · {item.carbs}g carbs · {item.fiber}g fiber
+                </div>
+              </div>
+              <div className="text-right shrink-0">
+                <div className="text-xs text-white/70 font-semibold">{item.cal} cal</div>
+                <div className="text-[11px] text-blue-400">{item.protein}g pro</div>
+                <div className="text-[10px] text-white/25">{item.serving}</div>
+              </div>
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function FoodTab({
   daily, totalCal, totalProtein, addFood, removeFood,
   customFoods, addCustomFood, copyYesterday, targets, notify,
 }) {
   const [showQuick, setShowQuick] = useState(false);
   const [search, setSearch] = useState('');
-  const [form, setForm] = useState({ name: '', cal: '', protein: '' });
+  const [form, setForm] = useState({ name: '', cal: '', protein: '', fat: '', carbs: '', fiber: '' });
   const [saveAsPreset, setSaveAsPreset] = useState(false);
   const [undoItem, setUndoItem] = useState(null);
 
   const calLeft = targets.calories - totalCal;
   const proteinLeft = Math.max(0, targets.protein - totalProtein);
+
+  const handleSelectFromSearch = (item) => {
+    setForm({
+      name: item.brand ? `${item.name} (${item.brand})` : item.name,
+      cal: String(item.cal),
+      protein: String(item.protein),
+      fat: String(item.fat || ''),
+      carbs: String(item.carbs || ''),
+      fiber: String(item.fiber || ''),
+    });
+  };
 
   const handleAdd = () => {
     if (!form.name || !form.cal) return;
@@ -114,13 +191,16 @@ export function FoodTab({
       name: form.name,
       cal: parseInt(form.cal) || 0,
       protein: parseInt(form.protein) || 0,
+      fat: parseInt(form.fat) || 0,
+      carbs: parseInt(form.carbs) || 0,
+      fiber: parseInt(form.fiber) || 0,
     };
     addFood(item);
     if (saveAsPreset) {
       addCustomFood(item);
     }
     notify(`+${item.cal} cal, +${item.protein}g protein`);
-    setForm({ name: '', cal: '', protein: '' });
+    setForm({ name: '', cal: '', protein: '', fat: '', carbs: '', fiber: '' });
     setSaveAsPreset(false);
   };
 
@@ -179,6 +259,18 @@ export function FoodTab({
             <span className="text-lg font-bold">{totalProtein}g</span>
             <span className="text-xs text-white/50">/{targets.protein}g pro</span>
           </div>
+          {daily.food.some(f => f.fat) && (
+            <div>
+              <span className="text-lg font-bold">{daily.food.reduce((s, f) => s + (f.fat || 0), 0)}g</span>
+              <span className="text-xs text-white/50"> fat</span>
+            </div>
+          )}
+          {daily.food.some(f => f.carbs) && (
+            <div>
+              <span className="text-lg font-bold">{daily.food.reduce((s, f) => s + (f.carbs || 0), 0)}g</span>
+              <span className="text-xs text-white/50"> carbs</span>
+            </div>
+          )}
         </div>
         <div className="flex justify-around text-center mt-2 pt-2 border-t border-white/[0.06]">
           <div className="text-xs">
@@ -271,10 +363,11 @@ export function FoodTab({
         </Card>
       )}
 
-      {/* Custom Entry */}
+      {/* Food Database Search + Custom Entry */}
       <Card>
-        <CardTitle>Custom Entry</CardTitle>
+        <CardTitle>Add Food</CardTitle>
         <div className="flex flex-col gap-2">
+          <FoodSearchDropdown onSelect={handleSelectFromSearch} />
           <Input
             type="text"
             value={form.name}
@@ -297,6 +390,35 @@ export function FoodTab({
                 type="number"
                 value={form.protein}
                 onChange={e => setForm({ ...form, protein: e.target.value })}
+                placeholder="0"
+              />
+            </div>
+          </div>
+          <div className="flex gap-2">
+            <div className="flex-1">
+              <Label>Fat (g)</Label>
+              <Input
+                type="number"
+                value={form.fat}
+                onChange={e => setForm({ ...form, fat: e.target.value })}
+                placeholder="0"
+              />
+            </div>
+            <div className="flex-1">
+              <Label>Carbs (g)</Label>
+              <Input
+                type="number"
+                value={form.carbs}
+                onChange={e => setForm({ ...form, carbs: e.target.value })}
+                placeholder="0"
+              />
+            </div>
+            <div className="flex-1">
+              <Label>Fiber (g)</Label>
+              <Input
+                type="number"
+                value={form.fiber}
+                onChange={e => setForm({ ...form, fiber: e.target.value })}
                 placeholder="0"
               />
             </div>
@@ -327,10 +449,17 @@ export function FoodTab({
               border-b border-white/[0.06] last:border-0">
               <div className="flex-1 min-w-0">
                 <div className="text-sm truncate">{f.name}</div>
-                <div className="flex items-center gap-2 text-xs text-white/40">
-                  <span>{f.cal} cal · {f.protein}g protein</span>
+                <div className="flex items-center gap-2 text-xs text-white/40 flex-wrap">
+                  <span>{f.cal} cal · {f.protein}g pro</span>
+                  {(f.fat || f.carbs) && (
+                    <span className="text-white/25">
+                      {f.fat ? `${f.fat}g fat` : ''}
+                      {f.fat && f.carbs ? ' · ' : ''}
+                      {f.carbs ? `${f.carbs}g carbs` : ''}
+                    </span>
+                  )}
                   {f.loggedAt && (
-                    <span className="text-white/25">· {formatTime(f.loggedAt)}</span>
+                    <span className="text-white/20">· {formatTime(f.loggedAt)}</span>
                   )}
                 </div>
               </div>
