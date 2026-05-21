@@ -124,6 +124,7 @@ export default function App() {
           removeFood={daily.removeFood}
           customFoods={customFoods}
           addCustomFood={addCustomFood}
+          copyYesterday={daily.copyYesterday}
           targets={targets}
           notify={notify}
         />

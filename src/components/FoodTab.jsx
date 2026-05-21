@@ -1,11 +1,109 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { QUICK_FOODS } from '../data/constants';
 import { Card, CardTitle, Input, Button, Label } from './UI';
 
-export function FoodTab({ daily, totalCal, totalProtein, addFood, removeFood, customFoods, addCustomFood, targets, notify }) {
+const CATEGORIES = [
+  { id: 'breakfast', label: 'Breakfast' },
+  { id: 'meal', label: 'Meals' },
+  { id: 'snack', label: 'Snacks' },
+  { id: 'custom', label: 'Custom' },
+];
+
+function formatTime(isoStr) {
+  if (!isoStr) return '';
+  const d = new Date(isoStr);
+  return d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+}
+
+function UndoBar({ item, onUndo, onDismiss }) {
+  const [remaining, setRemaining] = useState(5);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setRemaining(r => {
+        if (r <= 1) { clearInterval(interval); onDismiss(); return 0; }
+        return r - 1;
+      });
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [onDismiss]);
+
+  return (
+    <div className="flex items-center justify-between bg-green-500/15 border border-green-500/30
+      rounded-xl px-4 py-2.5 mb-3 animate-fade-in">
+      <span className="text-sm text-green-300">Added {item.name}</span>
+      <button
+        onClick={onUndo}
+        className="text-sm font-bold text-green-400 bg-transparent border-none cursor-pointer"
+      >
+        Undo ({remaining}s)
+      </button>
+    </div>
+  );
+}
+
+function LongPressDeleteButton({ onDelete }) {
+  const timerRef = useRef(null);
+  const [holding, setHolding] = useState(false);
+  const [progress, setProgress] = useState(0);
+  const intervalRef = useRef(null);
+
+  const startPress = useCallback(() => {
+    setHolding(true);
+    setProgress(0);
+    let p = 0;
+    intervalRef.current = setInterval(() => {
+      p += 10;
+      setProgress(p);
+      if (p >= 100) {
+        clearInterval(intervalRef.current);
+        onDelete();
+        setHolding(false);
+        setProgress(0);
+      }
+    }, 80);
+  }, [onDelete]);
+
+  const cancelPress = useCallback(() => {
+    clearInterval(intervalRef.current);
+    setHolding(false);
+    setProgress(0);
+  }, []);
+
+  return (
+    <button
+      onMouseDown={startPress}
+      onMouseUp={cancelPress}
+      onMouseLeave={cancelPress}
+      onTouchStart={startPress}
+      onTouchEnd={cancelPress}
+      onTouchCancel={cancelPress}
+      title="Hold to delete"
+      className="relative w-9 h-9 rounded-lg bg-red-500/15 text-red-400 border-none
+        cursor-pointer text-base flex items-center justify-center overflow-hidden
+        transition-colors active:bg-red-500/30"
+      style={{ flexShrink: 0 }}
+    >
+      {holding && (
+        <div
+          className="absolute inset-0 bg-red-500/30 origin-left transition-none"
+          style={{ transform: `scaleX(${progress / 100})` }}
+        />
+      )}
+      <span className="relative z-10">×</span>
+    </button>
+  );
+}
+
+export function FoodTab({
+  daily, totalCal, totalProtein, addFood, removeFood,
+  customFoods, addCustomFood, copyYesterday, targets, notify,
+}) {
   const [showQuick, setShowQuick] = useState(false);
+  const [search, setSearch] = useState('');
   const [form, setForm] = useState({ name: '', cal: '', protein: '' });
   const [saveAsPreset, setSaveAsPreset] = useState(false);
+  const [undoItem, setUndoItem] = useState(null);
 
   const calLeft = targets.calories - totalCal;
   const proteinLeft = Math.max(0, targets.protein - totalProtein);
@@ -20,21 +118,53 @@ export function FoodTab({ daily, totalCal, totalProtein, addFood, removeFood, cu
     addFood(item);
     if (saveAsPreset) {
       addCustomFood(item);
-      notify(`Added "${item.name}" to presets`);
-    } else {
-      notify(`+${item.cal} cal, +${item.protein}g protein`);
     }
+    notify(`+${item.cal} cal, +${item.protein}g protein`);
     setForm({ name: '', cal: '', protein: '' });
     setSaveAsPreset(false);
   };
 
   const handleQuickAdd = (food) => {
-    addFood({ name: food.name, cal: food.cal, protein: food.protein });
+    const item = { name: food.name, cal: food.cal, protein: food.protein };
+    addFood(item);
+    setUndoItem({ ...item, id: null }); // will be set by last added
     setShowQuick(false);
     notify(`+${food.cal} cal, +${food.protein}g protein`);
   };
 
-  const allPresets = [...QUICK_FOODS, ...customFoods];
+  const handleUndo = () => {
+    // Remove the last added food item
+    const lastFood = daily.food[daily.food.length - 1];
+    if (lastFood) {
+      removeFood(lastFood.id);
+      notify('Removed');
+    }
+    setUndoItem(null);
+  };
+
+  const handleCopyYesterday = () => {
+    if (!copyYesterday) return;
+    const count = copyYesterday();
+    if (count > 0) {
+      notify(`Copied ${count} items from yesterday`);
+    } else {
+      notify('No food logged yesterday');
+    }
+  };
+
+  const allPresets = [
+    ...QUICK_FOODS,
+    ...customFoods.map(f => ({ ...f, category: 'custom' })),
+  ];
+
+  const filteredPresets = search
+    ? allPresets.filter(f => f.name.toLowerCase().includes(search.toLowerCase()))
+    : allPresets;
+
+  const grouped = CATEGORIES.map(cat => ({
+    ...cat,
+    items: filteredPresets.filter(f => f.category === cat.id),
+  })).filter(g => g.items.length > 0);
 
   return (
     <div className="px-5 pt-2 pb-4">
@@ -58,42 +188,86 @@ export function FoodTab({ daily, totalCal, totalProtein, addFood, removeFood, cu
           </div>
           <div className="text-xs">
             <span className={proteinLeft === 0 ? 'text-green-400 font-bold' : 'text-white/60'}>
-              {proteinLeft}g protein left
+              {proteinLeft === 0 ? '✓ Protein goal hit' : `${proteinLeft}g protein left`}
             </span>
           </div>
         </div>
       </Card>
 
-      {/* Quick Add Toggle */}
-      <button
-        onClick={() => setShowQuick(!showQuick)}
-        className={`w-full rounded-xl py-3 mb-3 text-sm font-semibold cursor-pointer
-          transition-all active:scale-[0.98] border
-          ${showQuick
-            ? 'bg-blue-500 border-blue-500 text-white'
-            : 'bg-white/[0.04] border-white/[0.08] text-white/70'
-          }`}
-      >
-        {showQuick ? 'Hide Quick Add' : '⚡ Quick Add Meal'}
-      </button>
+      {/* Undo bar */}
+      {undoItem && (
+        <UndoBar
+          item={undoItem}
+          onUndo={handleUndo}
+          onDismiss={() => setUndoItem(null)}
+        />
+      )}
+
+      {/* Quick Add Toggle + Copy Yesterday */}
+      <div className="flex gap-2 mb-3">
+        <button
+          onClick={() => setShowQuick(!showQuick)}
+          className={`flex-1 rounded-xl py-3 text-sm font-semibold cursor-pointer
+            transition-all active:scale-[0.98] border
+            ${showQuick
+              ? 'bg-blue-500 border-blue-500 text-white'
+              : 'bg-white/[0.04] border-white/[0.08] text-white/70'
+            }`}
+        >
+          {showQuick ? 'Hide Quick Add' : '⚡ Quick Add'}
+        </button>
+        <button
+          onClick={handleCopyYesterday}
+          className="rounded-xl py-3 px-3 text-sm font-semibold cursor-pointer
+            transition-all active:scale-[0.98] border
+            bg-white/[0.04] border-white/[0.08] text-white/70"
+          title="Copy yesterday's meals"
+        >
+          📋
+        </button>
+      </div>
 
       {/* Quick Add List */}
       {showQuick && (
-        <Card className="max-h-72 overflow-y-auto">
-          {allPresets.map((f, i) => (
-            <button
-              key={f.id || i}
-              onClick={() => handleQuickAdd(f)}
-              className="flex justify-between w-full py-3 border-b border-white/[0.06]
-                last:border-0 bg-transparent text-left cursor-pointer
-                active:bg-white/[0.05] transition-colors"
-            >
-              <span className="text-sm text-white/90">{f.name}</span>
-              <span className="text-xs text-white/40 whitespace-nowrap ml-2">
-                {f.cal}cal · {f.protein}g
-              </span>
-            </button>
-          ))}
+        <Card className="p-0 overflow-hidden">
+          <div className="px-4 pt-3 pb-2 border-b border-white/[0.06]">
+            <Input
+              type="text"
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              placeholder="Search foods..."
+              className="w-full"
+            />
+          </div>
+          <div className="max-h-72 overflow-y-auto">
+            {grouped.length === 0 ? (
+              <p className="text-sm text-white/40 py-4 text-center">No matches</p>
+            ) : (
+              grouped.map(group => (
+                <div key={group.id}>
+                  <div className="px-4 py-1.5 bg-white/[0.02]">
+                    <span className="text-[10px] text-white/30 uppercase tracking-widest font-semibold">
+                      {group.label}
+                    </span>
+                  </div>
+                  {group.items.map((f, i) => (
+                    <button
+                      key={f.id || i}
+                      onClick={() => handleQuickAdd(f)}
+                      className="flex justify-between w-full py-3 px-4 border-b border-white/[0.06]
+                        last:border-0 bg-transparent text-left cursor-pointer
+                        active:bg-white/[0.05] transition-colors"
+                    >
+                      <span className="text-sm text-white/90">{f.name}</span>
+                      <span className="text-xs text-white/40 whitespace-nowrap ml-2">
+                        {f.cal}cal · {f.protein}g
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              ))
+            )}
+          </div>
         </Card>
       )}
 
@@ -142,25 +316,25 @@ export function FoodTab({ daily, totalCal, totalProtein, addFood, removeFood, cu
 
       {/* Today's Log */}
       <Card>
-        <CardTitle right={`${daily.food.length} items`}>Today's Log</CardTitle>
+        <CardTitle right={daily.food.length > 0 ? `${daily.food.length} items` : null}>
+          Today's Log
+        </CardTitle>
         {daily.food.length === 0 ? (
-          <p className="text-sm text-white/40">Empty</p>
+          <p className="text-sm text-white/40">Empty — add meals above</p>
         ) : (
           daily.food.map(f => (
-            <div key={f.id} className="flex justify-between items-center py-2
+            <div key={f.id} className="flex justify-between items-center py-2.5
               border-b border-white/[0.06] last:border-0">
-              <div>
-                <div className="text-sm">{f.name}</div>
-                <div className="text-xs text-white/40">{f.cal} cal · {f.protein}g protein</div>
+              <div className="flex-1 min-w-0">
+                <div className="text-sm truncate">{f.name}</div>
+                <div className="flex items-center gap-2 text-xs text-white/40">
+                  <span>{f.cal} cal · {f.protein}g protein</span>
+                  {f.loggedAt && (
+                    <span className="text-white/25">· {formatTime(f.loggedAt)}</span>
+                  )}
+                </div>
               </div>
-              <button
-                onClick={() => removeFood(f.id)}
-                className="w-8 h-8 rounded-lg bg-red-500/15 text-red-400 border-none
-                  cursor-pointer text-base flex items-center justify-center
-                  active:bg-red-500/30 transition-colors"
-              >
-                ×
-              </button>
+              <LongPressDeleteButton onDelete={() => removeFood(f.id)} />
             </div>
           ))
         )}

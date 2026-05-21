@@ -34,7 +34,11 @@ export function useDaily() {
   const addFood = useCallback((item) => {
     update(prev => ({
       ...prev,
-      food: [...prev.food, { ...item, id: Date.now() }],
+      food: [...prev.food, {
+        ...item,
+        id: Date.now(),
+        loggedAt: new Date().toISOString(),
+      }],
     }));
   }, [update]);
 
@@ -71,12 +75,32 @@ export function useDaily() {
     }));
   }, [update]);
 
+  const copyYesterday = useCallback(() => {
+    const d = new Date();
+    d.setDate(d.getDate() - 1);
+    const y = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    const yesterday = load(`daily-${y}`, EMPTY_DAY);
+    if (!yesterday.food || yesterday.food.length === 0) return 0;
+    update(prev => ({
+      ...prev,
+      food: [
+        ...prev.food,
+        ...yesterday.food.map(f => ({
+          ...f,
+          id: Date.now() + Math.random(),
+          loggedAt: new Date().toISOString(),
+        })),
+      ],
+    }));
+    return yesterday.food.length;
+  }, [update]);
+
   const totalCal = data.food.reduce((s, f) => s + (f.cal || 0), 0);
   const totalProtein = data.food.reduce((s, f) => s + (f.protein || 0), 0);
 
   return {
     data, loaded, addFood, removeFood, setWater,
     toggleMeditation, addRun, addExercise, removeExercise,
-    totalCal, totalProtein,
+    copyYesterday, totalCal, totalProtein,
   };
 }
