@@ -28,6 +28,38 @@ const STEPS = [
     title: 'Workout schedule',
     subtitle: 'Strength Mon/Wed/Fri · Cardio Tue/Thu · Long run Sat · Rest Sun',
   },
+  {
+    id: 'storage',
+    title: 'Where should your data be saved?',
+    subtitle: 'All data stays on your device. Choose how to back it up.',
+  },
+];
+
+const CLOUD_OPTIONS = [
+  {
+    id: 'device',
+    icon: '📱',
+    label: 'Device Only',
+    desc: 'Data stays in your browser\'s local storage. Clearing browser data will delete it.',
+  },
+  {
+    id: 'icloud',
+    icon: '☁️',
+    label: 'iCloud Drive',
+    desc: 'Export weekly and save the file to your iCloud Drive via the Files app.',
+  },
+  {
+    id: 'gdrive',
+    icon: '🟢',
+    label: 'Google Drive',
+    desc: 'Export weekly and save the file to Google Drive via the app or Files.',
+  },
+  {
+    id: 'onedrive',
+    icon: '🔵',
+    label: 'OneDrive',
+    desc: 'Export weekly and save the file to your Microsoft OneDrive.',
+  },
 ];
 
 export function OnboardingFlow({ onComplete }) {
@@ -42,6 +74,7 @@ export function OnboardingFlow({ onComplete }) {
     protein: String(DEFAULT_SETTINGS.protein),
     waterBottles: String(DEFAULT_SETTINGS.waterBottles),
     sodiumMg: String(DEFAULT_SETTINGS.sodiumMg),
+    cloudStorage: 'device',
   });
 
   const f = (field) => ({
@@ -68,6 +101,7 @@ export function OnboardingFlow({ onComplete }) {
       protein: parseInt(form.protein) || DEFAULT_SETTINGS.protein,
       waterBottles: parseInt(form.waterBottles) || DEFAULT_SETTINGS.waterBottles,
       sodiumMg: parseInt(form.sodiumMg) || DEFAULT_SETTINGS.sodiumMg,
+      cloudStorage: form.cloudStorage || 'device',
     });
   };
 
@@ -218,6 +252,38 @@ export function OnboardingFlow({ onComplete }) {
             <p className="text-xs text-white/30 text-center">
               Workout A/B alternates weekly. Customize exercises in Settings.
             </p>
+          </div>
+        )}
+
+        {current.id === 'storage' && (
+          <div className="space-y-3">
+            {CLOUD_OPTIONS.map(opt => (
+              <button
+                key={opt.id}
+                onClick={() => setForm(prev => ({ ...prev, cloudStorage: opt.id }))}
+                className={`w-full text-left rounded-2xl p-4 border cursor-pointer transition-all
+                  ${form.cloudStorage === opt.id
+                    ? 'bg-blue-500/20 border-blue-500/60'
+                    : 'bg-white/[0.04] border-white/[0.08]'
+                  }`}
+              >
+                <div className="flex items-center gap-3">
+                  <span className="text-2xl">{opt.icon}</span>
+                  <div className="flex-1">
+                    <div className="text-sm font-semibold">{opt.label}</div>
+                    <div className="text-xs text-white/40 mt-0.5">{opt.desc}</div>
+                  </div>
+                  {form.cloudStorage === opt.id && (
+                    <span className="text-blue-400 text-lg">✓</span>
+                  )}
+                </div>
+              </button>
+            ))}
+            {form.cloudStorage !== 'device' && (
+              <p className="text-xs text-blue-400/70 text-center px-2 pt-1">
+                We'll remind you weekly to export and save to {CLOUD_OPTIONS.find(o => o.id === form.cloudStorage)?.label}.
+              </p>
+            )}
           </div>
         )}
 

@@ -156,6 +156,7 @@ export default function App() {
           targets={targets}
           name={settings.name}
           notify={notify}
+          settings={settings}
         />
       )}
       {tab === 'food' && (

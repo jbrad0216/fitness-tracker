@@ -12,6 +12,8 @@ export const DEFAULT_SETTINGS = {
   protein: TARGETS.protein,
   waterBottles: TARGETS.waterBottles,
   sodiumMg: TARGETS.sodiumMg,
+  cloudStorage: 'device',
+  theme: 'dark',
 };
 
 export function useSettings() {

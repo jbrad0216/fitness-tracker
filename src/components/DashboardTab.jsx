@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { isWednesday, getToday } from '../data/constants';
 import { ProgressRing, WaterBottles, Card, CardTitle, Input, Button, StatBox } from './UI';
+import { exportAllData, markExported, getLastExportDate } from '../data/storage';
 
 function getGreeting() {
   const hour = new Date().getHours();
@@ -33,11 +34,43 @@ function MotivationalLine({ totalCal, totalProtein, targets }) {
 
 export function DashboardTab({
   daily, totalCal, totalProtein, setWater, toggleMeditation, addRun,
-  weighIns, addWeighIn, latest, startWeight, goalWeight, targets, name, notify,
+  weighIns, addWeighIn, latest, startWeight, goalWeight, targets, name, notify, settings,
 }) {
   const [runInput, setRunInput] = useState('');
   const [showRunInput, setShowRunInput] = useState(false);
   const [weightInput, setWeightInput] = useState('');
+
+  const cloudStorage = settings?.cloudStorage || 'device';
+  const lastExport = getLastExportDate();
+  const daysSinceExport = lastExport
+    ? Math.floor((new Date() - new Date(lastExport)) / 86400000)
+    : null;
+  const showExportBanner = cloudStorage !== 'device' && (daysSinceExport === null || daysSinceExport >= 7);
+
+  const cloudLabels = { icloud: 'iCloud Drive', gdrive: 'Google Drive', onedrive: 'OneDrive' };
+
+  const handleCloudExport = () => {
+    const data = exportAllData();
+    const blob = new Blob([data], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    if (navigator.share) {
+      navigator.share({
+        files: [new File([blob], `fitness-${new Date().toISOString().split('T')[0]}.json`, { type: 'application/json' })],
+        title: 'Fitness Tracker Backup',
+      }).catch(() => {
+        const a = document.createElement('a');
+        a.href = url; a.download = `fitness-${new Date().toISOString().split('T')[0]}.json`;
+        a.click();
+      });
+    } else {
+      const a = document.createElement('a');
+      a.href = url; a.download = `fitness-${new Date().toISOString().split('T')[0]}.json`;
+      a.click();
+    }
+    URL.revokeObjectURL(url);
+    markExported();
+    notify('Backup exported!');
+  };
 
   const calPct = totalCal / targets.calories;
   const proteinPct = totalProtein / targets.protein;
@@ -66,6 +99,28 @@ export function DashboardTab({
 
   return (
     <div className="px-5 pt-2 pb-4">
+      {/* Cloud Export Reminder */}
+      {showExportBanner && (
+        <div className="flex items-center justify-between bg-blue-500/10 border border-blue-500/30
+          rounded-xl px-4 py-3 mb-3">
+          <div>
+            <p className="text-xs font-semibold text-blue-300">
+              {cloudLabels[cloudStorage] || 'Cloud'} backup reminder
+            </p>
+            <p className="text-[11px] text-white/40">
+              {lastExport ? `Last backup ${daysSinceExport}d ago` : 'No backup yet'}
+            </p>
+          </div>
+          <button
+            onClick={handleCloudExport}
+            className="bg-blue-500 text-white text-xs font-bold rounded-lg px-3 py-2
+              border-none cursor-pointer active:opacity-80"
+          >
+            Export
+          </button>
+        </div>
+      )}
+
       {/* Greeting */}
       <div className="mb-4">
         <p className="text-base font-semibold text-white/80">

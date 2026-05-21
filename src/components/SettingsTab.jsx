@@ -1,7 +1,14 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Card, CardTitle, Input, Button, Label } from './UI';
 import { DEFAULT_SETTINGS } from '../hooks/useSettings';
-import { exportAllData, markExported, getLastExportDate, getBackupDates, restoreBackup } from '../data/storage';
+import { exportAllData, importAllData, markExported, getLastExportDate, getBackupDates, restoreBackup } from '../data/storage';
+
+const CLOUD_OPTIONS = [
+  { id: 'device', icon: '📱', label: 'Device Only' },
+  { id: 'icloud', icon: '☁️', label: 'iCloud Drive' },
+  { id: 'gdrive', icon: '🟢', label: 'Google Drive' },
+  { id: 'onedrive', icon: '🔵', label: 'OneDrive' },
+];
 
 function WorkoutEditor({ label, exercises, onUpdate, onRemove, onMove, onAdd }) {
   const [newEx, setNewEx] = useState({ name: '', sets: '3', reps: '12', defaultWeight: '' });
@@ -125,6 +132,8 @@ export function SettingsTab({ settings, updateSettings, resetSettings, templates
   const [form, setForm] = useState({ ...settings });
   const [showBackups, setShowBackups] = useState(false);
   const [backupDates, setBackupDates] = useState([]);
+  const [showImport, setShowImport] = useState(false);
+  const [importText, setImportText] = useState('');
 
   useEffect(() => {
     setForm({ ...settings });
@@ -176,8 +185,38 @@ export function SettingsTab({ settings, updateSettings, resetSettings, templates
       protein: parseInt(form.protein) || DEFAULT_SETTINGS.protein,
       waterBottles: Math.max(1, Math.min(6, parseInt(form.waterBottles) || DEFAULT_SETTINGS.waterBottles)),
       sodiumMg: parseInt(form.sodiumMg) || DEFAULT_SETTINGS.sodiumMg,
+      cloudStorage: form.cloudStorage || 'device',
+      theme: form.theme || 'dark',
     });
     notify('Settings saved');
+  };
+
+  const handleImportFile = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const ok = importAllData(ev.target.result);
+      if (ok) {
+        notify('Imported — reloading...');
+        setTimeout(() => window.location.reload(), 1000);
+      } else {
+        notify('Import failed — bad format');
+      }
+    };
+    reader.readAsText(file);
+  };
+
+  const handleImportText = () => {
+    if (!importText.trim()) return;
+    const ok = importAllData(importText);
+    if (ok) {
+      notify('Imported — reloading...');
+      setImportText('');
+      setTimeout(() => window.location.reload(), 1000);
+    } else {
+      notify('Import failed — bad format');
+    }
   };
 
   const handleReset = () => {
@@ -268,6 +307,36 @@ export function SettingsTab({ settings, updateSettings, resetSettings, templates
         <Button onClick={handleReset} variant="danger" className="flex-1">Reset Defaults</Button>
       </div>
 
+      {/* Cloud Storage Preference */}
+      <Card>
+        <CardTitle>Backup Destination</CardTitle>
+        <div className="grid grid-cols-2 gap-2 mb-2">
+          {CLOUD_OPTIONS.map(opt => (
+            <button
+              key={opt.id}
+              onClick={() => setForm(f => ({ ...f, cloudStorage: opt.id }))}
+              className={`rounded-xl py-2.5 px-3 text-sm border cursor-pointer transition-all text-left
+                ${form.cloudStorage === opt.id
+                  ? 'bg-blue-500/20 border-blue-500/50 text-white'
+                  : 'bg-white/[0.04] border-white/[0.08] text-white/60'
+                }`}
+            >
+              <span className="mr-1.5">{opt.icon}</span>{opt.label}
+            </button>
+          ))}
+        </div>
+        {form.cloudStorage === 'device' && (
+          <p className="text-[11px] text-amber-400/70">
+            Data is only on this device. Clearing browser storage will delete it.
+          </p>
+        )}
+        {form.cloudStorage !== 'device' && (
+          <p className="text-[11px] text-blue-400/70">
+            Export weekly and save to {CLOUD_OPTIONS.find(o => o.id === form.cloudStorage)?.label}.
+          </p>
+        )}
+      </Card>
+
       {/* Backup & Export */}
       <Card>
         <CardTitle>Data & Backup</CardTitle>
@@ -285,6 +354,35 @@ export function SettingsTab({ settings, updateSettings, resetSettings, templates
         <Button onClick={handleExport} className="w-full mb-2">
           📥 Export All Data (JSON)
         </Button>
+
+        <div className="mb-2">
+          <label className="w-full flex items-center justify-center rounded-xl py-2.5 text-sm
+            text-white/50 bg-transparent border border-white/[0.08] cursor-pointer">
+            📤 Import from File
+            <input type="file" accept=".json" onChange={handleImportFile} className="hidden" />
+          </label>
+        </div>
+
+        <button
+          onClick={() => setShowImport(v => !v)}
+          className="w-full text-sm text-white/40 bg-transparent border border-white/[0.06]
+            rounded-xl py-2 cursor-pointer mb-2"
+        >
+          {showImport ? 'Hide Paste Import' : '📋 Import via Paste'}
+        </button>
+        {showImport && (
+          <div className="mb-2">
+            <textarea
+              value={importText}
+              onChange={e => setImportText(e.target.value)}
+              placeholder="Paste exported JSON here..."
+              className="w-full bg-white/[0.06] border border-white/[0.08] rounded-xl
+                p-3 text-sm text-white/80 outline-none h-24 resize-none
+                placeholder:text-white/25 mb-2"
+            />
+            <Button onClick={handleImportText} variant="ghost" className="w-full">Import</Button>
+          </div>
+        )}
 
         <button
           onClick={handleShowBackups}
