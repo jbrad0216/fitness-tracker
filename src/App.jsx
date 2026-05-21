@@ -5,6 +5,7 @@ import { useWeighIns, useLiftLog, useCustomFoods } from './hooks/useAppData';
 import { useSettings } from './hooks/useSettings';
 import { useWorkoutTemplates } from './hooks/useWorkoutTemplates';
 import { Toast, ErrorBoundary, PullToRefresh, LandscapeHint } from './components/UI';
+import { ChatInterface } from './components/ChatInterface';
 import { BottomNav } from './components/BottomNav';
 import { DashboardTab } from './components/DashboardTab';
 import { FoodTab } from './components/FoodTab';
@@ -18,6 +19,7 @@ export default function App() {
   const [notification, setNotification] = useState(null);
   const [tabKey, setTabKey] = useState(0);
   const [updateAvailable, setUpdateAvailable] = useState(false);
+  const [showChat, setShowChat] = useState(false);
 
   // Listen for service worker updates
   useEffect(() => {
@@ -213,6 +215,40 @@ export default function App() {
 
       {/* Navigation */}
       <BottomNav active={tab} onChange={(t) => { setTab(t); setTabKey(k => k + 1); }} />
+
+      {/* Chat FAB */}
+      {!showChat && (
+        <button
+          onClick={() => setShowChat(true)}
+          className="fixed z-40 bg-blue-500 text-white rounded-full shadow-lg shadow-blue-500/40
+            flex items-center justify-center text-2xl border-none cursor-pointer
+            active:scale-95 transition-transform w-14 h-14"
+          style={{
+            right: '20px',
+            bottom: 'calc(max(env(safe-area-inset-bottom), 8px) + 72px)',
+          }}
+          title="Quick Log"
+        >
+          💬
+        </button>
+      )}
+
+      {/* Chat Interface */}
+      {showChat && (
+        <ChatInterface
+          daily={{ ...daily.data, totalCal: daily.totalCal, totalProtein: daily.totalProtein }}
+          targets={targets}
+          addFood={daily.addFood}
+          setWater={daily.setWater}
+          toggleMeditation={daily.toggleMeditation}
+          addRun={daily.addRun}
+          addWeighIn={addWeighIn}
+          addExercise={daily.addExercise}
+          logLift={logLift}
+          getLastLift={getLastLift}
+          onClose={() => setShowChat(false)}
+        />
+      )}
     </div>
   );
 }
