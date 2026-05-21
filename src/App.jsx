@@ -4,7 +4,7 @@ import { useDaily } from './hooks/useDaily';
 import { useWeighIns, useLiftLog, useCustomFoods } from './hooks/useAppData';
 import { useSettings } from './hooks/useSettings';
 import { useWorkoutTemplates } from './hooks/useWorkoutTemplates';
-import { Toast, ErrorBoundary, PullToRefresh } from './components/UI';
+import { Toast, ErrorBoundary, PullToRefresh, LandscapeHint } from './components/UI';
 import { BottomNav } from './components/BottomNav';
 import { DashboardTab } from './components/DashboardTab';
 import { FoodTab } from './components/FoodTab';
@@ -94,7 +94,8 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen max-w-lg mx-auto pb-24">
+    <div className="min-h-screen max-w-lg mx-auto pb-28">
+      <LandscapeHint />
       {/* Update Available Banner */}
       {updateAvailable && (
         <div className="fixed top-0 left-0 right-0 z-50 max-w-lg mx-auto
@@ -114,7 +115,8 @@ export default function App() {
       {notification && <Toast message={notification} onDone={clearNotify} />}
 
       {/* Header */}
-      <header className="px-5 pt-5 pb-2 flex justify-between items-start">
+      <header className="px-5 pb-2 flex justify-between items-start"
+        style={{ paddingTop: 'max(env(safe-area-inset-top), 16px)' }}>
         <div>
           <h1 className="text-[22px] font-bold leading-tight">
             {new Date().toLocaleDateString('en-US', { weekday: 'long' })}

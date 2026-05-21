@@ -29,6 +29,24 @@ body {
   overscroll-behavior: none;
   user-select: none;
   min-height: 100dvh;
+  font-size: 16px;
+}
+
+/* Prevent iOS auto-zoom on input focus */
+input, select, textarea {
+  font-size: 16px !important;
+}
+
+/* Safe area padding for header */
+.safe-top {
+  padding-top: max(env(safe-area-inset-top), 12px);
+}
+
+/* Landscape mode hint */
+@media (orientation: landscape) and (max-height: 480px) {
+  .landscape-hint {
+    display: flex !important;
+  }
 }
 
 input[type="number"]::-webkit-inner-spin-button,

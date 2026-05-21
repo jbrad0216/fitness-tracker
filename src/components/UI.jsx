@@ -195,9 +195,38 @@ export function Button({ children, variant = 'primary', className = '', onClick,
 // ─── Label ───
 export function Label({ children }) {
   return (
-    <label className="text-[11px] text-white/50 uppercase tracking-wider mb-1 block">
+    <label className="text-[12px] text-white/50 uppercase tracking-wider mb-1 block">
       {children}
     </label>
+  );
+}
+
+// ─── Toggle Switch ───
+export function Toggle({ checked, onChange, label }) {
+  return (
+    <label className="flex items-center justify-between cursor-pointer select-none min-h-[44px]">
+      {label && <span className="text-sm text-white/80">{label}</span>}
+      <div className="relative" onClick={onChange}>
+        <div className={`w-12 h-6 rounded-full transition-colors duration-200
+          ${checked ? 'bg-blue-500' : 'bg-white/[0.12]'}`} />
+        <div className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow-md
+          transition-transform duration-200
+          ${checked ? 'translate-x-6' : 'translate-x-0'}`} />
+      </div>
+    </label>
+  );
+}
+
+// ─── Landscape hint ───
+export function LandscapeHint() {
+  return (
+    <div className="landscape-hint hidden fixed inset-0 z-[9999] bg-[#0f1117]
+      flex-col items-center justify-center">
+      <div className="text-4xl mb-3">📱</div>
+      <p className="text-sm text-white/60 text-center px-8">
+        Rotate to portrait for the best experience
+      </p>
+    </div>
   );
 }
 

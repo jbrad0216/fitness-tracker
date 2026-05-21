@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { isWednesday, getToday } from '../data/constants';
-import { ProgressRing, WaterBottles, Card, CardTitle, Input, Button, StatBox } from './UI';
+import { ProgressRing, WaterBottles, Card, CardTitle, Input, Button, StatBox, Toggle } from './UI';
 import { exportAllData, markExported, getLastExportDate } from '../data/storage';
 
 function getGreeting() {
@@ -184,34 +184,33 @@ export function DashboardTab({
       </Card>
 
       {/* Quick Toggles */}
-      <div className="flex gap-2 mb-3">
-        <button
-          onClick={toggleMeditation}
-          className={`flex-1 rounded-xl py-3.5 text-sm font-semibold cursor-pointer
-            transition-all active:scale-95 border
-            ${daily.meditation
-              ? 'bg-purple-500/20 border-purple-500/50 text-purple-300'
-              : 'bg-white/[0.04] border-white/[0.08] text-white/50'
-            }`}
-        >
-          {daily.meditation ? '✓ TM Done' : '○ TM Done'}
-        </button>
-        <button
-          onClick={() => {
-            if (daily.ranMiles > 0) return;
-            setShowRunInput(true);
-            setRunInput('2');
-          }}
-          className={`flex-1 rounded-xl py-3.5 text-sm font-semibold cursor-pointer
-            transition-all active:scale-95 border
-            ${daily.ranMiles > 0
-              ? 'bg-green-500/20 border-green-500/50 text-green-300'
-              : 'bg-white/[0.04] border-white/[0.08] text-white/50'
-            }`}
-        >
-          {daily.ranMiles > 0 ? `✓ ${daily.ranMiles}mi` : '○ Log Run'}
-        </button>
-      </div>
+      <Card className="py-2">
+        <div className="flex gap-2 items-center">
+          <div className="flex-1">
+            <Toggle
+              checked={daily.meditation}
+              onChange={toggleMeditation}
+              label={daily.meditation ? '✓ TM Done' : 'TM Done'}
+            />
+          </div>
+          <div className="w-px bg-white/[0.08] self-stretch" />
+          <button
+            onClick={() => {
+              if (daily.ranMiles > 0) return;
+              setShowRunInput(true);
+              setRunInput('2');
+            }}
+            className={`flex-1 rounded-xl py-3 text-sm font-semibold cursor-pointer
+              transition-all active:scale-95 border text-center
+              ${daily.ranMiles > 0
+                ? 'bg-green-500/20 border-green-500/50 text-green-300'
+                : 'bg-white/[0.04] border-white/[0.08] text-white/50'
+              }`}
+          >
+            {daily.ranMiles > 0 ? `✓ ${daily.ranMiles}mi` : '○ Log Run'}
+          </button>
+        </div>
+      </Card>
 
       {/* Run Input */}
       {showRunInput && daily.ranMiles === 0 && (
