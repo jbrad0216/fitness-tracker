@@ -217,6 +217,32 @@ export function Toggle({ checked, onChange, label }) {
   );
 }
 
+// ─── Offline Indicator ───
+export function OfflineIndicator() {
+  const [offline, setOffline] = useState(!navigator.onLine);
+
+  useEffect(() => {
+    const handleOnline = () => setOffline(false);
+    const handleOffline = () => setOffline(true);
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
+
+  if (!offline) return null;
+
+  return (
+    <div className="fixed top-0 left-0 right-0 z-[60] max-w-lg mx-auto
+      bg-amber-500/95 text-white px-4 py-2 text-xs font-semibold text-center
+      flex items-center justify-center gap-2">
+      <span>📵</span> You're offline — data saves locally
+    </div>
+  );
+}
+
 // ─── Landscape hint ───
 export function LandscapeHint() {
   return (

@@ -11,6 +11,18 @@ const EMPTY_DAY = {
   coreMin: 0,
 };
 
+function validateDayData(raw) {
+  if (!raw || typeof raw !== 'object') return EMPTY_DAY;
+  return {
+    food: Array.isArray(raw.food) ? raw.food : [],
+    water: typeof raw.water === 'number' ? raw.water : 0,
+    exercises: Array.isArray(raw.exercises) ? raw.exercises : [],
+    meditation: !!raw.meditation,
+    ranMiles: typeof raw.ranMiles === 'number' ? raw.ranMiles : 0,
+    coreMin: typeof raw.coreMin === 'number' ? raw.coreMin : 0,
+  };
+}
+
 export function useDaily() {
   const today = getToday();
   const key = `daily-${today}`;
@@ -18,8 +30,12 @@ export function useDaily() {
   const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
-    const saved = load(key, EMPTY_DAY);
-    setData(saved);
+    try {
+      const saved = load(key, EMPTY_DAY);
+      setData(validateDayData(saved));
+    } catch {
+      setData(EMPTY_DAY);
+    }
     setLoaded(true);
   }, [key]);
 

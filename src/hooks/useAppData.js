@@ -2,11 +2,20 @@ import { useState, useEffect, useCallback } from 'react';
 import { load, save } from '../data/storage';
 import { getToday } from '../data/constants';
 
+function validateWeighIns(raw) {
+  if (!Array.isArray(raw)) return [];
+  return raw.filter(w => w && typeof w.weight === 'number' && typeof w.date === 'string');
+}
+
 export function useWeighIns() {
   const [weighIns, setWeighIns] = useState([]);
 
   useEffect(() => {
-    setWeighIns(load('weigh-ins', []));
+    try {
+      setWeighIns(validateWeighIns(load('weigh-ins', [])));
+    } catch {
+      setWeighIns([]);
+    }
   }, []);
 
   const addWeighIn = useCallback((weight) => {

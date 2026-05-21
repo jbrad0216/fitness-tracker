@@ -4,7 +4,7 @@ import { useDaily } from './hooks/useDaily';
 import { useWeighIns, useLiftLog, useCustomFoods } from './hooks/useAppData';
 import { useSettings } from './hooks/useSettings';
 import { useWorkoutTemplates } from './hooks/useWorkoutTemplates';
-import { Toast, ErrorBoundary, PullToRefresh, LandscapeHint } from './components/UI';
+import { Toast, ErrorBoundary, PullToRefresh, LandscapeHint, OfflineIndicator } from './components/UI';
 import { ChatInterface } from './components/ChatInterface';
 import { BottomNav } from './components/BottomNav';
 import { DashboardTab } from './components/DashboardTab';
@@ -127,6 +127,7 @@ export default function App() {
       onTouchEnd={handleTouchEnd}
     >
       <LandscapeHint />
+      <OfflineIndicator />
       {/* Update Available Banner */}
       {updateAvailable && (
         <div className="fixed top-0 left-0 right-0 z-50 max-w-lg mx-auto
@@ -174,78 +175,90 @@ export default function App() {
       {/* Tab Content */}
       <div key={tabKey} className="animate-tab-in">
       {tab === 'today' && (
-        <DashboardTab
-          daily={daily.data}
-          totalCal={daily.totalCal}
-          totalProtein={daily.totalProtein}
-          setWater={daily.setWater}
-          toggleMeditation={daily.toggleMeditation}
-          addRun={daily.addRun}
-          weighIns={weighIns}
-          addWeighIn={addWeighIn}
-          latest={latest}
-          startWeight={settings.startWeight}
-          goalWeight={settings.goalWeight}
-          targets={targets}
-          name={settings.name}
-          notify={notify}
-          settings={settings}
-          onNavigate={changeTab}
-        />
+        <ErrorBoundary>
+          <DashboardTab
+            daily={daily.data}
+            totalCal={daily.totalCal}
+            totalProtein={daily.totalProtein}
+            setWater={daily.setWater}
+            toggleMeditation={daily.toggleMeditation}
+            addRun={daily.addRun}
+            weighIns={weighIns}
+            addWeighIn={addWeighIn}
+            latest={latest}
+            startWeight={settings.startWeight}
+            goalWeight={settings.goalWeight}
+            targets={targets}
+            name={settings.name}
+            notify={notify}
+            settings={settings}
+            onNavigate={changeTab}
+          />
+        </ErrorBoundary>
       )}
       {tab === 'food' && (
-        <FoodTab
-          daily={daily.data}
-          totalCal={daily.totalCal}
-          totalProtein={daily.totalProtein}
-          addFood={daily.addFood}
-          removeFood={daily.removeFood}
-          customFoods={customFoods}
-          addCustomFood={addCustomFood}
-          copyYesterday={daily.copyYesterday}
-          targets={targets}
-          notify={notify}
-        />
+        <ErrorBoundary>
+          <FoodTab
+            daily={daily.data}
+            totalCal={daily.totalCal}
+            totalProtein={daily.totalProtein}
+            addFood={daily.addFood}
+            removeFood={daily.removeFood}
+            customFoods={customFoods}
+            addCustomFood={addCustomFood}
+            copyYesterday={daily.copyYesterday}
+            targets={targets}
+            notify={notify}
+          />
+        </ErrorBoundary>
       )}
       {tab === 'gym' && (
-        <GymTab
-          daily={daily.data}
-          addRun={daily.addRun}
-          addExercise={daily.addExercise}
-          removeExercise={daily.removeExercise}
-          getLastLift={getLastLift}
-          logLift={logLift}
-          templates={templates}
-          notify={notify}
-        />
+        <ErrorBoundary>
+          <GymTab
+            daily={daily.data}
+            addRun={daily.addRun}
+            addExercise={daily.addExercise}
+            removeExercise={daily.removeExercise}
+            getLastLift={getLastLift}
+            logLift={logLift}
+            templates={templates}
+            notify={notify}
+          />
+        </ErrorBoundary>
       )}
       {tab === 'stats' && (
-        <StatsTab
-          weighIns={weighIns}
-          addWeighIn={addWeighIn}
-          latest={latest}
-          liftLog={liftLog}
-          startWeight={settings.startWeight}
-          goalWeight={settings.goalWeight}
-          notify={notify}
-        />
+        <ErrorBoundary>
+          <StatsTab
+            weighIns={weighIns}
+            addWeighIn={addWeighIn}
+            latest={latest}
+            liftLog={liftLog}
+            startWeight={settings.startWeight}
+            goalWeight={settings.goalWeight}
+            notify={notify}
+          />
+        </ErrorBoundary>
       )}
       {tab === 'journey' && (
-        <JourneyTab
-          weighIns={weighIns}
-          startWeight={settings.startWeight}
-          goalWeight={settings.goalWeight}
-        />
+        <ErrorBoundary>
+          <JourneyTab
+            weighIns={weighIns}
+            startWeight={settings.startWeight}
+            goalWeight={settings.goalWeight}
+          />
+        </ErrorBoundary>
       )}
       {tab === 'settings' && (
-        <SettingsTab
-          settings={settings}
-          updateSettings={updateSettings}
-          resetSettings={resetSettings}
-          templates={templates}
-          workoutOps={{ updateExercise, addExercise: addTemplateEx, removeExercise: removeTemplateEx, moveExercise, resetTemplates }}
-          notify={notify}
-        />
+        <ErrorBoundary>
+          <SettingsTab
+            settings={settings}
+            updateSettings={updateSettings}
+            resetSettings={resetSettings}
+            templates={templates}
+            workoutOps={{ updateExercise, addExercise: addTemplateEx, removeExercise: removeTemplateEx, moveExercise, resetTemplates }}
+            notify={notify}
+          />
+        </ErrorBoundary>
       )}
 
       </div>

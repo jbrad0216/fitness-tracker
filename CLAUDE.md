@@ -21,21 +21,29 @@ Personal fitness tracking PWA for Jason. React + Vite + Tailwind CSS. Deployed o
 ```
 src/
   main.jsx              # Entry point
-  index.css             # Tailwind imports + CSS variables
-  App.jsx               # Main app shell, routing, state composition
+  index.css             # Tailwind imports + CSS variables + light mode
+  App.jsx               # Main app shell, routing, swipe navigation, state composition
   data/
     constants.js        # Targets, quick foods, workout templates, date helpers
-    storage.js          # localStorage wrapper with export/import
+    storage.js          # localStorage wrapper with export/import/backup
+    exercises.js        # Exercise library: descriptions, YouTube URLs, muscle groups, SVGs
   components/
-    UI.jsx              # Shared components (Toast, ProgressRing, WaterBottles, Card, Button, Input, etc.)
-    BottomNav.jsx       # Fixed bottom tab navigation
-    DashboardTab.jsx    # Today's overview (rings, water, toggles, food summary)
-    FoodTab.jsx         # Food logging with quick-add presets and custom entry
-    GymTab.jsx          # Workout logging with prescribed exercises and manual entry
-    StatsTab.jsx        # Weight chart, lift progress, weigh-in history, data export
+    UI.jsx              # Shared components (Toast, ProgressRing, WaterBottles, Toggle, OfflineIndicator, etc.)
+    BottomNav.jsx       # Fixed bottom tab navigation (6 tabs including Journey)
+    DashboardTab.jsx    # Today's overview (rings, water, toggles, quick-log shortcuts, reminders)
+    FoodTab.jsx         # Food logging with USDA/OpenFoodFacts API search + quick-add presets
+    GymTab.jsx          # Workout logging with exercise library info panels
+    StatsTab.jsx        # Weight chart, lift progress, weigh-in history, data export/import
+    JourneyTab.jsx      # Progress journey: week timeline, milestones, monthly calendar, streaks
+    SettingsTab.jsx     # Profile, targets, cloud storage preference, theme, workout templates
+    ChatInterface.jsx   # Natural language logging chat (AI parser, no external API key needed)
+    OnboardingFlow.jsx  # First-time setup wizard including cloud storage preference
   hooks/
-    useDaily.js         # Daily data state (food, water, exercises, meditation, run)
-    useAppData.js       # Weigh-ins, lift log, custom foods hooks
+    useDaily.js         # Daily data state with validation (food, water, exercises, meditation, run)
+    useAppData.js       # Weigh-ins, lift log, custom foods hooks with validation
+    useSettings.js      # App settings (profile, targets, cloudStorage, theme)
+    useWorkoutTemplates.js  # A/B workout template management
+    useFoodSearch.js    # USDA FoodData Central + OpenFoodFacts API search hook
 public/
   icon-192.png          # PWA icon
   icon-512.png          # PWA icon
@@ -43,13 +51,16 @@ public/
 ```
 
 ## Key Design Decisions
-- Dark theme (#0f1117 background) — used at 5:30am in the gym
-- Mobile-first (375-430px iPhone viewport)
-- Bottom tab nav (Today, Food, Gym, Stats)
+- Dark theme (#0f1117 background) — used at 5:30am in the gym; light mode available in Settings
+- Mobile-first (375-430px iPhone viewport), safe area insets for notch/home indicator
+- Bottom tab nav (Today, Food, Gym, Journey, Stats, Settings)
+- Swipe left/right gesture to switch tabs
 - All data in localStorage with `ft_` prefix
 - Workout A/B rotation based on week number (A/B/A → B/A/B)
 - Progress rings for daily calories, protein, water
 - Toast notifications for feedback on actions
+- Chat FAB for natural language logging (💬 button on every tab)
+- ErrorBoundary around each tab so one crash doesn't kill the app
 
 ## Commands
 ```bash
@@ -75,6 +86,10 @@ npm run preview      # Preview production build locally
 - `ft_weigh-ins` — array of {date, weight} objects
 - `ft_lift-log` — object keyed by exercise slug, stores last weight/sets/reps/date
 - `ft_custom-foods` — user-created food presets
+- `ft_settings` — app settings including cloudStorage, theme, targets, profile
+- `ft_chat-YYYY-MM-DD` — daily chat log from the natural language interface
+- `ft_last-export` — date of last manual data export
+- `ft_backup-YYYY-MM-DD` — auto-backup snapshots (last 7 days kept)
 
 ## Common Change Patterns
 - **Add a new quick food preset**: Edit QUICK_FOODS array in `src/data/constants.js`
