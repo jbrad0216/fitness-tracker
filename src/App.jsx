@@ -3,6 +3,7 @@ import { getDaySchedule, getTodaysWorkoutType } from './data/constants';
 import { useDaily } from './hooks/useDaily';
 import { useWeighIns, useLiftLog, useCustomFoods } from './hooks/useAppData';
 import { useSettings } from './hooks/useSettings';
+import { useWorkoutTemplates } from './hooks/useWorkoutTemplates';
 import { Toast } from './components/UI';
 import { BottomNav } from './components/BottomNav';
 import { DashboardTab } from './components/DashboardTab';
@@ -16,6 +17,7 @@ export default function App() {
   const [notification, setNotification] = useState(null);
 
   const { settings, updateSettings, resetSettings, loaded: settingsLoaded } = useSettings();
+  const { templates, updateExercise, addExercise: addTemplateEx, removeExercise: removeTemplateEx, moveExercise, resetTemplates } = useWorkoutTemplates();
   const daily = useDaily();
   const { weighIns, addWeighIn, latest } = useWeighIns();
   const { log: liftLog, logLift, getLastLift } = useLiftLog();
@@ -133,6 +135,7 @@ export default function App() {
           removeExercise={daily.removeExercise}
           getLastLift={getLastLift}
           logLift={logLift}
+          templates={templates}
           notify={notify}
         />
       )}
@@ -152,6 +155,8 @@ export default function App() {
           settings={settings}
           updateSettings={updateSettings}
           resetSettings={resetSettings}
+          templates={templates}
+          workoutOps={{ updateExercise, addExercise: addTemplateEx, removeExercise: removeTemplateEx, moveExercise, resetTemplates }}
           notify={notify}
         />
       )}

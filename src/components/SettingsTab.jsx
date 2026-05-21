@@ -2,7 +2,125 @@ import { useState, useEffect } from 'react';
 import { Card, CardTitle, Input, Button, Label } from './UI';
 import { DEFAULT_SETTINGS } from '../hooks/useSettings';
 
-export function SettingsTab({ settings, updateSettings, resetSettings, notify }) {
+function WorkoutEditor({ label, exercises, onUpdate, onRemove, onMove, onAdd }) {
+  const [newEx, setNewEx] = useState({ name: '', sets: '3', reps: '12', defaultWeight: '' });
+  const [editIndex, setEditIndex] = useState(null);
+  const [editForm, setEditForm] = useState({});
+
+  const handleAdd = () => {
+    if (!newEx.name) return;
+    onAdd({
+      name: newEx.name,
+      sets: parseInt(newEx.sets) || 3,
+      reps: parseInt(newEx.reps) || 12,
+      defaultWeight: parseFloat(newEx.defaultWeight) || 0,
+    });
+    setNewEx({ name: '', sets: '3', reps: '12', defaultWeight: '' });
+  };
+
+  const startEdit = (i) => {
+    setEditIndex(i);
+    setEditForm({ ...exercises[i] });
+  };
+
+  const saveEdit = () => {
+    onUpdate(editIndex, {
+      name: editForm.name,
+      sets: parseInt(editForm.sets) || 3,
+      reps: parseInt(editForm.reps) || 12,
+      defaultWeight: parseFloat(editForm.defaultWeight) || 0,
+    });
+    setEditIndex(null);
+  };
+
+  return (
+    <div className="mb-4">
+      <h3 className="text-sm font-semibold text-blue-400 mb-2">Workout {label}</h3>
+
+      {exercises.map((ex, i) => (
+        <div key={i} className="mb-2 rounded-xl bg-white/[0.03] border border-white/[0.06] p-3">
+          {editIndex === i ? (
+            <div className="flex flex-col gap-2">
+              <Input
+                type="text"
+                value={editForm.name}
+                onChange={e => setEditForm(f => ({ ...f, name: e.target.value }))}
+                placeholder="Exercise name"
+              />
+              <div className="flex gap-1.5">
+                <div className="flex-1">
+                  <Label>Wt (lbs)</Label>
+                  <Input type="number" value={editForm.defaultWeight}
+                    onChange={e => setEditForm(f => ({ ...f, defaultWeight: e.target.value }))}
+                    step="2.5" />
+                </div>
+                <div className="w-14">
+                  <Label>Sets</Label>
+                  <Input type="number" value={editForm.sets}
+                    onChange={e => setEditForm(f => ({ ...f, sets: e.target.value }))} />
+                </div>
+                <div className="w-14">
+                  <Label>Reps</Label>
+                  <Input type="number" value={editForm.reps}
+                    onChange={e => setEditForm(f => ({ ...f, reps: e.target.value }))} />
+                </div>
+              </div>
+              <div className="flex gap-1.5">
+                <Button onClick={saveEdit} className="flex-1 text-xs py-2">Save</Button>
+                <Button onClick={() => setEditIndex(null)} variant="ghost" className="text-xs py-2">Cancel</Button>
+              </div>
+            </div>
+          ) : (
+            <div className="flex items-center justify-between">
+              <div className="flex-1 min-w-0">
+                <div className="text-sm truncate">{ex.name}</div>
+                <div className="text-[11px] text-white/40">
+                  {ex.defaultWeight}lbs · {ex.sets}×{ex.reps}
+                </div>
+              </div>
+              <div className="flex gap-1 ml-2 shrink-0">
+                <button onClick={() => onMove(i, -1)} disabled={i === 0}
+                  className="w-7 h-7 rounded-lg bg-white/[0.05] text-white/50 border-none cursor-pointer
+                    text-xs disabled:opacity-20 active:bg-white/[0.1]">↑</button>
+                <button onClick={() => onMove(i, 1)} disabled={i === exercises.length - 1}
+                  className="w-7 h-7 rounded-lg bg-white/[0.05] text-white/50 border-none cursor-pointer
+                    text-xs disabled:opacity-20 active:bg-white/[0.1]">↓</button>
+                <button onClick={() => startEdit(i)}
+                  className="w-7 h-7 rounded-lg bg-blue-500/15 text-blue-400 border-none cursor-pointer text-xs">✏️</button>
+                <button onClick={() => onRemove(i)}
+                  className="w-7 h-7 rounded-lg bg-red-500/15 text-red-400 border-none cursor-pointer text-base">×</button>
+              </div>
+            </div>
+          )}
+        </div>
+      ))}
+
+      {/* Add new */}
+      <div className="rounded-xl bg-white/[0.02] border border-white/[0.05] p-3">
+        <p className="text-[11px] text-white/30 mb-2 uppercase tracking-wider">Add Exercise</p>
+        <div className="flex flex-col gap-1.5">
+          <Input type="text" value={newEx.name}
+            onChange={e => setNewEx(f => ({ ...f, name: e.target.value }))}
+            placeholder="Exercise name" />
+          <div className="flex gap-1.5">
+            <Input type="number" value={newEx.defaultWeight}
+              onChange={e => setNewEx(f => ({ ...f, defaultWeight: e.target.value }))}
+              placeholder="Wt" step="2.5" className="flex-1" />
+            <Input type="number" value={newEx.sets}
+              onChange={e => setNewEx(f => ({ ...f, sets: e.target.value }))}
+              placeholder="Sets" className="w-16" />
+            <Input type="number" value={newEx.reps}
+              onChange={e => setNewEx(f => ({ ...f, reps: e.target.value }))}
+              placeholder="Reps" className="w-16" />
+          </div>
+          <Button onClick={handleAdd} variant="ghost" className="w-full text-xs py-2">+ Add</Button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export function SettingsTab({ settings, updateSettings, resetSettings, templates, workoutOps, notify }) {
   const [form, setForm] = useState({ ...settings });
 
   useEffect(() => {
@@ -29,6 +147,11 @@ export function SettingsTab({ settings, updateSettings, resetSettings, notify })
     notify('Reset to defaults');
   };
 
+  const handleResetTemplates = () => {
+    workoutOps.resetTemplates();
+    notify('Workout templates reset');
+  };
+
   const f = (field) => ({
     value: form[field] ?? '',
     onChange: (e) => setForm(prev => ({ ...prev, [field]: e.target.value })),
@@ -39,7 +162,7 @@ export function SettingsTab({ settings, updateSettings, resetSettings, notify })
       {/* Data Warning */}
       <div className="rounded-xl bg-amber-500/10 border border-amber-500/30 px-4 py-3 mb-3">
         <p className="text-xs text-amber-400/90 leading-relaxed">
-          ⚠️ Your data is stored locally on this device only. Use Export in Stats to save a backup.
+          ⚠️ Your data is stored locally on this device only. Export regularly via Stats to save a backup.
         </p>
       </div>
 
@@ -101,11 +224,44 @@ export function SettingsTab({ settings, updateSettings, resetSettings, notify })
         </div>
       </Card>
 
-      {/* Actions */}
-      <div className="flex gap-2 mb-3">
+      {/* Save / Reset settings */}
+      <div className="flex gap-2 mb-4">
         <Button onClick={handleSave} className="flex-1">Save Settings</Button>
         <Button onClick={handleReset} variant="danger" className="flex-1">Reset Defaults</Button>
       </div>
+
+      {/* Workout Templates */}
+      <Card>
+        <CardTitle right={
+          <button onClick={handleResetTemplates}
+            className="text-[11px] text-red-400/70 bg-transparent border-none cursor-pointer">
+            Reset Templates
+          </button>
+        }>
+          Workout Templates
+        </CardTitle>
+
+        {templates && (
+          <>
+            <WorkoutEditor
+              label="A"
+              exercises={templates.A}
+              onUpdate={(i, u) => workoutOps.updateExercise('A', i, u)}
+              onRemove={(i) => workoutOps.removeExercise('A', i)}
+              onMove={(i, d) => workoutOps.moveExercise('A', i, d)}
+              onAdd={(ex) => workoutOps.addExercise('A', ex)}
+            />
+            <WorkoutEditor
+              label="B"
+              exercises={templates.B}
+              onUpdate={(i, u) => workoutOps.updateExercise('B', i, u)}
+              onRemove={(i) => workoutOps.removeExercise('B', i)}
+              onMove={(i, d) => workoutOps.moveExercise('B', i, d)}
+              onAdd={(ex) => workoutOps.addExercise('B', ex)}
+            />
+          </>
+        )}
+      </Card>
     </div>
   );
 }

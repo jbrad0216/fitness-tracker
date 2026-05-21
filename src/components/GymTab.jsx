@@ -1,17 +1,17 @@
 import { useState } from 'react';
 import {
-  WORKOUT_A, WORKOUT_B, getTodaysWorkoutType, getDaySchedule,
+  getTodaysWorkoutType, getDaySchedule,
 } from '../data/constants';
 import { Card, CardTitle, Input, Button, Label } from './UI';
 
-export function GymTab({ daily, addRun, addExercise, removeExercise, getLastLift, logLift, notify }) {
+export function GymTab({ daily, addRun, addExercise, removeExercise, getLastLift, logLift, templates, notify }) {
   const [runInput, setRunInput] = useState('');
   const [exForm, setExForm] = useState({ name: '', weight: '', sets: '3', reps: '12' });
   const [activeLog, setActiveLog] = useState(null); // exercise name being logged
 
   const schedule = getDaySchedule();
   const workoutType = getTodaysWorkoutType();
-  const exercises = workoutType === 'A' ? WORKOUT_A : workoutType === 'B' ? WORKOUT_B : [];
+  const exercises = workoutType === 'A' ? (templates?.A || []) : workoutType === 'B' ? (templates?.B || []) : [];
 
   const handleLogRun = () => {
     const miles = parseFloat(runInput);
