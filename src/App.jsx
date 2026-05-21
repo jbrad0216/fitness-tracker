@@ -4,28 +4,43 @@ import { useDaily } from './hooks/useDaily';
 import { useWeighIns, useLiftLog, useCustomFoods } from './hooks/useAppData';
 import { useSettings } from './hooks/useSettings';
 import { useWorkoutTemplates } from './hooks/useWorkoutTemplates';
-import { Toast, ErrorBoundary, PullToRefresh, LandscapeHint, OfflineIndicator } from './components/UI';
+import { Toast, ErrorBoundary, LandscapeHint, OfflineIndicator } from './components/UI';
 import { ChatInterface } from './components/ChatInterface';
 import { BottomNav } from './components/BottomNav';
 import { DashboardTab } from './components/DashboardTab';
-import { FoodTab } from './components/FoodTab';
 import { GymTab } from './components/GymTab';
-import { StatsTab } from './components/StatsTab';
-import { JourneyTab } from './components/JourneyTab';
-import { SettingsTab } from './components/SettingsTab';
+import { MoreTab } from './components/MoreTab';
 import { OnboardingFlow } from './components/OnboardingFlow';
+import { BarcodeScanner } from './components/BarcodeScanner';
 
 export default function App() {
-  const TAB_ORDER = ['today', 'food', 'gym', 'journey', 'stats', 'settings'];
-  const [tab, setTab] = useState('today');
+  const TAB_ORDER = ['home', 'log', 'gym', 'more'];
+  const [tab, setTab] = useState('home');
   const [notification, setNotification] = useState(null);
   const [tabKey, setTabKey] = useState(0);
   const [updateAvailable, setUpdateAvailable] = useState(false);
-  const [showChat, setShowChat] = useState(false);
+  const [showScanner, setShowScanner] = useState(false);
+  const [chatPrefill, setChatPrefill] = useState('');
   const swipeStartX = useRef(null);
   const swipeStartY = useRef(null);
 
-  // Listen for service worker updates
+  // Apple Health URL params on load
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const steps = params.get('steps');
+    const activeCal = params.get('activeCal');
+    if (steps || activeCal) {
+      const data = {};
+      if (steps) data.steps = parseInt(steps);
+      if (activeCal) data.activeCal = parseInt(activeCal);
+      localStorage.setItem('ft_apple-health-today', JSON.stringify({ ...data, date: new Date().toISOString().split('T')[0] }));
+      // Clean URL without reload
+      const url = new URL(window.location.href);
+      url.search = '';
+      window.history.replaceState({}, '', url.toString());
+    }
+  }, []);
+
   useEffect(() => {
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.addEventListener('controllerchange', () => {
@@ -34,20 +49,25 @@ export default function App() {
     }
   }, []);
 
-  const changeTab = useCallback((t) => { setTab(t); setTabKey(k => k + 1); }, []);
+  const changeTab = useCallback((t) => {
+    setTab(t);
+    setTabKey(k => k + 1);
+    if (t !== 'log') setChatPrefill('');
+  }, []);
 
-  // Swipe left/right to switch tabs
+  // Swipe left/right to switch tabs (only for the 4 main tabs)
   const handleTouchStart = useCallback((e) => {
+    if (tab === 'log') return; // don't swipe away from log
     swipeStartX.current = e.touches[0].clientX;
     swipeStartY.current = e.touches[0].clientY;
-  }, []);
+  }, [tab]);
 
   const handleTouchEnd = useCallback((e) => {
     if (swipeStartX.current === null) return;
     const dx = e.changedTouches[0].clientX - swipeStartX.current;
     const dy = Math.abs(e.changedTouches[0].clientY - swipeStartY.current);
     swipeStartX.current = null;
-    if (Math.abs(dx) < 60 || dy > 80) return; // not a swipe
+    if (Math.abs(dx) < 60 || dy > 80) return;
     const idx = TAB_ORDER.indexOf(tab);
     if (dx < 0 && idx < TAB_ORDER.length - 1) changeTab(TAB_ORDER[idx + 1]);
     if (dx > 0 && idx > 0) changeTab(TAB_ORDER[idx - 1]);
@@ -60,13 +80,8 @@ export default function App() {
   const { log: liftLog, logLift, getLastLift } = useLiftLog();
   const { foods: customFoods, addCustomFood } = useCustomFoods();
 
-  const notify = useCallback((msg) => {
-    setNotification(msg);
-  }, []);
-
-  const clearNotify = useCallback(() => {
-    setNotification(null);
-  }, []);
+  const notify = useCallback((msg) => setNotification(msg), []);
+  const clearNotify = useCallback(() => setNotification(null), []);
 
   if (!daily.loaded || !settingsLoaded) {
     return (
@@ -76,19 +91,11 @@ export default function App() {
     );
   }
 
-  // Hide splash screen now that app is ready
   if (window.__hideSplash) { window.__hideSplash(); window.__hideSplash = null; }
 
-  // Show onboarding if no settings have been saved yet
   const hasOnboarded = !!localStorage.getItem('ft_settings');
   if (!hasOnboarded) {
-    return (
-      <OnboardingFlow
-        onComplete={(newSettings) => {
-          updateSettings(newSettings);
-        }}
-      />
-    );
+    return <OnboardingFlow onComplete={updateSettings} />;
   }
 
   const targets = {
@@ -98,205 +105,148 @@ export default function App() {
     sodiumMg: settings.sodiumMg,
   };
 
-  const schedule = getDaySchedule();
-  const workoutType = getTodaysWorkoutType();
-  const currentWeight = latest?.weight || settings.startWeight;
-  const weightLost = settings.startWeight - currentWeight;
-  const weightToGo = currentWeight - settings.goalWeight;
-
-  const scheduleColors = {
-    strength: 'text-blue-400',
-    cardio: 'text-amber-400',
-    longrun: 'text-green-400',
-    rest: 'text-purple-400',
-  };
-
-  const scheduleLabels = {
-    strength: `Workout ${workoutType}`,
-    cardio: 'Cardio Only',
-    longrun: 'Long Run',
-    rest: 'Rest Day',
-  };
-
   const isLight = settings.theme === 'light';
+
+  // Open the Log tab and optionally pre-fill the input
+  const openLog = (prefill = '') => {
+    setChatPrefill(prefill);
+    changeTab('log');
+  };
+
+  const chatProps = {
+    daily: { ...daily.data, totalCal: daily.totalCal, totalProtein: daily.totalProtein },
+    targets,
+    addFood: daily.addFood,
+    setWater: daily.setWater,
+    toggleMeditation: daily.toggleMeditation,
+    addRun: daily.addRun,
+    addWeighIn,
+    addExercise: daily.addExercise,
+    logLift,
+    getLastLift,
+    removeFood: daily.removeFood,
+    onOpenScanner: () => setShowScanner(true),
+  };
 
   return (
     <div
-      className={`min-h-screen max-w-lg mx-auto pb-28 ${isLight ? 'light-mode' : ''}`}
+      className={`min-h-screen max-w-lg mx-auto ${isLight ? 'light-mode' : ''}`}
       onTouchStart={handleTouchStart}
       onTouchEnd={handleTouchEnd}
     >
       <LandscapeHint />
       <OfflineIndicator />
-      {/* Update Available Banner */}
+
       {updateAvailable && (
         <div className="fixed top-0 left-0 right-0 z-50 max-w-lg mx-auto
           bg-blue-500/95 text-white px-4 py-3 text-sm font-semibold
           flex justify-between items-center">
           <span>Update available</span>
-          <button
-            onClick={() => window.location.reload()}
-            className="bg-white/20 rounded-lg px-3 py-1 text-xs font-bold border-none cursor-pointer"
-          >
+          <button onClick={() => window.location.reload()}
+            className="bg-white/20 rounded-lg px-3 py-1 text-xs font-bold border-none cursor-pointer">
             Reload
           </button>
         </div>
       )}
 
-      {/* Toast */}
       {notification && <Toast message={notification} onDone={clearNotify} />}
 
-      {/* Header */}
-      <header className="px-5 pb-2 flex justify-between items-start"
-        style={{ paddingTop: 'max(env(safe-area-inset-top), 16px)' }}>
-        <div>
-          <h1 className="text-[22px] font-bold leading-tight">
-            {new Date().toLocaleDateString('en-US', { weekday: 'long' })}
-          </h1>
-          <p className="text-[13px] text-white/50">
-            {new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
-            <span className={`ml-1.5 ${scheduleColors[schedule]}`}>
-              · {scheduleLabels[schedule]}
-            </span>
-          </p>
-          <p className="text-[11px] text-white/30 mt-0.5">{settings.name}'s Tracker</p>
+      {/* Log tab — full screen fixed panel */}
+      {tab === 'log' && (
+        <div
+          className="fixed inset-x-0 max-w-lg mx-auto z-20 flex flex-col bg-[#0f1117]"
+          style={{
+            top: 0,
+            bottom: `calc(64px + max(env(safe-area-inset-bottom), 8px))`,
+          }}
+        >
+          <ChatInterface
+            {...chatProps}
+            embedded
+            initialInput={chatPrefill}
+          />
         </div>
-        {latest && (
-          <div className="text-right">
-            <div className="text-lg font-bold">{currentWeight}</div>
-            <div className={`text-[11px] ${weightLost > 0 ? 'text-green-400' : 'text-white/50'}`}>
-              {weightLost > 0 ? `↓${weightLost.toFixed(1)} lbs` : 'Start'}
-              {' · '}{weightToGo.toFixed(1)} to go
-            </div>
-          </div>
-        )}
-      </header>
-
-      {/* Tab Content */}
-      <div key={tabKey} className="animate-tab-in">
-      {tab === 'today' && (
-        <ErrorBoundary>
-          <DashboardTab
-            daily={daily.data}
-            totalCal={daily.totalCal}
-            totalProtein={daily.totalProtein}
-            setWater={daily.setWater}
-            toggleMeditation={daily.toggleMeditation}
-            addRun={daily.addRun}
-            weighIns={weighIns}
-            addWeighIn={addWeighIn}
-            latest={latest}
-            startWeight={settings.startWeight}
-            goalWeight={settings.goalWeight}
-            targets={targets}
-            name={settings.name}
-            notify={notify}
-            settings={settings}
-            onNavigate={changeTab}
-          />
-        </ErrorBoundary>
-      )}
-      {tab === 'food' && (
-        <ErrorBoundary>
-          <FoodTab
-            daily={daily.data}
-            totalCal={daily.totalCal}
-            totalProtein={daily.totalProtein}
-            addFood={daily.addFood}
-            removeFood={daily.removeFood}
-            customFoods={customFoods}
-            addCustomFood={addCustomFood}
-            copyYesterday={daily.copyYesterday}
-            targets={targets}
-            notify={notify}
-          />
-        </ErrorBoundary>
-      )}
-      {tab === 'gym' && (
-        <ErrorBoundary>
-          <GymTab
-            daily={daily.data}
-            addRun={daily.addRun}
-            addExercise={daily.addExercise}
-            removeExercise={daily.removeExercise}
-            getLastLift={getLastLift}
-            logLift={logLift}
-            templates={templates}
-            notify={notify}
-          />
-        </ErrorBoundary>
-      )}
-      {tab === 'stats' && (
-        <ErrorBoundary>
-          <StatsTab
-            weighIns={weighIns}
-            addWeighIn={addWeighIn}
-            latest={latest}
-            liftLog={liftLog}
-            startWeight={settings.startWeight}
-            goalWeight={settings.goalWeight}
-            notify={notify}
-          />
-        </ErrorBoundary>
-      )}
-      {tab === 'journey' && (
-        <ErrorBoundary>
-          <JourneyTab
-            weighIns={weighIns}
-            startWeight={settings.startWeight}
-            goalWeight={settings.goalWeight}
-          />
-        </ErrorBoundary>
-      )}
-      {tab === 'settings' && (
-        <ErrorBoundary>
-          <SettingsTab
-            settings={settings}
-            updateSettings={updateSettings}
-            resetSettings={resetSettings}
-            templates={templates}
-            workoutOps={{ updateExercise, addExercise: addTemplateEx, removeExercise: removeTemplateEx, moveExercise, resetTemplates }}
-            notify={notify}
-          />
-        </ErrorBoundary>
       )}
 
-      </div>
+      {/* All other tabs */}
+      {tab !== 'log' && (
+        <div key={tabKey} className="pb-24 animate-tab-in"
+          style={{ paddingTop: tab === 'home' ? 0 : 0 }}>
 
-      {/* Navigation */}
+          {tab === 'home' && (
+            <ErrorBoundary>
+              <DashboardTab
+                daily={daily.data}
+                totalCal={daily.totalCal}
+                totalProtein={daily.totalProtein}
+                setWater={daily.setWater}
+                toggleMeditation={daily.toggleMeditation}
+                addRun={daily.addRun}
+                removeFood={daily.removeFood}
+                weighIns={weighIns}
+                addWeighIn={addWeighIn}
+                latest={latest}
+                startWeight={settings.startWeight}
+                goalWeight={settings.goalWeight}
+                targets={targets}
+                name={settings.name}
+                notify={notify}
+                settings={settings}
+                onNavigate={changeTab}
+                onOpenLog={openLog}
+              />
+            </ErrorBoundary>
+          )}
+
+          {tab === 'gym' && (
+            <ErrorBoundary>
+              <GymTab
+                daily={daily.data}
+                addRun={daily.addRun}
+                addExercise={daily.addExercise}
+                removeExercise={daily.removeExercise}
+                getLastLift={getLastLift}
+                logLift={logLift}
+                templates={templates}
+                notify={notify}
+                settings={settings}
+                updateSettings={updateSettings}
+              />
+            </ErrorBoundary>
+          )}
+
+          {tab === 'more' && (
+            <ErrorBoundary>
+              <MoreTab
+                weighIns={weighIns}
+                addWeighIn={addWeighIn}
+                latest={latest}
+                liftLog={liftLog}
+                startWeight={settings.startWeight}
+                goalWeight={settings.goalWeight}
+                settings={settings}
+                updateSettings={updateSettings}
+                resetSettings={resetSettings}
+                templates={templates}
+                workoutOps={{ updateExercise, addExercise: addTemplateEx, removeExercise: removeTemplateEx, moveExercise, resetTemplates }}
+                notify={notify}
+              />
+            </ErrorBoundary>
+          )}
+        </div>
+      )}
+
+      {/* Bottom nav */}
       <BottomNav active={tab} onChange={changeTab} />
 
-      {/* Chat FAB */}
-      {!showChat && (
-        <button
-          onClick={() => setShowChat(true)}
-          className="fixed z-40 bg-blue-500 text-white rounded-full shadow-lg shadow-blue-500/40
-            flex items-center justify-center text-2xl border-none cursor-pointer
-            active:scale-95 transition-transform w-14 h-14"
-          style={{
-            right: '20px',
-            bottom: 'calc(max(env(safe-area-inset-bottom), 8px) + 72px)',
+      {/* Barcode scanner overlay */}
+      {showScanner && (
+        <BarcodeScanner
+          onScan={(barcode) => {
+            setShowScanner(false);
+            window.__chatHandleBarcode?.(barcode);
           }}
-          title="Quick Log"
-        >
-          💬
-        </button>
-      )}
-
-      {/* Chat Interface */}
-      {showChat && (
-        <ChatInterface
-          daily={{ ...daily.data, totalCal: daily.totalCal, totalProtein: daily.totalProtein }}
-          targets={targets}
-          addFood={daily.addFood}
-          setWater={daily.setWater}
-          toggleMeditation={daily.toggleMeditation}
-          addRun={daily.addRun}
-          addWeighIn={addWeighIn}
-          addExercise={daily.addExercise}
-          logLift={logLift}
-          getLastLift={getLastLift}
-          onClose={() => setShowChat(false)}
+          onClose={() => setShowScanner(false)}
         />
       )}
     </div>
