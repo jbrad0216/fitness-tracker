@@ -1,20 +1,20 @@
 import { useState } from 'react';
-import { TARGETS, isWednesday, getToday } from '../data/constants';
+import { isWednesday, getToday } from '../data/constants';
 import { ProgressRing, WaterBottles, Card, CardTitle, Input, Button, StatBox } from './UI';
 
 export function DashboardTab({
   daily, totalCal, totalProtein, setWater, toggleMeditation, addRun,
-  weighIns, addWeighIn, latest, startWeight, goalWeight, notify,
+  weighIns, addWeighIn, latest, startWeight, goalWeight, targets, notify,
 }) {
   const [runInput, setRunInput] = useState('');
   const [showRunInput, setShowRunInput] = useState(false);
   const [weightInput, setWeightInput] = useState('');
 
-  const calPct = totalCal / TARGETS.calories;
-  const proteinPct = totalProtein / TARGETS.protein;
-  const waterPct = daily.water / TARGETS.waterBottles;
-  const calLeft = TARGETS.calories - totalCal;
-  const proteinLeft = Math.max(0, TARGETS.protein - totalProtein);
+  const calPct = totalCal / targets.calories;
+  const proteinPct = totalProtein / targets.protein;
+  const waterPct = daily.water / targets.waterBottles;
+  const calLeft = targets.calories - totalCal;
+  const proteinLeft = Math.max(0, targets.protein - totalProtein);
 
   const handleLogRun = () => {
     const miles = parseFloat(runInput);
@@ -41,15 +41,15 @@ export function DashboardTab({
       <div className="flex justify-around mb-5">
         <ProgressRing pct={calPct} color={calPct > 1 ? '#ef4444' : '#f59e0b'}>
           <span className="text-[15px] font-bold">{totalCal}</span>
-          <span className="text-[9px] text-white/50">/ {TARGETS.calories}</span>
+          <span className="text-[9px] text-white/50">/ {targets.calories}</span>
         </ProgressRing>
         <ProgressRing pct={proteinPct} color={proteinPct >= 1 ? '#22c55e' : '#3b82f6'}>
           <span className="text-[15px] font-bold">{totalProtein}g</span>
-          <span className="text-[9px] text-white/50">/ {TARGETS.protein}g</span>
+          <span className="text-[9px] text-white/50">/ {targets.protein}g</span>
         </ProgressRing>
         <ProgressRing pct={waterPct} color="#38bdf8">
           <span className="text-[15px] font-bold">{daily.water}</span>
-          <span className="text-[9px] text-white/50">/ 3 btl</span>
+          <span className="text-[9px] text-white/50">/ {targets.waterBottles} btl</span>
         </ProgressRing>
       </div>
 
@@ -75,7 +75,7 @@ export function DashboardTab({
       {/* Water */}
       <Card>
         <CardTitle right={`${daily.water * 32}oz`}>Water (32oz bottles)</CardTitle>
-        <WaterBottles count={daily.water} onTap={setWater} />
+        <WaterBottles count={daily.water} total={targets.waterBottles} onTap={setWater} />
       </Card>
 
       {/* Quick Toggles */}

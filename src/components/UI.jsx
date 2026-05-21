@@ -45,10 +45,10 @@ export function ProgressRing({ pct, size = 72, stroke = 7, color, children }) {
 }
 
 // ─── Water Bottles ───
-export function WaterBottles({ count, onTap }) {
+export function WaterBottles({ count, total = 3, onTap }) {
   return (
-    <div className="flex gap-3 justify-center mt-2">
-      {[0, 1, 2].map(i => {
+    <div className="flex gap-2 justify-center mt-2 flex-wrap">
+      {Array.from({ length: total }, (_, i) => {
         const filled = i < count;
         return (
           <button

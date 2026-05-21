@@ -1,16 +1,16 @@
 import { useState } from 'react';
-import { PROFILE, formatDateShort } from '../data/constants';
+import { formatDateShort } from '../data/constants';
 import { exportAllData, importAllData } from '../data/storage';
 import { Card, CardTitle, Input, Button, StatBox } from './UI';
 
-export function StatsTab({ weighIns, addWeighIn, latest, liftLog, notify }) {
+export function StatsTab({ weighIns, addWeighIn, latest, liftLog, startWeight, goalWeight, notify }) {
   const [weightInput, setWeightInput] = useState('');
   const [showSettings, setShowSettings] = useState(false);
   const [importText, setImportText] = useState('');
 
-  const currentWeight = latest?.weight || PROFILE.startWeight;
-  const weightLost = PROFILE.startWeight - currentWeight;
-  const weightToGo = currentWeight - PROFILE.goalWeight;
+  const currentWeight = latest?.weight || startWeight;
+  const weightLost = startWeight - currentWeight;
+  const weightToGo = currentWeight - goalWeight;
 
   const handleWeighIn = () => {
     const w = parseFloat(weightInput);
@@ -58,8 +58,8 @@ export function StatsTab({ weighIns, addWeighIn, latest, liftLog, notify }) {
               <svg viewBox="0 0 100 140" className="w-full h-full">
                 {(() => {
                   const weights = weighIns.map(w => w.weight);
-                  const min = Math.min(...weights, PROFILE.goalWeight) - 2;
-                  const max = Math.max(...weights, PROFILE.startWeight) + 2;
+                  const min = Math.min(...weights, goalWeight) - 2;
+                  const max = Math.max(...weights, startWeight) + 2;
                   const range = max - min;
                   const W = 100;
 
@@ -68,25 +68,25 @@ export function StatsTab({ weighIns, addWeighIn, latest, liftLog, notify }) {
                       {/* Goal line */}
                       <line
                         x1="0"
-                        y1={140 - ((PROFILE.goalWeight - min) / range) * 130 - 5}
+                        y1={140 - ((goalWeight - min) / range) * 130 - 5}
                         x2={W}
-                        y2={140 - ((PROFILE.goalWeight - min) / range) * 130 - 5}
+                        y2={140 - ((goalWeight - min) / range) * 130 - 5}
                         stroke="#22c55e" strokeWidth="0.5" strokeDasharray="3,3" opacity="0.5"
                       />
                       <text
                         x={W - 1}
-                        y={140 - ((PROFILE.goalWeight - min) / range) * 130 - 8}
+                        y={140 - ((goalWeight - min) / range) * 130 - 8}
                         fill="#22c55e" fontSize="5.5" textAnchor="end" opacity="0.7"
                       >
-                        {PROFILE.goalWeight}
+                        {goalWeight}
                       </text>
 
                       {/* Start line */}
                       <line
                         x1="0"
-                        y1={140 - ((PROFILE.startWeight - min) / range) * 130 - 5}
+                        y1={140 - ((startWeight - min) / range) * 130 - 5}
                         x2={W}
-                        y2={140 - ((PROFILE.startWeight - min) / range) * 130 - 5}
+                        y2={140 - ((startWeight - min) / range) * 130 - 5}
                         stroke="#f59e0b" strokeWidth="0.3" strokeDasharray="2,3" opacity="0.3"
                       />
 

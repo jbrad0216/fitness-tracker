@@ -1,18 +1,21 @@
 import { useState, useCallback } from 'react';
-import { PROFILE, getDaySchedule, getTodaysWorkoutType, isWednesday } from './data/constants';
+import { getDaySchedule, getTodaysWorkoutType } from './data/constants';
 import { useDaily } from './hooks/useDaily';
 import { useWeighIns, useLiftLog, useCustomFoods } from './hooks/useAppData';
+import { useSettings } from './hooks/useSettings';
 import { Toast } from './components/UI';
 import { BottomNav } from './components/BottomNav';
 import { DashboardTab } from './components/DashboardTab';
 import { FoodTab } from './components/FoodTab';
 import { GymTab } from './components/GymTab';
 import { StatsTab } from './components/StatsTab';
+import { SettingsTab } from './components/SettingsTab';
 
 export default function App() {
   const [tab, setTab] = useState('today');
   const [notification, setNotification] = useState(null);
 
+  const { settings, updateSettings, resetSettings, loaded: settingsLoaded } = useSettings();
   const daily = useDaily();
   const { weighIns, addWeighIn, latest } = useWeighIns();
   const { log: liftLog, logLift, getLastLift } = useLiftLog();
@@ -26,7 +29,7 @@ export default function App() {
     setNotification(null);
   }, []);
 
-  if (!daily.loaded) {
+  if (!daily.loaded || !settingsLoaded) {
     return (
       <div className="min-h-screen flex items-center justify-center text-white/50">
         Loading...
@@ -34,11 +37,18 @@ export default function App() {
     );
   }
 
+  const targets = {
+    calories: settings.calories,
+    protein: settings.protein,
+    waterBottles: settings.waterBottles,
+    sodiumMg: settings.sodiumMg,
+  };
+
   const schedule = getDaySchedule();
   const workoutType = getTodaysWorkoutType();
-  const currentWeight = latest?.weight || PROFILE.startWeight;
-  const weightLost = PROFILE.startWeight - currentWeight;
-  const weightToGo = currentWeight - PROFILE.goalWeight;
+  const currentWeight = latest?.weight || settings.startWeight;
+  const weightLost = settings.startWeight - currentWeight;
+  const weightToGo = currentWeight - settings.goalWeight;
 
   const scheduleColors = {
     strength: 'text-blue-400',
@@ -71,7 +81,7 @@ export default function App() {
               · {scheduleLabels[schedule]}
             </span>
           </p>
-          <p className="text-[11px] text-white/30 mt-0.5">Jason's Tracker</p>
+          <p className="text-[11px] text-white/30 mt-0.5">{settings.name}'s Tracker</p>
         </div>
         {latest && (
           <div className="text-right">
@@ -96,8 +106,9 @@ export default function App() {
           weighIns={weighIns}
           addWeighIn={addWeighIn}
           latest={latest}
-          startWeight={PROFILE.startWeight}
-          goalWeight={PROFILE.goalWeight}
+          startWeight={settings.startWeight}
+          goalWeight={settings.goalWeight}
+          targets={targets}
           notify={notify}
         />
       )}
@@ -110,6 +121,7 @@ export default function App() {
           removeFood={daily.removeFood}
           customFoods={customFoods}
           addCustomFood={addCustomFood}
+          targets={targets}
           notify={notify}
         />
       )}
@@ -130,6 +142,16 @@ export default function App() {
           addWeighIn={addWeighIn}
           latest={latest}
           liftLog={liftLog}
+          startWeight={settings.startWeight}
+          goalWeight={settings.goalWeight}
+          notify={notify}
+        />
+      )}
+      {tab === 'settings' && (
+        <SettingsTab
+          settings={settings}
+          updateSettings={updateSettings}
+          resetSettings={resetSettings}
           notify={notify}
         />
       )}

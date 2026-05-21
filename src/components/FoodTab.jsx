@@ -1,14 +1,14 @@
 import { useState } from 'react';
-import { TARGETS, QUICK_FOODS } from '../data/constants';
+import { QUICK_FOODS } from '../data/constants';
 import { Card, CardTitle, Input, Button, Label } from './UI';
 
-export function FoodTab({ daily, totalCal, totalProtein, addFood, removeFood, customFoods, addCustomFood, notify }) {
+export function FoodTab({ daily, totalCal, totalProtein, addFood, removeFood, customFoods, addCustomFood, targets, notify }) {
   const [showQuick, setShowQuick] = useState(false);
   const [form, setForm] = useState({ name: '', cal: '', protein: '' });
   const [saveAsPreset, setSaveAsPreset] = useState(false);
 
-  const calLeft = TARGETS.calories - totalCal;
-  const proteinLeft = Math.max(0, TARGETS.protein - totalProtein);
+  const calLeft = targets.calories - totalCal;
+  const proteinLeft = Math.max(0, targets.protein - totalProtein);
 
   const handleAdd = () => {
     if (!form.name || !form.cal) return;
@@ -43,17 +43,17 @@ export function FoodTab({ daily, totalCal, totalProtein, addFood, removeFood, cu
         <div className="flex justify-around text-center">
           <div>
             <span className="text-lg font-bold">{totalCal}</span>
-            <span className="text-xs text-white/50">/{TARGETS.calories} cal</span>
+            <span className="text-xs text-white/50">/{targets.calories} cal</span>
           </div>
           <div>
             <span className="text-lg font-bold">{totalProtein}g</span>
-            <span className="text-xs text-white/50">/{TARGETS.protein}g pro</span>
+            <span className="text-xs text-white/50">/{targets.protein}g pro</span>
           </div>
         </div>
         <div className="flex justify-around text-center mt-2 pt-2 border-t border-white/[0.06]">
           <div className="text-xs">
             <span className={calLeft < 0 ? 'text-red-400 font-bold' : 'text-white/60'}>
-              {calLeft} cal left
+              {calLeft < 0 ? `${Math.abs(calLeft)} over` : `${calLeft} cal left`}
             </span>
           </div>
           <div className="text-xs">

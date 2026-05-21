@@ -3,6 +3,7 @@ const tabs = [
   { id: 'food', icon: '🍽️', label: 'Food' },
   { id: 'gym', icon: '🏋️', label: 'Gym' },
   { id: 'stats', icon: '📈', label: 'Stats' },
+  { id: 'settings', icon: '⚙️', label: 'Settings' },
 ];
 
 export function BottomNav({ active, onChange }) {
@@ -16,7 +17,7 @@ export function BottomNav({ active, onChange }) {
           key={t.id}
           onClick={() => onChange(t.id)}
           className={`bg-transparent border-none cursor-pointer flex flex-col items-center
-            gap-0.5 px-4 py-1 transition-colors duration-150
+            gap-0.5 px-3 py-1 transition-colors duration-150
             ${active === t.id ? 'text-blue-500' : 'text-white/40'}`}
         >
           <span className="text-xl leading-none">{t.icon}</span>
