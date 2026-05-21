@@ -63,7 +63,7 @@ export default function App() {
       <header className="px-5 pt-5 pb-2 flex justify-between items-start">
         <div>
           <h1 className="text-[22px] font-bold leading-tight">
-            Jason's Tracker
+            {new Date().toLocaleDateString('en-US', { weekday: 'long' })}
           </h1>
           <p className="text-[13px] text-white/50">
             {new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
@@ -71,6 +71,7 @@ export default function App() {
               · {scheduleLabels[schedule]}
             </span>
           </p>
+          <p className="text-[11px] text-white/30 mt-0.5">Jason's Tracker</p>
         </div>
         {latest && (
           <div className="text-right">
