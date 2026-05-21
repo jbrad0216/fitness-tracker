@@ -11,6 +11,7 @@ import { DashboardTab } from './components/DashboardTab';
 import { FoodTab } from './components/FoodTab';
 import { GymTab } from './components/GymTab';
 import { StatsTab } from './components/StatsTab';
+import { JourneyTab } from './components/JourneyTab';
 import { SettingsTab } from './components/SettingsTab';
 import { OnboardingFlow } from './components/OnboardingFlow';
 
@@ -198,6 +199,13 @@ export default function App() {
           startWeight={settings.startWeight}
           goalWeight={settings.goalWeight}
           notify={notify}
+        />
+      )}
+      {tab === 'journey' && (
+        <JourneyTab
+          weighIns={weighIns}
+          startWeight={settings.startWeight}
+          goalWeight={settings.goalWeight}
         />
       )}
       {tab === 'settings' && (
