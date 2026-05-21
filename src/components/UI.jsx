@@ -1,4 +1,53 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Component } from 'react';
+
+// ─── Haptic feedback helper ───
+export function haptic(pattern = 10) {
+  if (navigator.vibrate) navigator.vibrate(pattern);
+}
+
+// ─── Error Boundary ───
+export class ErrorBoundary extends Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+
+  static getDerivedStateFromError(error) {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error, info) {
+    console.error('ErrorBoundary caught:', error, info);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="min-h-screen flex flex-col items-center justify-center px-6 text-center">
+          <div className="text-4xl mb-4">⚠️</div>
+          <h2 className="text-lg font-bold mb-2">Something went wrong</h2>
+          <p className="text-sm text-white/50 mb-6">
+            {this.state.error?.message || 'An unexpected error occurred'}
+          </p>
+          <button
+            onClick={() => this.setState({ hasError: false, error: null })}
+            className="px-6 py-3 bg-blue-500 text-white rounded-xl text-sm font-semibold
+              border-none cursor-pointer"
+          >
+            Try Again
+          </button>
+          <button
+            onClick={() => window.location.reload()}
+            className="mt-3 text-sm text-white/40 bg-transparent border-none cursor-pointer"
+          >
+            Reload App
+          </button>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
 
 // ─── Toast Notification ───
 export function Toast({ message, onDone }) {
@@ -8,9 +57,11 @@ export function Toast({ message, onDone }) {
   }, [onDone]);
 
   return (
-    <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 
+    <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50
       bg-green-500/90 text-white px-5 py-2 rounded-full text-sm font-semibold
-      animate-fade-in backdrop-blur-sm shadow-lg">
+      backdrop-blur-sm shadow-lg"
+      style={{ animation: 'toastIn 0.2s ease-out' }}
+    >
       {message}
     </div>
   );
@@ -34,7 +85,7 @@ export function ProgressRing({ pct, size = 72, stroke = 7, color, children }) {
           fill="none" stroke={color} strokeWidth={stroke}
           strokeDasharray={c} strokeDashoffset={c * (1 - p)}
           strokeLinecap="round"
-          className="transition-all duration-500 ease-out"
+          className="transition-all duration-700 ease-out"
         />
       </svg>
       <div className="absolute inset-0 flex flex-col items-center justify-center">
@@ -53,10 +104,10 @@ export function WaterBottles({ count, total = 3, onTap }) {
         return (
           <button
             key={i}
-            onClick={() => onTap(filled ? count - 1 : i + 1)}
+            onClick={() => { haptic(15); onTap(filled ? count - 1 : i + 1); }}
             className={`w-14 h-[4.5rem] rounded-xl border-none cursor-pointer
               flex flex-col items-center justify-center transition-all duration-200
-              active:scale-95
+              active:scale-90
               ${filled
                 ? 'bg-gradient-to-br from-blue-500 to-blue-400 shadow-lg shadow-blue-500/30'
                 : 'bg-white/[0.06]'
@@ -74,11 +125,12 @@ export function WaterBottles({ count, total = 3, onTap }) {
 }
 
 // ─── Card ───
-export function Card({ children, className = '', highlight = false, ...props }) {
+export function Card({ children, className = '', highlight = false, pressable = false, ...props }) {
   return (
     <div
       className={`bg-white/[0.04] border rounded-[14px] px-4 py-4 mb-3
         ${highlight ? 'border-amber-500/60' : 'border-white/[0.08]'}
+        ${pressable ? 'active:scale-[0.98] transition-transform cursor-pointer' : ''}
         ${className}`}
       {...props}
     >
@@ -104,6 +156,7 @@ export function Input({ className = '', ...props }) {
       className={`bg-white/[0.06] border border-white/[0.08] rounded-[10px]
         px-3.5 py-2.5 text-white/90 text-sm outline-none w-full
         placeholder:text-white/25 focus:border-blue-500/50 transition-colors
+        min-h-[44px]
         ${className}`}
       {...props}
     />
@@ -111,7 +164,7 @@ export function Input({ className = '', ...props }) {
 }
 
 // ─── Button ───
-export function Button({ children, variant = 'primary', className = '', ...props }) {
+export function Button({ children, variant = 'primary', className = '', onClick, ...props }) {
   const variants = {
     primary: 'bg-blue-500 text-white hover:bg-blue-600',
     success: 'bg-green-500 text-white hover:bg-green-600',
@@ -120,12 +173,18 @@ export function Button({ children, variant = 'primary', className = '', ...props
     danger: 'bg-red-500/15 text-red-400 hover:bg-red-500/25',
   };
 
+  const handleClick = (e) => {
+    haptic(8);
+    onClick?.(e);
+  };
+
   return (
     <button
       className={`rounded-[10px] px-4 py-2.5 text-sm font-semibold cursor-pointer
-        transition-all duration-150 active:scale-95 border-none
+        transition-all duration-150 active:scale-95 border-none min-h-[44px]
         ${variants[variant] || variants.primary}
         ${className}`}
+      onClick={handleClick}
       {...props}
     >
       {children}
@@ -145,9 +204,69 @@ export function Label({ children }) {
 // ─── Stat Box ───
 export function StatBox({ value, label, color }) {
   return (
-    <div className="text-center">
+    <div className="text-center py-1">
       <div className="text-xl font-bold" style={{ color }}>{value}</div>
       <div className="text-[11px] text-white/50">{label}</div>
+    </div>
+  );
+}
+
+// ─── Skeleton loader ───
+export function Skeleton({ className = '' }) {
+  return (
+    <div
+      className={`bg-white/[0.06] rounded-lg animate-pulse ${className}`}
+    />
+  );
+}
+
+// ─── Pull to Refresh ───
+export function PullToRefresh({ onRefresh, children }) {
+  const [pulling, setPulling] = useState(false);
+  const [pullY, setPullY] = useState(0);
+  const startY = useState(0);
+  const threshold = 60;
+
+  const handleTouchStart = (e) => {
+    if (window.scrollY === 0) {
+      startY[1](e.touches[0].clientY);
+    }
+  };
+
+  const handleTouchMove = (e) => {
+    if (window.scrollY === 0) {
+      const diff = e.touches[0].clientY - startY[0];
+      if (diff > 0) {
+        setPullY(Math.min(diff, threshold * 1.5));
+        setPulling(diff > threshold);
+      }
+    }
+  };
+
+  const handleTouchEnd = () => {
+    if (pulling) {
+      haptic(20);
+      onRefresh?.();
+    }
+    setPullY(0);
+    setPulling(false);
+  };
+
+  return (
+    <div
+      onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
+      onTouchEnd={handleTouchEnd}
+    >
+      {pullY > 10 && (
+        <div
+          className="flex justify-center items-center text-sm text-white/40 overflow-hidden transition-all"
+          style={{ height: pullY * 0.5 }}
+        >
+          {pulling ? '↑ Release to refresh' : '↓ Pull to refresh'}
+        </div>
+      )}
+      {children}
     </div>
   );
 }

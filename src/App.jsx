@@ -4,7 +4,7 @@ import { useDaily } from './hooks/useDaily';
 import { useWeighIns, useLiftLog, useCustomFoods } from './hooks/useAppData';
 import { useSettings } from './hooks/useSettings';
 import { useWorkoutTemplates } from './hooks/useWorkoutTemplates';
-import { Toast } from './components/UI';
+import { Toast, ErrorBoundary, PullToRefresh } from './components/UI';
 import { BottomNav } from './components/BottomNav';
 import { DashboardTab } from './components/DashboardTab';
 import { FoodTab } from './components/FoodTab';
@@ -16,6 +16,7 @@ import { OnboardingFlow } from './components/OnboardingFlow';
 export default function App() {
   const [tab, setTab] = useState('today');
   const [notification, setNotification] = useState(null);
+  const [tabKey, setTabKey] = useState(0);
 
   const { settings, updateSettings, resetSettings, loaded: settingsLoaded } = useSettings();
   const { templates, updateExercise, addExercise: addTemplateEx, removeExercise: removeTemplateEx, moveExercise, resetTemplates } = useWorkoutTemplates();
@@ -110,6 +111,7 @@ export default function App() {
       </header>
 
       {/* Tab Content */}
+      <div key={tabKey} className="animate-tab-in">
       {tab === 'today' && (
         <DashboardTab
           daily={daily.data}
@@ -176,8 +178,10 @@ export default function App() {
         />
       )}
 
+      </div>
+
       {/* Navigation */}
-      <BottomNav active={tab} onChange={setTab} />
+      <BottomNav active={tab} onChange={(t) => { setTab(t); setTabKey(k => k + 1); }} />
     </div>
   );
 }
