@@ -1,16 +1,166 @@
-import { useState } from 'react';
-import { formatDateShort } from '../data/constants';
-import { exportAllData, importAllData } from '../data/storage';
+import { useState, useMemo } from 'react';
+import { formatDateShort, getToday } from '../data/constants';
+import { exportAllData, importAllData, load } from '../data/storage';
 import { Card, CardTitle, Input, Button, StatBox } from './UI';
+
+function getStreak() {
+  let streak = 0;
+  const d = new Date();
+  // Start from yesterday if today has no food yet, or from today
+  for (let i = 0; i < 90; i++) {
+    const date = new Date(d);
+    date.setDate(d.getDate() - i);
+    const key = `daily-${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+    const day = load(key, null);
+    if (!day || !day.food || day.food.length === 0) {
+      if (i === 0) continue; // skip today if not logged yet
+      break;
+    }
+    streak++;
+  }
+  return streak;
+}
+
+function getWeeklyAverages() {
+  const totals = { cal: 0, protein: 0, days: 0 };
+  const d = new Date();
+  for (let i = 1; i <= 7; i++) {
+    const date = new Date(d);
+    date.setDate(d.getDate() - i);
+    const key = `daily-${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+    const day = load(key, null);
+    if (day && day.food && day.food.length > 0) {
+      totals.cal += day.food.reduce((s, f) => s + (f.cal || 0), 0);
+      totals.protein += day.food.reduce((s, f) => s + (f.protein || 0), 0);
+      totals.days++;
+    }
+  }
+  if (totals.days === 0) return null;
+  return {
+    cal: Math.round(totals.cal / totals.days),
+    protein: Math.round(totals.protein / totals.days),
+    days: totals.days,
+  };
+}
+
+function getPersonalRecords(liftLog) {
+  // liftLog is keyed by slug, each has name, weight, sets, reps, date
+  // We treat the current log entry as the PR since it stores the latest
+  return Object.values(liftLog).sort((a, b) => (b.weight || 0) - (a.weight || 0));
+}
+
+function projectGoalDate(weighIns, goalWeight) {
+  if (weighIns.length < 2) return null;
+  // Use last 4 weigh-ins (or all if fewer) to calculate rate
+  const recent = weighIns.slice(-4);
+  const first = recent[0];
+  const last = recent[recent.length - 1];
+  const daysBetween = (new Date(last.date) - new Date(first.date)) / 86400000;
+  if (daysBetween <= 0) return null;
+  const lbsPerDay = (first.weight - last.weight) / daysBetween;
+  if (lbsPerDay <= 0) return null;
+  const lbsToGo = last.weight - goalWeight;
+  const daysToGoal = Math.round(lbsToGo / lbsPerDay);
+  const target = new Date();
+  target.setDate(target.getDate() + daysToGoal);
+  const lbsPerWeek = (lbsPerDay * 7).toFixed(1);
+  return {
+    date: target.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+    daysToGoal,
+    lbsPerWeek,
+  };
+}
+
+function InteractiveChart({ weighIns, startWeight, goalWeight }) {
+  const [selected, setSelected] = useState(null);
+
+  if (weighIns.length === 0) {
+    return (
+      <p className="text-sm text-white/40 py-3">
+        No weigh-ins yet. Log your first on Wednesday.
+      </p>
+    );
+  }
+
+  const weights = weighIns.map(w => w.weight);
+  const min = Math.min(...weights, goalWeight) - 2;
+  const max = Math.max(...weights, startWeight) + 2;
+  const range = max - min;
+  const W = 100;
+  const H = 140;
+
+  const getY = (w) => H - ((w - min) / range) * 130 - 5;
+  const getX = (i) => weighIns.length === 1 ? W / 2 : (i / (weighIns.length - 1)) * (W - 14) + 7;
+
+  return (
+    <>
+      {selected !== null && (
+        <div className="text-center mb-2">
+          <span className="text-lg font-bold">{weighIns[selected].weight} lbs</span>
+          <span className="text-xs text-white/40 ml-2">{formatDateShort(weighIns[selected].date)}</span>
+        </div>
+      )}
+      <div className="h-36 relative mb-3">
+        <svg viewBox={`0 0 ${W} ${H}`} className="w-full h-full">
+          {/* Goal line */}
+          <line x1="0" y1={getY(goalWeight)} x2={W} y2={getY(goalWeight)}
+            stroke="#22c55e" strokeWidth="0.5" strokeDasharray="3,3" opacity="0.5" />
+          <text x={W - 1} y={getY(goalWeight) - 3}
+            fill="#22c55e" fontSize="5.5" textAnchor="end" opacity="0.7">{goalWeight}</text>
+
+          {/* Start line */}
+          <line x1="0" y1={getY(startWeight)} x2={W} y2={getY(startWeight)}
+            stroke="#f59e0b" strokeWidth="0.3" strokeDasharray="2,3" opacity="0.3" />
+
+          {/* Data line */}
+          {weighIns.map((wi, i) => {
+            const x = getX(i);
+            const y = getY(wi.weight);
+            const prev = i > 0 ? weighIns[i - 1] : null;
+            const px = prev ? getX(i - 1) : 0;
+            const py = prev ? getY(prev.weight) : 0;
+            const isSel = selected === i;
+
+            return (
+              <g key={i} onClick={() => setSelected(isSel ? null : i)} style={{ cursor: 'pointer' }}>
+                {prev && (
+                  <line x1={px} y1={py} x2={x} y2={y} stroke="#3b82f6" strokeWidth="1.5" />
+                )}
+                <circle cx={x} cy={y} r={isSel ? 4 : 2.5}
+                  fill={isSel ? '#60a5fa' : '#3b82f6'}
+                  stroke={isSel ? '#fff' : 'none'} strokeWidth="1" />
+                {!isSel && (
+                  <text x={x} y={y - 5} fill="#f0f0f0" fontSize="5" textAnchor="middle" fontWeight="600">
+                    {wi.weight}
+                  </text>
+                )}
+                <text x={x} y={y + 10} fill="rgba(255,255,255,0.35)" fontSize="4" textAnchor="middle">
+                  {formatDateShort(wi.date)}
+                </text>
+                {/* Touch target */}
+                <rect x={x - 8} y={y - 12} width="16" height="24" fill="transparent" />
+              </g>
+            );
+          })}
+        </svg>
+      </div>
+    </>
+  );
+}
 
 export function StatsTab({ weighIns, addWeighIn, latest, liftLog, startWeight, goalWeight, notify }) {
   const [weightInput, setWeightInput] = useState('');
-  const [showSettings, setShowSettings] = useState(false);
+  const [showDataSettings, setShowDataSettings] = useState(false);
   const [importText, setImportText] = useState('');
 
   const currentWeight = latest?.weight || startWeight;
   const weightLost = startWeight - currentWeight;
   const weightToGo = currentWeight - goalWeight;
+
+  const streak = useMemo(() => getStreak(), []);
+  const weeklyAvg = useMemo(() => getWeeklyAverages(), []);
+  const projection = useMemo(() => projectGoalDate(weighIns, goalWeight), [weighIns, goalWeight]);
+  const prs = useMemo(() => getPersonalRecords(liftLog), [liftLog]);
 
   const handleWeighIn = () => {
     const w = parseFloat(weightInput);
@@ -26,7 +176,7 @@ export function StatsTab({ weighIns, addWeighIn, latest, liftLog, startWeight, g
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `fitness-tracker-backup-${new Date().toISOString().split('T')[0]}.json`;
+    a.download = `fitness-backup-${new Date().toISOString().split('T')[0]}.json`;
     a.click();
     URL.revokeObjectURL(url);
     notify('Data exported');
@@ -45,96 +195,70 @@ export function StatsTab({ weighIns, addWeighIn, latest, liftLog, startWeight, g
 
   return (
     <div className="px-5 pt-2 pb-4">
+      {/* Streak + Weekly Summary */}
+      <Card>
+        <div className="flex justify-around text-center">
+          <div>
+            <div className="text-2xl font-bold text-amber-400">{streak}</div>
+            <div className="text-[11px] text-white/50">day streak 🔥</div>
+          </div>
+          <div className="w-px bg-white/[0.08]" />
+          {weeklyAvg ? (
+            <>
+              <div>
+                <div className="text-xl font-bold">{weeklyAvg.cal}</div>
+                <div className="text-[11px] text-white/50">avg cal/day</div>
+              </div>
+              <div className="w-px bg-white/[0.08]" />
+              <div>
+                <div className="text-xl font-bold">{weeklyAvg.protein}g</div>
+                <div className="text-[11px] text-white/50">avg protein/day</div>
+              </div>
+            </>
+          ) : (
+            <div className="flex-1 flex items-center justify-center">
+              <span className="text-xs text-white/30">Log food to see averages</span>
+            </div>
+          )}
+        </div>
+        {weeklyAvg && (
+          <p className="text-[10px] text-white/25 text-center mt-2">
+            Based on {weeklyAvg.days} day{weeklyAvg.days !== 1 ? 's' : ''} this week
+          </p>
+        )}
+      </Card>
+
       {/* Weight Chart */}
       <Card>
         <CardTitle>Weight Trend</CardTitle>
-        {weighIns.length === 0 ? (
-          <p className="text-sm text-white/40 py-3">
-            No weigh-ins yet. Log your first one on Wednesday.
-          </p>
-        ) : (
-          <>
-            <div className="h-36 relative mb-3">
-              <svg viewBox="0 0 100 140" className="w-full h-full">
-                {(() => {
-                  const weights = weighIns.map(w => w.weight);
-                  const min = Math.min(...weights, goalWeight) - 2;
-                  const max = Math.max(...weights, startWeight) + 2;
-                  const range = max - min;
-                  const W = 100;
+        <InteractiveChart weighIns={weighIns} startWeight={startWeight} goalWeight={goalWeight} />
 
-                  return (
-                    <>
-                      {/* Goal line */}
-                      <line
-                        x1="0"
-                        y1={140 - ((goalWeight - min) / range) * 130 - 5}
-                        x2={W}
-                        y2={140 - ((goalWeight - min) / range) * 130 - 5}
-                        stroke="#22c55e" strokeWidth="0.5" strokeDasharray="3,3" opacity="0.5"
-                      />
-                      <text
-                        x={W - 1}
-                        y={140 - ((goalWeight - min) / range) * 130 - 8}
-                        fill="#22c55e" fontSize="5.5" textAnchor="end" opacity="0.7"
-                      >
-                        {goalWeight}
-                      </text>
-
-                      {/* Start line */}
-                      <line
-                        x1="0"
-                        y1={140 - ((startWeight - min) / range) * 130 - 5}
-                        x2={W}
-                        y2={140 - ((startWeight - min) / range) * 130 - 5}
-                        stroke="#f59e0b" strokeWidth="0.3" strokeDasharray="2,3" opacity="0.3"
-                      />
-
-                      {/* Data line + points */}
-                      {weighIns.map((wi, i) => {
-                        const x = weighIns.length === 1 ? W / 2 : (i / (weighIns.length - 1)) * (W - 14) + 7;
-                        const y = 140 - ((wi.weight - min) / range) * 130 - 5;
-                        const prev = i > 0 ? weighIns[i - 1] : null;
-                        const px = prev ? ((i - 1) / (weighIns.length - 1)) * (W - 14) + 7 : 0;
-                        const py = prev ? 140 - ((prev.weight - min) / range) * 130 - 5 : 0;
-
-                        return (
-                          <g key={i}>
-                            {prev && (
-                              <line x1={px} y1={py} x2={x} y2={y}
-                                stroke="#3b82f6" strokeWidth="1.5" />
-                            )}
-                            <circle cx={x} cy={y} r="2.5" fill="#3b82f6" />
-                            <text x={x} y={y - 6} fill="#f0f0f0"
-                              fontSize="5.5" textAnchor="middle" fontWeight="600">
-                              {wi.weight}
-                            </text>
-                            <text x={x} y={y + 10} fill="rgba(255,255,255,0.4)"
-                              fontSize="4" textAnchor="middle">
-                              {formatDateShort(wi.date)}
-                            </text>
-                          </g>
-                        );
-                      })}
-                    </>
-                  );
-                })()}
-              </svg>
-            </div>
-
-            {/* Weight stats */}
-            <div className="flex justify-around">
-              <StatBox
-                value={`${weightLost > 0 ? '-' : ''}${Math.abs(weightLost).toFixed(1)}`}
-                label="lbs lost"
-                color={weightLost > 0 ? '#22c55e' : undefined}
-              />
-              <StatBox value={weightToGo.toFixed(1)} label="lbs to go" />
-              <StatBox value={currentWeight} label="current" />
-            </div>
-          </>
+        {/* Weight stats */}
+        {weighIns.length > 0 && (
+          <div className="flex justify-around">
+            <StatBox
+              value={`${weightLost > 0 ? '-' : ''}${Math.abs(weightLost).toFixed(1)}`}
+              label="lbs lost"
+              color={weightLost > 0 ? '#22c55e' : undefined}
+            />
+            <StatBox value={weightToGo.toFixed(1)} label="lbs to go" />
+            <StatBox value={currentWeight} label="current" />
+          </div>
         )}
       </Card>
+
+      {/* Projected Goal Date */}
+      {projection && (
+        <Card>
+          <CardTitle>Goal Projection</CardTitle>
+          <div className="text-center py-1">
+            <div className="text-xl font-bold text-green-400">{projection.date}</div>
+            <div className="text-xs text-white/40 mt-1">
+              at {projection.lbsPerWeek} lbs/week · {projection.daysToGoal} days away
+            </div>
+          </div>
+        </Card>
+      )}
 
       {/* Log Weigh-In */}
       <Card>
@@ -153,26 +277,25 @@ export function StatsTab({ weighIns, addWeighIn, latest, liftLog, startWeight, g
         <p className="text-[11px] text-white/40 mt-1.5">Best practice: Wednesday mornings only</p>
       </Card>
 
-      {/* Lift Progress */}
-      <Card>
-        <CardTitle>Lift Progress</CardTitle>
-        {Object.keys(liftLog).length === 0 ? (
-          <p className="text-sm text-white/40">No lifts logged yet</p>
-        ) : (
-          Object.entries(liftLog).map(([key, val]) => (
-            <div key={key}
-              className="flex justify-between items-center py-2 border-b border-white/[0.06] last:border-0">
+      {/* Personal Records */}
+      {prs.length > 0 && (
+        <Card>
+          <CardTitle>Personal Records</CardTitle>
+          {prs.map((pr, i) => (
+            <div key={i} className="flex justify-between items-center py-2
+              border-b border-white/[0.06] last:border-0">
               <div>
-                <span className="text-[13px] capitalize">{val.name || key.replace(/-/g, ' ')}</span>
-                <div className="text-[11px] text-white/30">{formatDateShort(val.date)}</div>
+                <span className="text-[13px]">{pr.name || pr.key}</span>
+                <div className="text-[11px] text-white/30">{formatDateShort(pr.date)}</div>
               </div>
-              <span className="text-[13px] text-blue-400 font-semibold">
-                {val.weight}lbs × {val.sets}×{val.reps}
-              </span>
+              <div className="text-right">
+                <span className="text-[13px] text-blue-400 font-semibold">{pr.weight}lbs</span>
+                <div className="text-[11px] text-white/30">{pr.sets}×{pr.reps}</div>
+              </div>
             </div>
-          ))
-        )}
-      </Card>
+          ))}
+        </Card>
+      )}
 
       {/* Weigh-In History */}
       {weighIns.length > 0 && (
@@ -201,36 +324,39 @@ export function StatsTab({ weighIns, addWeighIn, latest, liftLog, startWeight, g
         </Card>
       )}
 
-      {/* Settings / Data */}
+      {/* Data Export */}
+      <Card>
+        <CardTitle>Export Data</CardTitle>
+        <Button onClick={handleExport} variant="ghost" className="w-full mb-2">
+          📥 Export All Data (JSON)
+        </Button>
+        <p className="text-[11px] text-white/30 text-center">
+          Download a full backup of all your data
+        </p>
+      </Card>
+
+      {/* Import */}
       <button
-        onClick={() => setShowSettings(!showSettings)}
+        onClick={() => setShowDataSettings(!showDataSettings)}
         className="w-full rounded-xl py-3 mb-3 text-sm text-white/40
           bg-white/[0.03] border border-white/[0.06] cursor-pointer"
       >
-        {showSettings ? 'Hide' : '⚙️ Data & Settings'}
+        {showDataSettings ? 'Hide Import' : '📤 Import Data'}
       </button>
 
-      {showSettings && (
+      {showDataSettings && (
         <Card>
-          <div className="flex flex-col gap-3">
-            <Button onClick={handleExport} variant="ghost" className="w-full">
-              📥 Export All Data (JSON)
-            </Button>
-            <div>
-              <Label>Import Data</Label>
-              <textarea
-                value={importText}
-                onChange={e => setImportText(e.target.value)}
-                placeholder="Paste exported JSON here..."
-                className="w-full bg-white/[0.06] border border-white/[0.08] rounded-xl
-                  p-3 text-sm text-white/80 outline-none h-24 resize-none
-                  placeholder:text-white/25"
-              />
-              <Button onClick={handleImport} variant="ghost" className="w-full mt-2">
-                📤 Import Data
-              </Button>
-            </div>
-          </div>
+          <textarea
+            value={importText}
+            onChange={e => setImportText(e.target.value)}
+            placeholder="Paste exported JSON here..."
+            className="w-full bg-white/[0.06] border border-white/[0.08] rounded-xl
+              p-3 text-sm text-white/80 outline-none h-24 resize-none
+              placeholder:text-white/25"
+          />
+          <Button onClick={handleImport} variant="ghost" className="w-full mt-2">
+            Import
+          </Button>
         </Card>
       )}
     </div>
