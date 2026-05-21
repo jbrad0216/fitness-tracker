@@ -3,16 +3,63 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+
+    <!-- Theme & PWA -->
     <meta name="theme-color" content="#0f1117" />
+    <meta name="background-color" content="#0f1117" />
+    <meta name="color-scheme" content="dark" />
+
+    <!-- iOS PWA -->
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="Tracker" />
     <link rel="apple-touch-icon" href="/icon-192.png" />
+    <link rel="apple-touch-icon" sizes="192x192" href="/icon-192.png" />
+    <link rel="apple-touch-icon" sizes="512x512" href="/icon-512.png" />
+
+    <!-- Android PWA -->
+    <meta name="mobile-web-app-capable" content="yes" />
+
+    <!-- Standard -->
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <title>Fitness Tracker</title>
+
+    <!-- Inline splash screen styles for instant display -->
+    <style>
+      body { margin: 0; background: #0f1117; }
+      #splash {
+        position: fixed; inset: 0; background: #0f1117;
+        display: flex; flex-direction: column;
+        align-items: center; justify-content: center;
+        z-index: 9999; transition: opacity 0.35s ease-out;
+      }
+      #splash.done { opacity: 0; pointer-events: none; }
+      #splash-icon { font-size: 56px; margin-bottom: 16px; }
+      #splash-title { color: #f0f0f0; font-family: -apple-system, system-ui, sans-serif;
+        font-size: 22px; font-weight: 700; letter-spacing: -0.5px; }
+      #splash-sub { color: rgba(255,255,255,0.3); font-family: -apple-system, system-ui, sans-serif;
+        font-size: 13px; margin-top: 6px; }
+    </style>
   </head>
   <body>
+    <!-- App loading splash -->
+    <div id="splash">
+      <div id="splash-icon">🏋️</div>
+      <div id="splash-title">Fitness Tracker</div>
+      <div id="splash-sub">Loading...</div>
+    </div>
+
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
+    <script>
+      // Hide splash once React has rendered
+      window.__hideSplash = function() {
+        var splash = document.getElementById('splash');
+        if (splash) {
+          splash.classList.add('done');
+          setTimeout(function() { splash.remove(); }, 400);
+        }
+      };
+    </script>
   </body>
 </html>

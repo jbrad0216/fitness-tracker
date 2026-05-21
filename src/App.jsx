@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { getDaySchedule, getTodaysWorkoutType } from './data/constants';
 import { useDaily } from './hooks/useDaily';
 import { useWeighIns, useLiftLog, useCustomFoods } from './hooks/useAppData';
@@ -17,6 +17,16 @@ export default function App() {
   const [tab, setTab] = useState('today');
   const [notification, setNotification] = useState(null);
   const [tabKey, setTabKey] = useState(0);
+  const [updateAvailable, setUpdateAvailable] = useState(false);
+
+  // Listen for service worker updates
+  useEffect(() => {
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.addEventListener('controllerchange', () => {
+        setUpdateAvailable(true);
+      });
+    }
+  }, []);
 
   const { settings, updateSettings, resetSettings, loaded: settingsLoaded } = useSettings();
   const { templates, updateExercise, addExercise: addTemplateEx, removeExercise: removeTemplateEx, moveExercise, resetTemplates } = useWorkoutTemplates();
@@ -40,6 +50,9 @@ export default function App() {
       </div>
     );
   }
+
+  // Hide splash screen now that app is ready
+  if (window.__hideSplash) { window.__hideSplash(); window.__hideSplash = null; }
 
   // Show onboarding if no settings have been saved yet
   const hasOnboarded = !!localStorage.getItem('ft_settings');
@@ -82,6 +95,21 @@ export default function App() {
 
   return (
     <div className="min-h-screen max-w-lg mx-auto pb-24">
+      {/* Update Available Banner */}
+      {updateAvailable && (
+        <div className="fixed top-0 left-0 right-0 z-50 max-w-lg mx-auto
+          bg-blue-500/95 text-white px-4 py-3 text-sm font-semibold
+          flex justify-between items-center">
+          <span>Update available</span>
+          <button
+            onClick={() => window.location.reload()}
+            className="bg-white/20 rounded-lg px-3 py-1 text-xs font-bold border-none cursor-pointer"
+          >
+            Reload
+          </button>
+        </div>
+      )}
+
       {/* Toast */}
       {notification && <Toast message={notification} onDone={clearNotify} />}
 
