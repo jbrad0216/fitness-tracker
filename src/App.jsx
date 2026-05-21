@@ -63,7 +63,7 @@ export default function App() {
       <header className="px-5 pt-5 pb-2 flex justify-between items-start">
         <div>
           <h1 className="text-[22px] font-bold leading-tight">
-            {new Date().toLocaleDateString('en-US', { weekday: 'long' })}
+            Jason's Tracker
           </h1>
           <p className="text-[13px] text-white/50">
             {new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
