@@ -11,6 +11,7 @@ import { FoodTab } from './components/FoodTab';
 import { GymTab } from './components/GymTab';
 import { StatsTab } from './components/StatsTab';
 import { SettingsTab } from './components/SettingsTab';
+import { OnboardingFlow } from './components/OnboardingFlow';
 
 export default function App() {
   const [tab, setTab] = useState('today');
@@ -36,6 +37,18 @@ export default function App() {
       <div className="min-h-screen flex items-center justify-center text-white/50">
         Loading...
       </div>
+    );
+  }
+
+  // Show onboarding if no settings have been saved yet
+  const hasOnboarded = !!localStorage.getItem('ft_settings');
+  if (!hasOnboarded) {
+    return (
+      <OnboardingFlow
+        onComplete={(newSettings) => {
+          updateSettings(newSettings);
+        }}
+      />
     );
   }
 
