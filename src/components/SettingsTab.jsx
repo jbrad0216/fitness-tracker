@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { Card, CardTitle, Input, Button, Label } from './UI';
+import { Card, CardTitle, Input, Button, Label, Toggle } from './UI';
 import { DEFAULT_SETTINGS } from '../hooks/useSettings';
 import { exportAllData, importAllData, markExported, getLastExportDate, getBackupDates, restoreBackup } from '../data/storage';
 
@@ -413,6 +413,37 @@ export function SettingsTab({ settings, updateSettings, resetSettings, templates
             )}
           </div>
         )}
+      </Card>
+
+      {/* Appearance */}
+      <Card>
+        <CardTitle>Appearance</CardTitle>
+        <Toggle
+          checked={form.theme === 'light'}
+          onChange={() => setForm(f => ({ ...f, theme: f.theme === 'light' ? 'dark' : 'light' }))}
+          label={form.theme === 'light' ? '☀️ Light Mode' : '🌙 Dark Mode'}
+        />
+        <p className="text-[11px] text-white/30 mt-1">
+          Dark mode is recommended for gym and pre-dawn use
+        </p>
+      </Card>
+
+      {/* Report Issue */}
+      <Card>
+        <CardTitle>Help & Feedback</CardTitle>
+        <a
+          href="https://github.com/jbrad0216/fitness-tracker/issues/new?title=Bug+Report&body=Describe+the+issue+here"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center gap-2 text-sm text-white/60 no-underline py-2
+            active:opacity-60"
+        >
+          <span className="text-base">🐛</span>
+          Report a Bug on GitHub
+        </a>
+        <p className="text-[11px] text-white/25 mt-1">
+          Opens GitHub issue form. Include steps to reproduce.
+        </p>
       </Card>
 
       {/* Workout Templates */}

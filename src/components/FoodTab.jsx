@@ -442,7 +442,17 @@ export function FoodTab({
           Today's Log
         </CardTitle>
         {daily.food.length === 0 ? (
-          <p className="text-sm text-white/40">Empty — add meals above</p>
+          <div className="py-6 text-center">
+            <div className="text-4xl mb-2">🍽️</div>
+            <p className="text-sm text-white/40 mb-3">No meals logged yet today</p>
+            <button
+              onClick={() => setShowQuick(true)}
+              className="text-xs px-4 py-2 bg-blue-500/15 text-blue-400 rounded-xl
+                border border-blue-500/30 cursor-pointer active:opacity-70"
+            >
+              ⚡ Quick Add
+            </button>
+          </div>
         ) : (
           daily.food.map(f => (
             <div key={f.id} className="flex justify-between items-center py-2.5

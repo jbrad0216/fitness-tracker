@@ -32,9 +32,45 @@ function MotivationalLine({ totalCal, totalProtein, targets }) {
   );
 }
 
+function InAppReminders({ daily, targets, weighIns }) {
+  const hour = new Date().getHours();
+  const today = new Date().toISOString().split('T')[0];
+  const reminders = [];
+
+  // Water nudge: before noon, no water yet
+  if (hour >= 12 && daily.water === 0) {
+    reminders.push({ icon: '💧', text: 'Don\'t forget your water today!', color: 'blue' });
+  }
+  // Protein snack: 2pm, protein below 50%
+  if (hour >= 14 && hour < 17 && totalProtein < targets.protein * 0.5) {
+    reminders.push({ icon: '🥩', text: 'Time for your protein snack?', color: 'amber' });
+  }
+  // Wednesday weigh-in reminder
+  const isWed = new Date().getDay() === 3;
+  const todayLogged = weighIns.some(w => w.date === today);
+  if (isWed && !todayLogged && hour >= 7) {
+    reminders.push({ icon: '⚖️', text: 'Wednesday weigh-in — log your weight!', color: 'amber' });
+  }
+
+  if (reminders.length === 0) return null;
+  return (
+    <div className="flex flex-col gap-2 mb-3">
+      {reminders.map((r, i) => (
+        <div key={i} className={`flex items-center gap-2 rounded-xl px-3 py-2.5
+          ${r.color === 'blue' ? 'bg-blue-500/10 border border-blue-500/20' : 'bg-amber-500/10 border border-amber-500/20'}`}>
+          <span className="text-base">{r.icon}</span>
+          <span className={`text-[13px] ${r.color === 'blue' ? 'text-blue-300' : 'text-amber-300'}`}>{r.text}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// need totalProtein in InAppReminders scope — pass it via prop
 export function DashboardTab({
   daily, totalCal, totalProtein, setWater, toggleMeditation, addRun,
   weighIns, addWeighIn, latest, startWeight, goalWeight, targets, name, notify, settings,
+  onNavigate,
 }) {
   const [runInput, setRunInput] = useState('');
   const [showRunInput, setShowRunInput] = useState(false);
@@ -121,6 +157,9 @@ export function DashboardTab({
         </div>
       )}
 
+      {/* In-app reminders */}
+      <InAppReminders daily={daily} targets={targets} weighIns={weighIns} totalProtein={totalProtein} />
+
       {/* Greeting */}
       <div className="mb-4">
         <p className="text-base font-semibold text-white/80">
@@ -155,6 +194,32 @@ export function DashboardTab({
           <span className="text-[11px] text-white/50">Water</span>
         </div>
       </div>
+
+      {/* Quick-log shortcuts */}
+      {onNavigate && (
+        <div className="flex gap-2 mb-3">
+          {[
+            { icon: '🍽️', label: 'Log Food', tab: 'food' },
+            { icon: '💧', label: 'Water', action: () => setWater(Math.min((daily.water || 0) + 1, targets.waterBottles)) },
+            { icon: '🏃', label: 'Log Run', action: () => { setShowRunInput(true); setRunInput('2'); } },
+            { icon: '🏋️', label: 'Gym', tab: 'gym' },
+          ].map((btn, i) => (
+            <button
+              key={i}
+              onClick={() => {
+                if (btn.tab) onNavigate(btn.tab);
+                else btn.action?.();
+              }}
+              className="flex-1 flex flex-col items-center gap-1 py-3 rounded-xl
+                bg-white/[0.05] border border-white/[0.08] cursor-pointer
+                active:scale-95 transition-transform min-h-[64px]"
+            >
+              <span className="text-xl">{btn.icon}</span>
+              <span className="text-[10px] text-white/50">{btn.label}</span>
+            </button>
+          ))}
+        </div>
+      )}
 
       {/* Remaining Stats */}
       <Card>

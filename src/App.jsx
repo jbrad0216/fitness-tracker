@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { getDaySchedule, getTodaysWorkoutType } from './data/constants';
 import { useDaily } from './hooks/useDaily';
 import { useWeighIns, useLiftLog, useCustomFoods } from './hooks/useAppData';
@@ -16,11 +16,14 @@ import { SettingsTab } from './components/SettingsTab';
 import { OnboardingFlow } from './components/OnboardingFlow';
 
 export default function App() {
+  const TAB_ORDER = ['today', 'food', 'gym', 'journey', 'stats', 'settings'];
   const [tab, setTab] = useState('today');
   const [notification, setNotification] = useState(null);
   const [tabKey, setTabKey] = useState(0);
   const [updateAvailable, setUpdateAvailable] = useState(false);
   const [showChat, setShowChat] = useState(false);
+  const swipeStartX = useRef(null);
+  const swipeStartY = useRef(null);
 
   // Listen for service worker updates
   useEffect(() => {
@@ -30,6 +33,25 @@ export default function App() {
       });
     }
   }, []);
+
+  const changeTab = useCallback((t) => { setTab(t); setTabKey(k => k + 1); }, []);
+
+  // Swipe left/right to switch tabs
+  const handleTouchStart = useCallback((e) => {
+    swipeStartX.current = e.touches[0].clientX;
+    swipeStartY.current = e.touches[0].clientY;
+  }, []);
+
+  const handleTouchEnd = useCallback((e) => {
+    if (swipeStartX.current === null) return;
+    const dx = e.changedTouches[0].clientX - swipeStartX.current;
+    const dy = Math.abs(e.changedTouches[0].clientY - swipeStartY.current);
+    swipeStartX.current = null;
+    if (Math.abs(dx) < 60 || dy > 80) return; // not a swipe
+    const idx = TAB_ORDER.indexOf(tab);
+    if (dx < 0 && idx < TAB_ORDER.length - 1) changeTab(TAB_ORDER[idx + 1]);
+    if (dx > 0 && idx > 0) changeTab(TAB_ORDER[idx - 1]);
+  }, [tab, changeTab]);
 
   const { settings, updateSettings, resetSettings, loaded: settingsLoaded } = useSettings();
   const { templates, updateExercise, addExercise: addTemplateEx, removeExercise: removeTemplateEx, moveExercise, resetTemplates } = useWorkoutTemplates();
@@ -96,8 +118,14 @@ export default function App() {
     rest: 'Rest Day',
   };
 
+  const isLight = settings.theme === 'light';
+
   return (
-    <div className="min-h-screen max-w-lg mx-auto pb-28">
+    <div
+      className={`min-h-screen max-w-lg mx-auto pb-28 ${isLight ? 'light-mode' : ''}`}
+      onTouchStart={handleTouchStart}
+      onTouchEnd={handleTouchEnd}
+    >
       <LandscapeHint />
       {/* Update Available Banner */}
       {updateAvailable && (
@@ -162,6 +190,7 @@ export default function App() {
           name={settings.name}
           notify={notify}
           settings={settings}
+          onNavigate={changeTab}
         />
       )}
       {tab === 'food' && (
@@ -222,7 +251,7 @@ export default function App() {
       </div>
 
       {/* Navigation */}
-      <BottomNav active={tab} onChange={(t) => { setTab(t); setTabKey(k => k + 1); }} />
+      <BottomNav active={tab} onChange={changeTab} />
 
       {/* Chat FAB */}
       {!showChat && (

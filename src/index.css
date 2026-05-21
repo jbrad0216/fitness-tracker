@@ -99,6 +99,17 @@ input[type="number"] {
   animation: pulse 2s ease-in-out infinite;
 }
 
+/* Light mode */
+.light-mode {
+  filter: invert(1) hue-rotate(180deg);
+}
+.light-mode img,
+.light-mode svg,
+.light-mode video,
+.light-mode canvas {
+  filter: invert(1) hue-rotate(180deg);
+}
+
 /* Splash screen */
 #splash {
   position: fixed;
