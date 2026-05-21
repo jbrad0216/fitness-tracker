@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { getTodaysWorkoutType, getDaySchedule } from '../data/constants';
 import { Card, CardTitle, Input, Button, Label } from './UI';
+import { getExerciseInfo, MUSCLE_COLORS } from '../data/exercises';
 
 const STRETCH_SUGGESTIONS = [
   'Hip flexor stretch — 60s each side',
@@ -114,12 +115,74 @@ function OverloadBadge({ current, previous }) {
   return <span className="text-[10px] text-amber-400 ml-1">= same</span>;
 }
 
+function MuscleBadge({ group, muscleKey }) {
+  const color = MUSCLE_COLORS[muscleKey] || '#6b7280';
+  return (
+    <span
+      className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full"
+      style={{ background: `${color}25`, color }}
+    >
+      {group}
+    </span>
+  );
+}
+
+function ExerciseInfoPanel({ name, onClose }) {
+  const info = getExerciseInfo(name);
+  if (!info) return null;
+
+  return (
+    <div className="mt-3 pt-3 border-t border-white/[0.06] animate-fade-in">
+      <div className="flex justify-between items-center mb-2">
+        <MuscleBadge group={info.muscleGroup} muscleKey={info.muscleKey} />
+        <button onClick={onClose}
+          className="text-white/30 bg-transparent border-none cursor-pointer text-sm">✕</button>
+      </div>
+
+      {/* SVG Illustration */}
+      <div className="flex justify-center mb-3">
+        <div
+          className="w-20 h-20 opacity-80"
+          dangerouslySetInnerHTML={{ __html: info.svgIllustration }}
+        />
+      </div>
+
+      <p className="text-[13px] text-white/70 leading-relaxed mb-3">{info.description}</p>
+
+      {info.tips && (
+        <ul className="mb-3">
+          {info.tips.map((tip, i) => (
+            <li key={i} className="flex items-center gap-2 text-[12px] text-white/50 py-0.5">
+              <span className="text-green-400 text-[10px]">▸</span>{tip}
+            </li>
+          ))}
+        </ul>
+      )}
+
+      {info.youtubeUrl && (
+        <a
+          href={info.youtubeUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center gap-2 bg-red-500/15 border border-red-500/30
+            rounded-xl px-3 py-2.5 text-red-400 text-sm font-semibold no-underline
+            active:opacity-70"
+        >
+          <span className="text-base">▶</span>
+          Watch tutorial on YouTube
+        </a>
+      )}
+    </div>
+  );
+}
+
 export function GymTab({ daily, addRun, addExercise, removeExercise, getLastLift, logLift, templates, notify }) {
   const [runInput, setRunInput] = useState('');
   const [exForm, setExForm] = useState({ name: '', weight: '', sets: '3', reps: '12' });
   const [activeLog, setActiveLog] = useState(null);
   const [showTimer, setShowTimer] = useState(false);
   const [workoutStart, setWorkoutStart] = useState(null);
+  const [infoPanel, setInfoPanel] = useState(null); // exercise name
 
   const schedule = getDaySchedule();
   const workoutType = getTodaysWorkoutType();
@@ -247,41 +310,63 @@ export function GymTab({ daily, addRun, addExercise, removeExercise, getLastLift
             return (
               <div key={i} className={`py-3 border-b border-white/[0.06] last:border-0
                 ${isLogged ? 'opacity-60' : ''}`}>
-                <div className="flex justify-between items-center">
-                  <div>
-                    <div className="text-sm flex items-center">
-                      {isLogged && <span className="text-green-400 mr-1.5 text-xs">✓</span>}
-                      {ex.name}
+                <div className="flex justify-between items-start">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      {isLogged && <span className="text-green-400 text-xs">✓</span>}
+                      <span className="text-sm font-medium">{ex.name}</span>
+                      {getExerciseInfo(ex.name) && (
+                        <MuscleBadge
+                          group={getExerciseInfo(ex.name).muscleGroup}
+                          muscleKey={getExerciseInfo(ex.name).muscleKey}
+                        />
+                      )}
                     </div>
-                    <div className="text-[11px] text-white/40">
+                    <div className="text-[11px] text-white/40 mt-0.5">
                       {prev
                         ? <>Last: {prev.weight}lbs × {prev.sets}×{prev.reps}</>
                         : `Target: ${ex.defaultWeight}lbs × ${ex.sets}×${ex.reps}`
                       }
                     </div>
                   </div>
-                  {!isLogged && (
-                    <Button
-                      onClick={() => {
-                        if (isActive) {
-                          setActiveLog(null);
-                        } else {
-                          setActiveLog(ex.name);
-                          setExForm({
-                            name: ex.name,
-                            weight: prev ? String(prev.weight) : String(ex.defaultWeight),
-                            sets: String(ex.sets),
-                            reps: String(ex.reps),
-                          });
-                        }
-                      }}
-                      variant={isActive ? 'ghost' : 'primary'}
-                      className="text-xs px-3 py-2"
-                    >
-                      {isActive ? 'Cancel' : 'Log'}
-                    </Button>
-                  )}
+                  <div className="flex items-center gap-1.5 ml-2 shrink-0">
+                    {getExerciseInfo(ex.name) && (
+                      <button
+                        onClick={() => setInfoPanel(infoPanel === ex.name ? null : ex.name)}
+                        className="text-[11px] px-2 py-1.5 rounded-lg bg-white/[0.05]
+                          text-white/40 border-none cursor-pointer active:opacity-70"
+                        title="How to"
+                      >
+                        ℹ
+                      </button>
+                    )}
+                    {!isLogged && (
+                      <Button
+                        onClick={() => {
+                          if (isActive) {
+                            setActiveLog(null);
+                          } else {
+                            setActiveLog(ex.name);
+                            setExForm({
+                              name: ex.name,
+                              weight: prev ? String(prev.weight) : String(ex.defaultWeight),
+                              sets: String(ex.sets),
+                              reps: String(ex.reps),
+                            });
+                          }
+                        }}
+                        variant={isActive ? 'ghost' : 'primary'}
+                        className="text-xs px-3 py-2"
+                      >
+                        {isActive ? 'Cancel' : 'Log'}
+                      </Button>
+                    )}
+                  </div>
                 </div>
+                {/* Info Panel */}
+                {infoPanel === ex.name && (
+                  <ExerciseInfoPanel name={ex.name} onClose={() => setInfoPanel(null)} />
+                )}
 
                 {/* Inline log form */}
                 {isActive && (
