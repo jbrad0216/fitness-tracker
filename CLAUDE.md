@@ -3,7 +3,7 @@
 ## Project Overview
 Personal fitness tracking PWA for Jason. React + Vite + Tailwind CSS. Deployed on Vercel via GitHub (auto-deploys on push to main).
 
-**Phase 3 (current)**: Major simplification overhaul — 4-tab nav, AI chat as primary logging, barcode scanner, simplified dashboard.
+**Phase 4 (current)**: Targeted fixes and polish — food deletion with X button + swipe, meal-grouped food log, weekly workout calendar, daily goals checklist, UX polish.
 
 ## Owner Profile
 - Jason, 48, 6'1", goal: 222.6 lbs → 200 lbs
@@ -54,10 +54,10 @@ public/
   favicon.svg           # Browser favicon
 ```
 
-## Navigation Structure (Phase 3)
-- **Home** (🏠) — DashboardTab: overall score, stats, food log, reminders
-- **Log** (➕) — ChatInterface embedded: AI-powered logging for food, run, water, weight, exercise
-- **Gym** (🏋️) — GymTab: equipment setup, today's workout cards
+## Navigation Structure (Phase 4)
+- **Home** (🏠) — DashboardTab: goals checklist, progress ring, stats, meal-grouped food log, reminders
+- **Log** (➕) — ChatInterface embedded: AI-powered logging; auto-focuses input on tab open
+- **Gym** (🏋️) — GymTab: weekly calendar (7-day row), today's workout cards, rest timer
 - **More** (···) — MoreTab: sub-pages for Stats, Journey, Settings
 
 Stats, Journey, Settings are no longer in the bottom nav — accessed via More menu.
@@ -69,15 +69,17 @@ Stats, Journey, Settings are no longer in the bottom nav — accessed via More m
 - Swipe left/right gesture to switch between the 4 main tabs
 - All data in localStorage with `ft_` prefix (storage.js auto-adds this)
 - AI chat (Log tab) is the PRIMARY way to log everything — food, run, water, weight, exercise
-- Food confirmation cards (not text bubbles) for food searches
+- Food confirmation cards (not text bubbles) for food searches; meal category selector on each card
 - Recent foods memory (ft_recent-foods) — fuzzy match before API search
 - Barcode scanner uses html5-qrcode + Open Food Facts API
 - Workout A/B rotation based on week number (A/B/A → B/A/B)
-- Single large progress ring on Home showing overall daily score
-- Swipe-to-delete food items on dashboard
+- Home tab shows: 4-item daily goals checklist → progress ring → stats → food log grouped by meal
+- Food items: swipe-left OR tap × button to delete; undo toast appears for 5 seconds
+- Food has `meal` field (breakfast/lunch/snack/dinner) auto-assigned by time of day; editable in chat
 - Time-based dismissible reminder banners on Home tab
 - Apple Health integration via URL params (?steps=X&activeCal=Y)
 - Equipment setup screen in GymTab (saved to ft_equipment-setup)
+- Weekly workout calendar row at top of Gym tab (7 day circles, tap for detail)
 - ErrorBoundary around each tab so one crash doesn't kill the app
 
 ## Commands
@@ -125,6 +127,8 @@ DO NOT include `ft_` in the key argument to load/save. Use direct localStorage f
 - **Add chat command**: Edit `parseMessage()` in ChatInterface.jsx
 - **Style changes**: Theme colors are CSS variables in `src/index.css`
 - **Add Stats/Journey sub-feature**: Modify StatsTab.jsx or JourneyTab.jsx
+- **Food meal auto-assign logic**: Edit `getMealFromTime()` in useDaily.js
+- **Weekly calendar schedule logic**: Edit `getWeekDays()` in GymTab.jsx
 
 ## Important Constraints
 - No backend — everything runs client-side with localStorage

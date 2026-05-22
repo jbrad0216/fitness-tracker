@@ -10,7 +10,6 @@ function getGreeting() {
   return 'Good evening';
 }
 
-// ─── Task 8: Dismissible reminder banners ───
 const DISMISSED_KEY = () => `dismissed-reminders-${getToday()}`;
 
 function getActiveReminder(daily, targets, weighIns, totalCal, totalProtein) {
@@ -23,7 +22,6 @@ function getActiveReminder(daily, targets, weighIns, totalCal, totalProtein) {
     return { id, ...reminder };
   };
 
-  // Priority order — only show one
   return (
     check('weigh-in', new Date().getDay() === 3 && !weighIns.some(w => w.date === today) && hour >= 7,
       { icon: '⚖️', text: "Wednesday weigh-in! Log your weight.", color: 'amber', action: 'log', prefill: 'weight is ' }) ||
@@ -95,7 +93,92 @@ function ReminderBanner({ daily, targets, weighIns, totalCal, totalProtein, onNa
   );
 }
 
-// ─── Swipeable food item ───
+// ─── Meal helpers ───
+const MEAL_CONFIG = [
+  { key: 'breakfast', icon: '🌅', label: 'Breakfast' },
+  { key: 'lunch', icon: '☀️', label: 'Lunch' },
+  { key: 'snack', icon: '🍿', label: 'Snacks' },
+  { key: 'dinner', icon: '🌙', label: 'Dinner' },
+];
+
+function getMealForFood(f) {
+  if (f.meal) return f.meal;
+  if (f.loggedAt) {
+    const h = new Date(f.loggedAt).getHours();
+    if (h < 10) return 'breakfast';
+    if (h < 14) return 'lunch';
+    if (h < 17) return 'snack';
+    return 'dinner';
+  }
+  return 'snack';
+}
+
+// ─── Goals Checklist ───
+function GoalChecklist({ daily, targets, totalProtein }) {
+  const dow = new Date().getDay();
+  const isRest = dow === 0;
+  const isStrength = [1, 3, 5].includes(dow);
+
+  const mealsLogged = new Set(daily.food.map(getMealForFood)).size;
+
+  const goals = [
+    {
+      key: 'meals',
+      label: 'Log all meals',
+      done: mealsLogged >= 3,
+      detail: `${mealsLogged} of 4 meals`,
+    },
+    {
+      key: 'protein',
+      label: 'Hit protein target',
+      done: totalProtein >= targets.protein,
+      detail: `${totalProtein}g / ${targets.protein}g`,
+    },
+    {
+      key: 'water',
+      label: 'Drink water',
+      done: daily.water >= targets.waterBottles,
+      detail: `${daily.water} / ${targets.waterBottles} bottles`,
+    },
+    {
+      key: 'workout',
+      label: 'Complete workout',
+      done: isRest || (isStrength ? daily.exercises.length >= 1 : daily.ranMiles > 0),
+      detail: isRest ? 'Rest day ✓'
+        : isStrength
+          ? (daily.exercises.length >= 1 ? `${daily.exercises.length} exercise${daily.exercises.length > 1 ? 's' : ''} done` : 'Not started')
+          : (daily.ranMiles > 0 ? `${daily.ranMiles}mi logged` : 'Not logged'),
+    },
+  ];
+
+  const allDone = goals.every(g => g.done);
+
+  return (
+    <div className={`rounded-2xl border mb-4 overflow-hidden transition-all
+      ${allDone ? 'border-green-500/40 bg-green-500/[0.04]' : 'border-white/[0.08] bg-white/[0.05]'}`}>
+      <div className="px-4 pt-3.5 pb-0.5">
+        <div className="text-[15px] font-semibold">Today's Goals</div>
+      </div>
+      <div className="px-4 pb-3">
+        {goals.map((goal, i) => (
+          <div key={goal.key} className={`flex items-center gap-3 py-2.5
+            ${i < goals.length - 1 ? 'border-b border-white/[0.06]' : ''}`}>
+            <span className="text-[20px] shrink-0 leading-none">{goal.done ? '✅' : '⬜'}</span>
+            <span className="flex-1 text-[15px] font-medium">{goal.label}</span>
+            <span className="text-[13px] text-white/40 text-right shrink-0">{goal.detail}</span>
+          </div>
+        ))}
+        {allDone && (
+          <div className="text-center pt-2 pb-0.5 text-green-400 font-semibold text-sm">
+            🎉 All goals hit!
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ─── Swipeable food item with always-visible X button ───
 function SwipeFoodItem({ item, onDelete }) {
   const [offset, setOffset] = useState(0);
   const [showBtn, setShowBtn] = useState(false);
@@ -111,7 +194,7 @@ function SwipeFoodItem({ item, onDelete }) {
     if (startX.current === null) return;
     const dx = e.touches[0].clientX - startX.current;
     const dy = Math.abs(e.touches[0].clientY - startY.current);
-    if (dy > 20) { startX.current = null; return; } // vertical scroll
+    if (dy > 20) { startX.current = null; return; }
     if (dx < 0) {
       e.preventDefault();
       setOffset(Math.max(dx, -72));
@@ -133,7 +216,7 @@ function SwipeFoodItem({ item, onDelete }) {
 
   return (
     <div className="relative overflow-hidden">
-      {/* Delete button behind */}
+      {/* Swipe-revealed delete button */}
       <div className="absolute right-0 top-0 bottom-0 w-[72px] flex items-center justify-center bg-red-500 rounded-r-xl">
         <button
           onClick={() => onDelete(item.id)}
@@ -142,16 +225,27 @@ function SwipeFoodItem({ item, onDelete }) {
           Delete
         </button>
       </div>
-      {/* Item */}
+      {/* Row with always-visible X button */}
       <div
-        className="relative bg-[#0f1117] flex justify-between items-center py-2.5 border-b border-white/[0.06] last:border-0"
+        className="relative bg-[#0f1117] flex items-center gap-2 py-2.5 border-b border-white/[0.06] last:border-0"
         style={{ transform: `translateX(${offset}px)`, transition: offset === 0 || offset === -72 ? 'transform 0.2s ease' : 'none' }}
         onTouchStart={onTouchStart}
         onTouchMove={onTouchMove}
         onTouchEnd={onTouchEnd}
       >
-        <span className="text-[15px] truncate mr-2">{item.name}</span>
-        <span className="text-sm text-white/40 shrink-0">{item.cal} cal</span>
+        <span className="text-[15px] truncate flex-1 min-w-0">{item.name}</span>
+        <span className="text-sm text-white/40 shrink-0">
+          {item.cal} cal{item.protein ? ` · ${item.protein}g` : ''}
+        </span>
+        <button
+          onClick={(e) => { e.stopPropagation(); onDelete(item.id); }}
+          className="w-[32px] h-[32px] shrink-0 flex items-center justify-center rounded-full
+            bg-red-500/15 text-red-400 border-none cursor-pointer text-xl leading-none
+            active:bg-red-500/30 active:scale-95"
+          aria-label={`Delete ${item.name}`}
+        >
+          ×
+        </button>
       </div>
     </div>
   );
@@ -159,7 +253,7 @@ function SwipeFoodItem({ item, onDelete }) {
 
 export function DashboardTab({
   daily, totalCal, totalProtein, setWater, toggleMeditation, addRun, addFood, removeFood,
-  weighIns, addWeighIn, latest, startWeight, goalWeight, targets, name, notify, settings,
+  weighIns, addWeighIn, latest, startWeight, targets, name, notify,
   onNavigate, onOpenLog,
 }) {
   const [weightInput, setWeightInput] = useState('');
@@ -170,19 +264,11 @@ export function DashboardTab({
   const proteinPct = totalProtein / targets.protein;
   const waterPct = daily.water / targets.waterBottles;
 
-  // Overall daily score (4 goals)
-  const goals = [
-    calPct >= 0.8 && calPct <= 1.15, // calories in range
-    proteinPct >= 1,
-    waterPct >= 1,
-    daily.meditation || daily.ranMiles > 0 || daily.exercises.length > 0,
-  ];
-  const goalsHit = goals.filter(Boolean).length;
   const scorePct = (
     Math.min(calPct, 1) * 0.25 +
     Math.min(proteinPct, 1) * 0.25 +
     Math.min(waterPct, 1) * 0.25 +
-    (goals[3] ? 0.25 : 0)
+    ((daily.meditation || daily.ranMiles > 0 || daily.exercises.length > 0) ? 0.25 : 0)
   );
 
   const currentWeight = latest?.weight || startWeight;
@@ -195,9 +281,8 @@ export function DashboardTab({
       setUndoItem(item);
       clearTimeout(undoTimer.current);
       undoTimer.current = setTimeout(() => setUndoItem(null), 5000);
-      notify(`Removed ${item.name}`);
     }
-  }, [daily.food, removeFood, notify]);
+  }, [daily.food, removeFood]);
 
   useEffect(() => () => clearTimeout(undoTimer.current), []);
 
@@ -210,6 +295,12 @@ export function DashboardTab({
   };
 
   const todayLogged = weighIns?.find(w => w.date === getToday());
+
+  // Group food by meal
+  const foodByMeal = MEAL_CONFIG.reduce((acc, m) => {
+    acc[m.key] = daily.food.filter(f => getMealForFood(f) === m.key);
+    return acc;
+  }, {});
 
   return (
     <div className="px-4 pb-6" style={{ paddingTop: 'max(env(safe-area-inset-top), 12px)' }}>
@@ -225,7 +316,7 @@ export function DashboardTab({
       />
 
       {/* Header */}
-      <div className="flex justify-between items-start mb-5">
+      <div className="flex justify-between items-start mb-4">
         <div>
           <div className="text-[22px] font-bold leading-tight">
             {getGreeting()}, {name || 'Jason'}
@@ -244,16 +335,16 @@ export function DashboardTab({
         )}
       </div>
 
-      {/* Big progress ring — overall score */}
+      {/* Goals Checklist — Task 4 */}
+      <GoalChecklist daily={daily} targets={targets} totalProtein={totalProtein} />
+
+      {/* Big progress ring */}
       <div className="flex flex-col items-center mb-5">
         <ProgressRing pct={scorePct} size={120} stroke={10}
           color={scorePct >= 1 ? '#22c55e' : scorePct >= 0.75 ? '#3b82f6' : '#f59e0b'}>
           <span className="text-[28px] font-bold leading-none">{Math.round(scorePct * 100)}%</span>
           <span className="text-[13px] text-white/40 mt-1">daily score</span>
         </ProgressRing>
-        <div className="text-[14px] text-white/50 mt-2">
-          {goalsHit} of 4 daily goals hit
-        </div>
       </div>
 
       {/* Quick stats row */}
@@ -300,7 +391,7 @@ export function DashboardTab({
         <button
           onClick={toggleMeditation}
           className={`flex-1 rounded-2xl py-4 text-[15px] font-semibold cursor-pointer
-            border active:opacity-70 transition-all
+            border active:scale-95 transition-all
             ${daily.meditation
               ? 'bg-green-500/20 border-green-500/50 text-green-300'
               : 'bg-white/[0.05] border-white/[0.08] text-white/50'}`}
@@ -310,7 +401,7 @@ export function DashboardTab({
         <button
           onClick={() => onOpenLog?.('I ran ')}
           className={`flex-1 rounded-2xl py-4 text-[15px] font-semibold cursor-pointer
-            border active:opacity-70 transition-all
+            border active:scale-95 transition-all
             ${daily.ranMiles > 0
               ? 'bg-green-500/20 border-green-500/50 text-green-300'
               : 'bg-white/[0.05] border-white/[0.08] text-white/50'}`}
@@ -319,7 +410,7 @@ export function DashboardTab({
         </button>
       </div>
 
-      {/* Today's food log with swipe-to-delete */}
+      {/* Food log — grouped by meal (Tasks 1 & 2) */}
       <div className="bg-white/[0.05] border border-white/[0.08] rounded-2xl overflow-hidden mb-4">
         <div className="flex justify-between items-center px-4 py-3 border-b border-white/[0.06]">
           <span className="text-[15px] font-semibold">Today's Food</span>
@@ -332,16 +423,36 @@ export function DashboardTab({
             <p className="text-[14px] text-white/30">Nothing logged yet</p>
             <button
               onClick={() => onOpenLog?.('I ate ')}
-              className="mt-3 text-blue-400 text-sm font-semibold bg-transparent border-none cursor-pointer"
+              className="mt-3 text-blue-400 text-sm font-semibold bg-transparent border-none cursor-pointer active:opacity-70"
             >
               + Log food
             </button>
           </div>
         ) : (
-          <div className="px-4 pb-1">
-            {daily.food.map(f => (
-              <SwipeFoodItem key={f.id} item={f} onDelete={handleDelete} />
-            ))}
+          <div>
+            {MEAL_CONFIG.map(meal => {
+              const items = foodByMeal[meal.key];
+              if (items.length === 0) return null;
+              const mealCal = items.reduce((s, f) => s + (f.cal || 0), 0);
+              const mealProtein = items.reduce((s, f) => s + (f.protein || 0), 0);
+              return (
+                <div key={meal.key} className="border-b border-white/[0.06] last:border-0">
+                  <div className="flex justify-between items-center px-4 py-2 bg-white/[0.03]">
+                    <span className="text-[13px] font-semibold text-white/60">
+                      {meal.icon} {meal.label}
+                    </span>
+                    <span className="text-[12px] text-white/35">
+                      {mealCal} cal · {mealProtein}g
+                    </span>
+                  </div>
+                  <div className="px-4">
+                    {items.map(f => (
+                      <SwipeFoodItem key={f.id} item={f} onDelete={handleDelete} />
+                    ))}
+                  </div>
+                </div>
+              );
+            })}
           </div>
         )}
       </div>
@@ -376,7 +487,7 @@ export function DashboardTab({
             />
             <button
               onClick={handleWeighIn}
-              className="bg-amber-500 text-white font-bold rounded-xl px-5 py-3 border-none cursor-pointer"
+              className="bg-amber-500 text-white font-bold rounded-xl px-5 py-3 border-none cursor-pointer active:scale-95"
             >
               Log
             </button>
@@ -391,7 +502,11 @@ export function DashboardTab({
           shadow-xl max-w-xs w-[90vw]">
           <span className="text-sm text-white/70 flex-1">Removed {undoItem.name}</span>
           <button
-            onClick={() => { clearTimeout(undoTimer.current); if (undoItem) addFood(undoItem); setUndoItem(null); }}
+            onClick={() => {
+              clearTimeout(undoTimer.current);
+              if (undoItem) addFood(undoItem);
+              setUndoItem(null);
+            }}
             className="text-blue-400 text-sm font-bold bg-transparent border-none cursor-pointer"
           >
             Undo

@@ -19,10 +19,27 @@ function findRecentFood(query) {
   );
 }
 
+// ─── Meal helpers ───
+const MEAL_OPTIONS = [
+  { key: 'breakfast', icon: '🌅', label: 'Breakfast' },
+  { key: 'lunch', icon: '☀️', label: 'Lunch' },
+  { key: 'snack', icon: '🍿', label: 'Snack' },
+  { key: 'dinner', icon: '🌙', label: 'Dinner' },
+];
+
+function getMealFromHour() {
+  const h = new Date().getHours();
+  if (h < 10) return 'breakfast';
+  if (h < 14) return 'lunch';
+  if (h < 17) return 'snack';
+  return 'dinner';
+}
+
 // ─── Food Confirmation Card ───
 function FoodConfirmCard({ msg, onConfirm, onReject }) {
   const [editing, setEditing] = useState(false);
   const [form, setForm] = useState({ ...msg.food });
+  const [meal, setMeal] = useState(getMealFromHour);
   const food = msg.food;
 
   if (editing) {
@@ -57,7 +74,7 @@ function FoodConfirmCard({ msg, onConfirm, onReject }) {
         </div>
         <div className="flex gap-2">
           <button
-            onClick={() => { onConfirm(form); }}
+            onClick={() => { onConfirm({ ...form, meal }); }}
             className="flex-1 bg-green-500 text-white rounded-xl py-3 text-sm font-bold
               border-none cursor-pointer active:opacity-80"
           >
@@ -79,9 +96,9 @@ function FoodConfirmCard({ msg, onConfirm, onReject }) {
     <div className="bg-white/[0.06] border border-white/[0.12] rounded-2xl p-4 w-full">
       <div className="text-[17px] font-bold mb-1 leading-snug">{food.name}</div>
       {food.servingSize && (
-        <div className="text-[13px] text-white/40 mb-3">{food.servingSize}</div>
+        <div className="text-[13px] text-white/40 mb-2">{food.servingSize}</div>
       )}
-      <div className="grid grid-cols-4 gap-2 mb-4">
+      <div className="grid grid-cols-4 gap-2 mb-3">
         {[
           { label: 'Cal', value: food.cal, color: 'text-amber-400' },
           { label: 'Protein', value: `${food.protein}g`, color: 'text-blue-400' },
@@ -94,8 +111,28 @@ function FoodConfirmCard({ msg, onConfirm, onReject }) {
           </div>
         ))}
       </div>
+      {/* Meal selector */}
+      <div className="mb-3">
+        <div className="text-[12px] text-white/40 mb-1.5">Logging as:</div>
+        <div className="flex gap-1.5">
+          {MEAL_OPTIONS.map(opt => (
+            <button
+              key={opt.key}
+              onClick={() => setMeal(opt.key)}
+              className={`flex-1 rounded-xl py-1.5 text-xs font-semibold border-none cursor-pointer
+                active:scale-95 transition-all
+                ${meal === opt.key ? 'bg-blue-500 text-white' : 'bg-white/[0.06] text-white/50'}`}
+            >
+              {opt.icon}
+            </button>
+          ))}
+        </div>
+        <div className="text-[12px] text-white/40 text-center mt-1">
+          {MEAL_OPTIONS.find(o => o.key === meal)?.label}
+        </div>
+      </div>
       <button
-        onClick={() => onConfirm(food)}
+        onClick={() => onConfirm({ ...food, meal })}
         className="w-full bg-green-500 text-white rounded-xl py-3.5 text-[16px] font-bold
           border-none cursor-pointer active:opacity-80 mb-2"
       >
@@ -514,12 +551,20 @@ export function ChatInterface({
   };
 
   const CHIPS = [
-    { label: '🥗 Food', prefill: 'I ate ' },
+    { label: '🥗 Food', prefill: 'I ate ', large: true },
     { label: '🏃 Run', prefill: 'I ran ' },
     { label: '💧 Water', prefill: 'drank water' },
     { label: '⚖️ Weight', prefill: 'weight is ' },
     { label: '📸 Scan', action: 'scan' },
   ];
+
+  // Auto-focus input when embedded Log tab opens
+  useEffect(() => {
+    if (embedded) {
+      const t = setTimeout(() => inputRef.current?.focus(), 150);
+      return () => clearTimeout(t);
+    }
+  }, [embedded]);
 
   const containerClass = embedded
     ? 'flex flex-col h-full bg-[#0f1117]'
@@ -686,9 +731,10 @@ export function ChatInterface({
                 inputRef.current?.focus();
               }
             }}
-            className="shrink-0 bg-white/[0.08] border border-white/[0.1] rounded-full
-              px-3.5 py-2 text-[13px] text-white/70 cursor-pointer active:opacity-70
-              whitespace-nowrap"
+            className={`shrink-0 border rounded-full cursor-pointer active:scale-95 whitespace-nowrap
+              ${chip.large
+                ? 'bg-blue-500/15 border-blue-500/40 text-blue-300 px-4 py-2.5 text-[14px] font-semibold'
+                : 'bg-white/[0.08] border-white/[0.1] text-white/70 px-3.5 py-2 text-[13px]'}`}
           >
             {chip.label}
           </button>

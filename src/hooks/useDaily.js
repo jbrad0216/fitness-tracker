@@ -2,6 +2,14 @@ import { useState, useEffect, useCallback } from 'react';
 import { load, save } from '../data/storage';
 import { getToday } from '../data/constants';
 
+function getMealFromTime() {
+  const h = new Date().getHours();
+  if (h < 10) return 'breakfast';
+  if (h < 14) return 'lunch';
+  if (h < 17) return 'snack';
+  return 'dinner';
+}
+
 const EMPTY_DAY = {
   food: [],
   water: 0,
@@ -54,6 +62,7 @@ export function useDaily() {
         ...item,
         id: Date.now(),
         loggedAt: new Date().toISOString(),
+        meal: item.meal || getMealFromTime(),
       }],
     }));
   }, [update]);
