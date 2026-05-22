@@ -249,7 +249,7 @@ export function DashboardTab({
         <ProgressRing pct={scorePct} size={120} stroke={10}
           color={scorePct >= 1 ? '#22c55e' : scorePct >= 0.75 ? '#3b82f6' : '#f59e0b'}>
           <span className="text-[28px] font-bold leading-none">{Math.round(scorePct * 100)}%</span>
-          <span className="text-[11px] text-white/40 mt-1">daily score</span>
+          <span className="text-[13px] text-white/40 mt-1">daily score</span>
         </ProgressRing>
         <div className="text-[14px] text-white/50 mt-2">
           {goalsHit} of 4 daily goals hit
@@ -274,7 +274,7 @@ export function DashboardTab({
         ].map(stat => (
           <div key={stat.label}
             className="bg-white/[0.05] border border-white/[0.08] rounded-2xl px-3 py-3">
-            <div className="text-[12px] text-white/40 mb-1">{stat.label}</div>
+            <div className="text-[13px] text-white/40 mb-1">{stat.label}</div>
             <div className="text-[18px] font-bold leading-none mb-1">{stat.value}</div>
             <div className="text-[12px] text-white/30 mb-2">of {stat.total}</div>
             <div className="h-1.5 bg-white/[0.08] rounded-full overflow-hidden">

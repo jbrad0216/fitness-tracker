@@ -44,7 +44,7 @@ function FoodConfirmCard({ msg, onConfirm, onReject }) {
             { k: 'carbs', label: 'Carbs (g)' },
           ].map(({ k, label }) => (
             <div key={k}>
-              <div className="text-[11px] text-white/40 mb-1">{label}</div>
+              <div className="text-[12px] text-white/40 mb-1">{label}</div>
               <input
                 type="number"
                 className="w-full bg-white/[0.08] border border-white/[0.1] rounded-xl px-3 py-2
@@ -90,7 +90,7 @@ function FoodConfirmCard({ msg, onConfirm, onReject }) {
         ].map(({ label, value, color }) => (
           <div key={label} className="text-center bg-white/[0.04] rounded-xl py-2 px-1">
             <div className={`text-[15px] font-bold ${color}`}>{value}</div>
-            <div className="text-[11px] text-white/40 mt-0.5">{label}</div>
+            <div className="text-[12px] text-white/40 mt-0.5">{label}</div>
           </div>
         ))}
       </div>
@@ -536,7 +536,7 @@ export function ChatInterface({
         <div className="flex items-center justify-between px-4 py-3 border-b border-white/[0.08] shrink-0">
           <div>
             <h2 className="text-base font-bold">Quick Log</h2>
-            <p className="text-[11px] text-white/40">Natural language logger</p>
+            <p className="text-[13px] text-white/40">Natural language logger</p>
           </div>
           <button onClick={onClose}
             className="w-10 h-10 rounded-xl bg-white/[0.06] text-white/60 border-none
@@ -591,7 +591,7 @@ export function ChatInterface({
                   <div className="bg-green-500/15 border border-green-500/30 text-green-300
                     rounded-2xl rounded-bl-sm px-3.5 py-2.5 text-sm max-w-[85%]">
                     ✓ Logged: {msg.food.name} — {msg.food.cal} cal, {msg.food.protein}g protein
-                    <p className="text-[10px] opacity-50 mt-1">{msg.time}</p>
+                    <p className="text-[12px] opacity-50 mt-1">{msg.time}</p>
                   </div>
                 </div>
               );
@@ -652,7 +652,7 @@ export function ChatInterface({
                 }`}
               >
                 <p className="leading-relaxed">{msg.text}</p>
-                <p className="text-[10px] opacity-50 mt-1">{msg.time}</p>
+                <p className="text-[12px] opacity-50 mt-1">{msg.time}</p>
               </div>
             </div>
           );

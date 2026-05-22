@@ -114,7 +114,7 @@ export function WaterBottles({ count, total = 3, onTap }) {
               }`}
           >
             <span className="text-2xl">{filled ? '💧' : '🫙'}</span>
-            <span className={`text-[10px] mt-0.5 ${filled ? 'text-white' : 'text-white/30'}`}>
+            <span className={`text-[12px] mt-0.5 ${filled ? 'text-white' : 'text-white/30'}`}>
               32oz
             </span>
           </button>

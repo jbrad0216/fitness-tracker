@@ -42,7 +42,7 @@ function WorkoutEditor({ label, exercises, onUpdate, onRemove, onMove, onAdd }) 
             <div className="flex items-center justify-between">
               <div className="flex-1 min-w-0">
                 <div className="text-sm truncate">{ex.name}</div>
-                <div className="text-[11px] text-white/40">{ex.defaultWeight}lbs · {ex.sets}×{ex.reps}</div>
+                <div className="text-[12px] text-white/40">{ex.defaultWeight}lbs · {ex.sets}×{ex.reps}</div>
               </div>
               <div className="flex gap-1 ml-2 shrink-0">
                 <button onClick={() => onMove(i, -1)} disabled={i === 0} className="w-7 h-7 rounded-lg bg-white/[0.05] text-white/50 border-none cursor-pointer text-xs disabled:opacity-20">↑</button>
@@ -55,7 +55,7 @@ function WorkoutEditor({ label, exercises, onUpdate, onRemove, onMove, onAdd }) 
         </div>
       ))}
       <div className="rounded-xl bg-white/[0.02] border border-white/[0.05] p-3">
-        <p className="text-[11px] text-white/30 mb-2 uppercase tracking-wider">Add Exercise</p>
+        <p className="text-[12px] text-white/30 mb-2 uppercase tracking-wider">Add Exercise</p>
         <div className="flex flex-col gap-1.5">
           <Input type="text" value={newEx.name} onChange={e => setNewEx(f => ({ ...f, name: e.target.value }))} placeholder="Exercise name" />
           <div className="flex gap-1.5">
@@ -210,7 +210,7 @@ export function SettingsTab({ settings, updateSettings, resetSettings, templates
         <div className="flex items-center justify-between py-2 mb-2">
           <div>
             <div className="text-sm font-semibold">Auto-Backup</div>
-            <div className="text-[11px] text-white/40">
+            <div className="text-[12px] text-white/40">
               {lastExport ? `Last backup: ${lastExport}` : 'Saves daily snapshot'}
             </div>
           </div>
@@ -279,7 +279,7 @@ export function SettingsTab({ settings, updateSettings, resetSettings, templates
           </ol>
         </div>
 
-        <p className="text-[11px] text-white/30">
+        <p className="text-[12px] text-white/30">
           The app reads the URL parameters and saves your Health data when you open it via the Shortcut.
         </p>
       </Card>
@@ -292,7 +292,7 @@ export function SettingsTab({ settings, updateSettings, resetSettings, templates
           onChange={() => setForm(f => ({ ...f, theme: f.theme === 'light' ? 'dark' : 'light' }))}
           label={form.theme === 'light' ? '☀️ Light Mode' : '🌙 Dark Mode'}
         />
-        <p className="text-[11px] text-white/30 mt-1">Dark mode recommended for gym use</p>
+        <p className="text-[12px] text-white/30 mt-1">Dark mode recommended for gym use</p>
       </Card>
 
       {/* Bug report */}
@@ -309,7 +309,7 @@ export function SettingsTab({ settings, updateSettings, resetSettings, templates
       <Card>
         <CardTitle right={
           <button onClick={() => { workoutOps.resetTemplates(); notify('Templates reset'); }}
-            className="text-[11px] text-red-400/70 bg-transparent border-none cursor-pointer">
+            className="text-[13px] text-red-400/70 bg-transparent border-none cursor-pointer">
             Reset
           </button>
         }>

@@ -192,7 +192,7 @@ export function OnboardingFlow({ onComplete }) {
             <button
               onClick={handleExportNow}
               className="w-full bg-white/[0.08] border border-white/[0.1] text-white/70 rounded-2xl py-4 text-base
-                cursor-pointer border-none active:opacity-70"
+                cursor-pointer active:opacity-70"
             >
               📤 Export Now (optional)
             </button>

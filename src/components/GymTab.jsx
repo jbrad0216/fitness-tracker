@@ -68,7 +68,7 @@ function RestTimer({ onDismiss }) {
 function MuscleBadge({ muscleKey, group }) {
   const color = MUSCLE_COLORS[muscleKey] || '#6b7280';
   return (
-    <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full"
+    <span className="text-[12px] font-semibold px-2 py-0.5 rounded-full"
       style={{ background: `${color}25`, color }}>
       {group}
     </span>
@@ -103,7 +103,7 @@ function ExerciseCard({ ex, isLogged, prev, onLog, showTimer }) {
             {ex.sets}×{ex.reps} @ {prev ? prev.weight : ex.defaultWeight} lbs
           </div>
           {prev && (
-            <div className="text-[12px] text-white/40 mt-0.5">
+            <div className="text-[13px] text-white/40 mt-0.5">
               Last: {prev.weight}lbs × {prev.sets}×{prev.reps}
             </div>
           )}

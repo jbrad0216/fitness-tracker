@@ -98,7 +98,7 @@ npm run preview      # Preview production build locally
 - Component files export named functions (not default)
 - Hooks in hooks/ directory, shared UI in components/UI.jsx
 - Keep components focused — one tab per file
-- Minimum touch target: 48px. Minimum body text: 16px.
+- Minimum touch target: 48px. Minimum body text: 16px. Minimum caption/label: 12px.
 
 ## Data Storage Keys (localStorage, prefix: ft_)
 NOTE: The `load(key, fallback)` and `save(key, val)` functions in storage.js auto-add the `ft_` prefix.
