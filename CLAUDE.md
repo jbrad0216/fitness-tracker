@@ -3,7 +3,7 @@
 ## Project Overview
 Personal fitness tracking PWA for Jason. React + Vite + Tailwind CSS. Deployed on Vercel via GitHub (auto-deploys on push to main).
 
-**Phase 4 (current)**: Targeted fixes and polish — food deletion with X button + swipe, meal-grouped food log, weekly workout calendar, daily goals checklist, UX polish.
+**Phase 5 (current)**: Workout intelligence, bug fixes, and science explanations — exercise swap UI, focus area workout generator, 12-week plan view, barcode scanner fix, scheduled meals, goal banner, USDA food accuracy fix, chat logging fixes, skip/reschedule workouts, About My Plan science section.
 
 ## Owner Profile
 - Jason, 48, 6'1", goal: 222.6 lbs → 200 lbs
@@ -36,8 +36,10 @@ src/
     BottomNav.jsx       # Fixed bottom tab navigation — 4 tabs: Home, Log, Gym, More
     DashboardTab.jsx    # Home tab: overall score ring, quick stats, food log with swipe-to-delete, reminders
     ChatInterface.jsx   # Log tab: full-screen AI chat with food confirm cards, recent foods, barcode lookup
-    GymTab.jsx          # Gym tab: equipment setup, expandable exercise cards, rest timer
-    MoreTab.jsx         # More tab: sub-pages for Stats, Journey, Settings (local state routing)
+    GymTab.jsx          # Gym tab: equipment setup, exercise cards with swap/why, rest timer, skip/reschedule
+    MoreTab.jsx         # More tab: sub-pages for Stats, Journey, Plan, Science, Settings
+    WorkoutPlanTab.jsx  # 12-week plan view with phases and run progression
+    ScienceTab.jsx      # About My Plan: science explanations with research links, editable targets
     StatsTab.jsx        # Weight chart, lift progress, weigh-in history
     JourneyTab.jsx      # Timeline, milestones, monthly calendar, streaks
     SettingsTab.jsx     # Profile, targets, simplified data backup, Apple Health, workout templates
@@ -54,13 +56,13 @@ public/
   favicon.svg           # Browser favicon
 ```
 
-## Navigation Structure (Phase 4)
-- **Home** (🏠) — DashboardTab: goals checklist, progress ring, stats, meal-grouped food log, reminders
+## Navigation Structure (Phase 5)
+- **Home** (🏠) — DashboardTab: goal banner, goals checklist, progress ring, stats, meal-grouped food log, scheduled meals, reminders
 - **Log** (➕) — ChatInterface embedded: AI-powered logging; auto-focuses input on tab open
-- **Gym** (🏋️) — GymTab: weekly calendar (7-day row), today's workout cards, rest timer
-- **More** (···) — MoreTab: sub-pages for Stats, Journey, Settings
+- **Gym** (🏋️) — GymTab: weekly calendar, exercise cards with swap/why/3×12 reasoning, customize workout, skip/reschedule
+- **More** (···) — MoreTab: Stats, Journey, Full Plan, About My Plan, Settings
 
-Stats, Journey, Settings are no longer in the bottom nav — accessed via More menu.
+Stats, Journey, Full Plan, About My Plan, and Settings are accessed via More menu.
 
 ## Key Design Decisions
 - Dark theme (#0f1117 background) — used at 5:30am in the gym; light mode available in Settings
@@ -80,6 +82,14 @@ Stats, Journey, Settings are no longer in the bottom nav — accessed via More m
 - Apple Health integration via URL params (?steps=X&activeCal=Y)
 - Equipment setup screen in GymTab (saved to ft_equipment-setup)
 - Weekly workout calendar row at top of Gym tab (7 day circles, tap for detail)
+- Exercise cards have "Why this exercise?" section, 3×12 reasoning, and swap UI (alternatives from exercises.js)
+- Focus area workout customizer: select 2-3 body parts → generate 4-5 exercise custom workout
+- Skip/reschedule workout: per-week ft_schedule-overrides-{year}-{weekNum} storage
+- Goal banner on home tab: progress bar, pace indicator, weeks remaining (green/amber/red)
+- Scheduled meals: ft_scheduled-meals, auto-appear on dashboard for 1-tap logging
+- Log Again button on each food item in dashboard
+- Food search: USDA nutrientNumber 1008 for kcal, prefer branded, fallback to Open Food Facts
+- Chat: delete food by name, food keywords checked before status queries
 - ErrorBoundary around each tab so one crash doesn't kill the app
 
 ## Commands
@@ -115,6 +125,10 @@ DO NOT include `ft_` in the key argument to load/save. Use direct localStorage f
 - `ft_recent-foods` — last 50 logged food items for quick re-logging
 - `ft_last-export` — date of last manual data export
 - `ft_backup-YYYY-MM-DD` — auto-backup snapshots (last 7 days kept)
+- `ft_scheduled-meals` — array of recurring meal objects with day-of-week schedule
+- `ft_custom-workout-YYYY-MM-DD` — one-off custom workout from focus area generator
+- `ft_exercise-swaps-YYYY-MM-DD` — daily exercise swaps (original name → replacement)
+- `ft_schedule-overrides-{year}-{weekNum}` — workout skip/reschedule overrides for the week
 - `ft_dismissed-reminders-YYYY-MM-DD` — reminder IDs dismissed today
 - `ft_equipment-setup` — gym equipment preferences (full/home/limited)
 - `ft_apple-health-today` — Apple Health data from URL params (steps, activeCal, date)
