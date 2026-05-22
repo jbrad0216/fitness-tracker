@@ -239,7 +239,7 @@ function SwipeFoodItem({ item, onDelete }) {
         </span>
         <button
           onClick={(e) => { e.stopPropagation(); onDelete(item.id); }}
-          className="w-[32px] h-[32px] shrink-0 flex items-center justify-center rounded-full
+          className="w-[44px] h-[44px] shrink-0 flex items-center justify-center rounded-full
             bg-red-500/15 text-red-400 border-none cursor-pointer text-xl leading-none
             active:bg-red-500/30 active:scale-95"
           aria-label={`Delete ${item.name}`}

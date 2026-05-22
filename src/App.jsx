@@ -188,11 +188,9 @@ export default function App() {
                 addWeighIn={addWeighIn}
                 latest={latest}
                 startWeight={settings.startWeight}
-                goalWeight={settings.goalWeight}
                 targets={targets}
                 name={settings.name}
                 notify={notify}
-                settings={settings}
                 onNavigate={changeTab}
                 onOpenLog={openLog}
               />
@@ -210,8 +208,6 @@ export default function App() {
                 logLift={logLift}
                 templates={templates}
                 notify={notify}
-                settings={settings}
-                updateSettings={updateSettings}
               />
             </ErrorBoundary>
           )}
