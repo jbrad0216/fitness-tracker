@@ -178,8 +178,117 @@ function GoalChecklist({ daily, targets, totalProtein }) {
   );
 }
 
+// ─── Goal Progress Banner ───
+function GoalBanner({ startWeight, goalWeight, weighIns }) {
+  if (!startWeight || !goalWeight || startWeight <= goalWeight) return null;
+
+  const sorted = [...(weighIns || [])].sort((a, b) => a.date.localeCompare(b.date));
+  const currentWeight = sorted.length > 0 ? sorted[sorted.length - 1].weight : startWeight;
+  const totalToLose = startWeight - goalWeight;
+  const lostSoFar = startWeight - currentWeight;
+  const pct = Math.min(Math.max(lostSoFar / totalToLose, 0), 1);
+  const lbsLeft = Math.max(currentWeight - goalWeight, 0);
+
+  // Calculate weekly rate
+  let weeklyRate = 0;
+  let weeksLeft = null;
+  let paceLabel = null;
+  let paceColor = 'text-white/50';
+
+  if (sorted.length >= 2) {
+    const first = sorted[0];
+    const last = sorted[sorted.length - 1];
+    const weeksElapsed = (new Date(last.date) - new Date(first.date)) / (7 * 86400000) || 1;
+    weeklyRate = (first.weight - last.weight) / weeksElapsed;
+    if (weeklyRate > 0 && lbsLeft > 0) {
+      weeksLeft = Math.ceil(lbsLeft / weeklyRate);
+    }
+    const target = 1.1;
+    const diff = weeklyRate - target;
+    if (diff >= 0.15) { paceLabel = 'Ahead of pace! 🚀'; paceColor = 'text-green-400'; }
+    else if (diff > -0.3) { paceLabel = 'On track ✓'; paceColor = 'text-green-400'; }
+    else if (diff > -0.5) { paceLabel = 'Slightly behind'; paceColor = 'text-amber-400'; }
+    else { paceLabel = 'Behind pace'; paceColor = 'text-red-400'; }
+  } else if (lbsLeft > 0) {
+    weeksLeft = Math.ceil(lbsLeft / 1.1);
+    paceLabel = 'Tracking…';
+  }
+
+  const barColor = paceLabel?.includes('🚀') || paceLabel?.includes('On track')
+    ? '#22c55e' : paceLabel?.includes('Slightly') ? '#f59e0b' : paceLabel?.includes('Behind') ? '#ef4444' : '#3b82f6';
+
+  return (
+    <div className="bg-white/[0.05] border border-white/[0.08] rounded-2xl px-4 py-3 mb-4">
+      <div className="flex items-center justify-between mb-1.5">
+        <span className="text-[14px] font-bold">🎯 Lose {totalToLose} lbs</span>
+        <span className="text-[13px] text-white/40">{Math.round(pct * 100)}% there</span>
+      </div>
+      <div className="h-2 bg-white/[0.08] rounded-full overflow-hidden mb-1.5">
+        <div
+          className="h-full rounded-full transition-all duration-700"
+          style={{ width: `${pct * 100}%`, background: barColor }}
+        />
+      </div>
+      <div className="flex justify-between items-center">
+        <span className="text-[12px] text-white/40">{startWeight} → {goalWeight} lbs</span>
+        <div className="flex items-center gap-2">
+          {paceLabel && <span className={`text-[12px] font-semibold ${paceColor}`}>{paceLabel}</span>}
+          {weeksLeft && <span className="text-[12px] text-white/30">~{weeksLeft}w left</span>}
+          {weeklyRate > 0 && <span className="text-[12px] text-white/25">({weeklyRate.toFixed(1)}/wk)</span>}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Scheduled Meals Banner ───
+function ScheduledMealsBanner({ daily, addFood, notify }) {
+  const [dismissed, setDismissed] = useState([]);
+  const today = new Date();
+  const dow = today.getDay();
+
+  const meals = (() => {
+    try { return JSON.parse(localStorage.getItem('ft_scheduled-meals') || '[]'); } catch { return []; }
+  })();
+
+  const todayMeals = meals.filter(m =>
+    m.days.includes(dow) &&
+    !dismissed.includes(m.id) &&
+    !daily.food.some(f => f.name.toLowerCase() === m.name.toLowerCase())
+  );
+
+  if (todayMeals.length === 0) return null;
+
+  return (
+    <div className="mb-4">
+      {todayMeals.map(m => (
+        <div key={m.id} className="bg-blue-500/10 border border-blue-500/20 rounded-2xl px-4 py-3 mb-2 flex items-center gap-3">
+          <div className="flex-1 min-w-0">
+            <div className="text-[14px] font-semibold">{m.name}</div>
+            <div className="text-[12px] text-white/40">{m.cal} cal · {m.protein}g protein · {m.meal}</div>
+          </div>
+          <button
+            onClick={() => {
+              addFood({ name: m.name, cal: m.cal, protein: m.protein || 0, fat: 0, carbs: 0, meal: m.meal });
+              setDismissed(d => [...d, m.id]);
+              notify(`${m.name} logged`);
+            }}
+            className="bg-blue-500 text-white text-sm font-bold rounded-xl px-3 py-2 border-none cursor-pointer shrink-0 active:opacity-80"
+          >
+            ✓ Log
+          </button>
+          <button
+            onClick={() => setDismissed(d => [...d, m.id])}
+            className="text-white/30 text-lg bg-transparent border-none cursor-pointer shrink-0"
+          >✕</button>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 // ─── Swipeable food item with always-visible X button ───
-function SwipeFoodItem({ item, onDelete }) {
+function SwipeFoodItem({ item, onDelete, onLogAgain }) {
   const [offset, setOffset] = useState(0);
   const [showBtn, setShowBtn] = useState(false);
   const startX = useRef(null);
@@ -234,9 +343,21 @@ function SwipeFoodItem({ item, onDelete }) {
         onTouchEnd={onTouchEnd}
       >
         <span className="text-[15px] truncate flex-1 min-w-0">{item.name}</span>
-        <span className="text-sm text-white/40 shrink-0">
+        <span className="text-sm text-white/40 shrink-0 mr-1">
           {item.cal} cal{item.protein ? ` · ${item.protein}g` : ''}
         </span>
+        {onLogAgain && (
+          <button
+            onClick={(e) => { e.stopPropagation(); onLogAgain(item); }}
+            className="w-[44px] h-[44px] shrink-0 flex items-center justify-center rounded-full
+              bg-blue-500/15 text-blue-400 border-none cursor-pointer text-base leading-none
+              active:bg-blue-500/30 active:scale-95 mr-1"
+            aria-label={`Log ${item.name} again`}
+            title="Log again"
+          >
+            +
+          </button>
+        )}
         <button
           onClick={(e) => { e.stopPropagation(); onDelete(item.id); }}
           className="w-[44px] h-[44px] shrink-0 flex items-center justify-center rounded-full
@@ -253,7 +374,7 @@ function SwipeFoodItem({ item, onDelete }) {
 
 export function DashboardTab({
   daily, totalCal, totalProtein, setWater, toggleMeditation, addRun, addFood, removeFood,
-  weighIns, addWeighIn, latest, startWeight, targets, name, notify,
+  weighIns, addWeighIn, latest, startWeight, goalWeight, targets, name, notify,
   onNavigate, onOpenLog,
 }) {
   const [weightInput, setWeightInput] = useState('');
@@ -304,6 +425,12 @@ export function DashboardTab({
 
   return (
     <div className="px-4 pb-6" style={{ paddingTop: 'max(env(safe-area-inset-top), 12px)' }}>
+      {/* Goal Banner */}
+      <GoalBanner startWeight={startWeight} goalWeight={goalWeight || 200} weighIns={weighIns} />
+
+      {/* Scheduled Meals */}
+      <ScheduledMealsBanner daily={daily} addFood={addFood} notify={notify} />
+
       {/* Reminders */}
       <ReminderBanner
         daily={daily}
@@ -447,7 +574,15 @@ export function DashboardTab({
                   </div>
                   <div className="px-4">
                     {items.map(f => (
-                      <SwipeFoodItem key={f.id} item={f} onDelete={handleDelete} />
+                      <SwipeFoodItem
+                        key={f.id}
+                        item={f}
+                        onDelete={handleDelete}
+                        onLogAgain={(food) => {
+                          addFood({ ...food, id: Date.now().toString(), loggedAt: new Date().toISOString() });
+                          notify(`Logged ${food.name} again`);
+                        }}
+                      />
                     ))}
                   </div>
                 </div>

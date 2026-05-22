@@ -186,6 +186,7 @@ export default function App() {
                 addWeighIn={addWeighIn}
                 latest={latest}
                 startWeight={settings.startWeight}
+                goalWeight={settings.goalWeight}
                 targets={targets}
                 name={settings.name}
                 notify={notify}

@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { StatsTab } from './StatsTab';
 import { JourneyTab } from './JourneyTab';
 import { SettingsTab } from './SettingsTab';
+import { WorkoutPlanTab } from './WorkoutPlanTab';
+import { ScienceTab } from './ScienceTab';
 import { ErrorBoundary } from './UI';
 
 function BackButton({ onBack, label }) {
@@ -25,6 +27,36 @@ export function MoreTab({
   notify,
 }) {
   const [subPage, setSubPage] = useState(null);
+
+  if (subPage === 'plan') {
+    return (
+      <div>
+        <BackButton onBack={() => setSubPage(null)} label="More" />
+        <ErrorBoundary>
+          <WorkoutPlanTab
+            weighIns={weighIns}
+            startWeight={startWeight}
+            goalWeight={goalWeight}
+          />
+        </ErrorBoundary>
+      </div>
+    );
+  }
+
+  if (subPage === 'science') {
+    return (
+      <div>
+        <BackButton onBack={() => setSubPage(null)} label="More" />
+        <ErrorBoundary>
+          <ScienceTab
+            settings={settings}
+            updateSettings={updateSettings}
+            notify={notify}
+          />
+        </ErrorBoundary>
+      </div>
+    );
+  }
 
   if (subPage === 'stats') {
     return (
@@ -90,6 +122,18 @@ export function MoreTab({
       icon: '🗺️',
       label: 'Journey',
       desc: 'Timeline, milestones, monthly calendar',
+    },
+    {
+      id: 'plan',
+      icon: '📅',
+      label: 'Full Workout Plan',
+      desc: '12-week timeline, phases, run progression',
+    },
+    {
+      id: 'science',
+      icon: '🔬',
+      label: 'About My Plan',
+      desc: 'Why these calories, protein, reps, and more',
     },
     {
       id: 'settings',

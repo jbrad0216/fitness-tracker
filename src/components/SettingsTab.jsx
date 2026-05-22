@@ -70,6 +70,90 @@ function WorkoutEditor({ label, exercises, onUpdate, onRemove, onMove, onAdd }) 
   );
 }
 
+const SCHEDULED_MEALS_KEY = 'ft_scheduled-meals';
+const DAYS_OF_WEEK = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+
+function ScheduledMealsEditor({ notify }) {
+  const [meals, setMeals] = useState(() => {
+    try { return JSON.parse(localStorage.getItem(SCHEDULED_MEALS_KEY) || '[]'); } catch { return []; }
+  });
+  const [adding, setAdding] = useState(false);
+  const [form, setForm] = useState({ name: '', cal: '', protein: '', days: [], meal: 'breakfast' });
+
+  const save = (next) => {
+    setMeals(next);
+    localStorage.setItem(SCHEDULED_MEALS_KEY, JSON.stringify(next));
+  };
+
+  const handleAdd = () => {
+    if (!form.name || form.days.length === 0) return;
+    save([...meals, { ...form, cal: parseInt(form.cal) || 0, protein: parseInt(form.protein) || 0, id: Date.now().toString() }]);
+    setForm({ name: '', cal: '', protein: '', days: [], meal: 'breakfast' });
+    setAdding(false);
+    notify('Scheduled meal saved');
+  };
+
+  const toggleDay = (d) => setForm(f => ({
+    ...f, days: f.days.includes(d) ? f.days.filter(x => x !== d) : [...f.days, d]
+  }));
+
+  return (
+    <div>
+      {meals.length === 0 && !adding && (
+        <p className="text-[13px] text-white/30 mb-3">No scheduled meals yet. Add a recurring meal below.</p>
+      )}
+      {meals.map(m => (
+        <div key={m.id} className="bg-white/[0.04] border border-white/[0.06] rounded-xl px-3 py-2.5 mb-2 flex items-center gap-2">
+          <div className="flex-1 min-w-0">
+            <div className="text-[14px] font-semibold truncate">{m.name}</div>
+            <div className="text-[12px] text-white/40">
+              {m.cal} cal · {m.protein}g · {m.meal} · {m.days.map(d => DAYS_OF_WEEK[d].slice(0,3)).join(', ')}
+            </div>
+          </div>
+          <button onClick={() => save(meals.filter(x => x.id !== m.id))}
+            className="w-7 h-7 rounded-lg bg-red-500/15 text-red-400 border-none cursor-pointer text-base">×</button>
+        </div>
+      ))}
+      {adding ? (
+        <div className="bg-white/[0.04] border border-white/[0.08] rounded-xl p-3 mt-2">
+          <Input type="text" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} placeholder="Meal name (e.g. Overnight Oats)" className="mb-2" />
+          <div className="flex gap-1.5 mb-2">
+            <Input type="number" value={form.cal} onChange={e => setForm(f => ({ ...f, cal: e.target.value }))} placeholder="Cal" className="flex-1" />
+            <Input type="number" value={form.protein} onChange={e => setForm(f => ({ ...f, protein: e.target.value }))} placeholder="Protein g" className="flex-1" />
+          </div>
+          <select
+            value={form.meal}
+            onChange={e => setForm(f => ({ ...f, meal: e.target.value }))}
+            className="w-full bg-white/[0.06] border border-white/[0.1] rounded-xl px-3 py-2 text-sm text-white outline-none mb-2"
+          >
+            {['breakfast','lunch','snack','dinner'].map(m => <option key={m} value={m}>{m}</option>)}
+          </select>
+          <div className="text-[12px] text-white/40 mb-1">Which days?</div>
+          <div className="flex gap-1 flex-wrap mb-2">
+            {DAYS_OF_WEEK.map((d, i) => (
+              <button key={i} onClick={() => toggleDay(i)}
+                className={`px-2 py-1 rounded-lg text-[12px] font-semibold border cursor-pointer
+                  ${form.days.includes(i) ? 'bg-blue-500 border-blue-400 text-white' : 'bg-white/[0.05] border-white/[0.08] text-white/50'}`}>
+                {d.slice(0,3)}
+              </button>
+            ))}
+          </div>
+          <div className="flex gap-1.5">
+            <Button onClick={handleAdd} className="flex-1 text-sm py-2">Save Meal</Button>
+            <Button onClick={() => setAdding(false)} variant="ghost" className="text-sm py-2">Cancel</Button>
+          </div>
+        </div>
+      ) : (
+        <button onClick={() => setAdding(true)}
+          className="w-full border border-dashed border-white/[0.1] rounded-xl py-3 text-[14px]
+            text-white/40 cursor-pointer bg-transparent mt-1">
+          + Add Scheduled Meal
+        </button>
+      )}
+    </div>
+  );
+}
+
 export function SettingsTab({ settings, updateSettings, resetSettings, templates, workoutOps, notify }) {
   const [form, setForm] = useState({ ...settings });
   const [showBackups, setShowBackups] = useState(false);
@@ -184,6 +268,12 @@ export function SettingsTab({ settings, updateSettings, resetSettings, templates
         <Button onClick={handleSave} className="flex-1">Save Settings</Button>
         <Button onClick={() => { resetSettings(); notify('Reset to defaults'); }} variant="danger" className="flex-1">Reset</Button>
       </div>
+
+      <Card>
+        <CardTitle>Scheduled Meals</CardTitle>
+        <p className="text-[12px] text-white/40 mb-3">Meals that auto-appear on selected days for quick logging.</p>
+        <ScheduledMealsEditor notify={notify} />
+      </Card>
 
       {/* Data & Backup — simplified (Task 6) */}
       <Card>

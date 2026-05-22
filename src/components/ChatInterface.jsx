@@ -95,9 +95,14 @@ function FoodConfirmCard({ msg, onConfirm, onReject }) {
   return (
     <div className="bg-white/[0.06] border border-white/[0.12] rounded-2xl p-4 w-full">
       <div className="text-[17px] font-bold mb-1 leading-snug">{food.name}</div>
-      {food.servingSize && (
-        <div className="text-[13px] text-white/40 mb-2">{food.servingSize}</div>
-      )}
+      <div className="flex items-center gap-2 mb-2">
+        {food.servingSize && (
+          <span className="text-[13px] text-white/40">{food.servingSize}</span>
+        )}
+        {food.source && (
+          <span className="text-[11px] text-white/25 bg-white/[0.04] rounded-full px-2 py-0.5">{food.source}</span>
+        )}
+      </div>
       <div className="grid grid-cols-4 gap-2 mb-3">
         {[
           { label: 'Cal', value: food.cal, color: 'text-amber-400' },
@@ -199,15 +204,20 @@ function parseMessage(text, ctx) {
     return m ? parseFloat(m[0]) : null;
   };
 
-  // Delete / remove food
-  if (/\b(delete|remove|undo|cancel)\b/.test(lower) && /\b(food|meal|last|entry|ate|had|breakfast|lunch|dinner|snack)\b/.test(lower)) {
+  // Delete / remove food — "delete the banana", "remove my last food", "undo last entry"
+  if (/\b(delete|remove|undo)\b/.test(lower)) {
     const foods = daily.food || [];
     if (foods.length === 0) {
       return [{ type: 'error', text: 'No food logged yet today.' }];
     }
-    const last = foods[foods.length - 1];
-    removeFood(last.id);
-    return [{ type: 'success', text: `Removed: ${last.name} (${last.cal} cal) ✓` }];
+    // Try to find a specific food by name in the message
+    const noisy = lower.replace(/\b(delete|remove|undo|my|the|a|an|last|entry|food|meal|item)\b/g, ' ').trim();
+    const byName = noisy.length > 1
+      ? foods.slice().reverse().find(f => f.name.toLowerCase().includes(noisy) || noisy.includes(f.name.toLowerCase().split(' ')[0]))
+      : null;
+    const target = byName || foods[foods.length - 1];
+    removeFood(target.id);
+    return [{ type: 'success', text: `Removed: ${target.name} (${target.cal} cal) ✓` }];
   }
 
   // Weigh-in
@@ -241,10 +251,12 @@ function parseMessage(text, ctx) {
   }
 
   // Meditation
-  if (/\b(meditat|tm|transcendental|mindful)\b/.test(lower)) {
-    toggleMeditation();
-    const newState = !daily.meditation;
-    return [{ type: 'success', text: `Meditation ${newState ? 'checked ✓' : 'unchecked'}` }];
+  if (/\b(meditat|tm|transcendental|mindful|mindfulness)\b/.test(lower)) {
+    if (!daily.meditation) {
+      toggleMeditation();
+      return [{ type: 'success', text: 'Meditation checked ✓' }];
+    }
+    return [{ type: 'info', text: 'Meditation already logged for today ✓' }];
   }
 
   // Exercise
@@ -277,22 +289,29 @@ function parseMessage(text, ctx) {
     return [{ type: 'success', text: `Logged: ${exName} — ${useWeight}lbs × ${sets}×${reps} ✓` }];
   }
 
-  // Status query
-  if (/\b(how|what|total|calories|protein|left|remaining|progress|today)\b/.test(lower)) {
+  // Food logging — check BEFORE status queries so "had a protein shake" doesn't trigger status
+  const foodKeywords = /\b(ate|eat|had|eaten|lunch|dinner|breakfast|snack|drink|drank|consumed|having|eating)\b/;
+  if (foodKeywords.test(lower)) {
+    // Extract food name: remove the log keyword and common prefixes/suffixes
+    let foodName = lower
+      .replace(/\b(i|just|already|also|for|today|this morning|tonight|at)\b/g, ' ')
+      .replace(/\b(ate|eat|had|eaten|consumed|having|eating)\b/g, ' ')
+      .replace(/\b(for\s+)?(lunch|dinner|breakfast|snack)\b/g, ' ')
+      .replace(/\b(a|an|some|my|the|some)\b/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+    if (!foodName || foodName.length < 2) foodName = lower;
+    return [{ type: 'searching', text: `Searching for "${foodName}"...`, foodQuery: foodName }];
+  }
+
+  // Status query — requires "how" or "what" or explicit query words
+  if (/\b(how|what)\b/.test(lower) || /\b(show|tell me|summarize).*(stats|today|progress)\b/.test(lower)) {
     const calLeft = targets.calories - (daily.totalCal || 0);
     const proLeft = Math.max(0, targets.protein - (daily.totalProtein || 0));
     return [{
       type: 'info',
       text: `Today: ${daily.totalCal || 0} cal (${calLeft > 0 ? calLeft + ' left' : Math.abs(calLeft) + ' over'}) · ${daily.totalProtein || 0}g protein (${proLeft}g left) · ${daily.water || 0}/${targets.waterBottles} water`,
     }];
-  }
-
-  // Food logging
-  const foodKeywords = /\b(ate|eat|had|eaten|lunch|dinner|breakfast|snack|drink|drank)\b/;
-  if (foodKeywords.test(lower)) {
-    const afterKeyword = lower.replace(/^.*(ate|eat|had|eaten|lunch|dinner|breakfast|snack|drink|drank)\s*(a\s+|some\s+|my\s+)?/i, '').trim();
-    const foodName = afterKeyword || 'Food';
-    return [{ type: 'searching', text: `Searching for "${foodName}"...`, foodQuery: foodName }];
   }
 
   // Treat unknown input as food search
@@ -376,28 +395,56 @@ export function ChatInterface({
       // Try USDA first
       let food = null;
       try {
-        const res = await fetch(
-          `https://api.nal.usda.gov/fdc/v1/foods/search?query=${encodeURIComponent(foodQuery)}&api_key=DEMO_KEY&pageSize=3`
-        );
+        const url = `https://api.nal.usda.gov/fdc/v1/foods/search?query=${encodeURIComponent(foodQuery)}&api_key=DEMO_KEY&pageSize=5&dataType=Survey%20(FNDDS),Branded,Foundation,SR%20Legacy`;
+        const res = await fetch(url);
         if (res.ok) {
           const data = await res.json();
-          const item = data.foods?.[0];
+          // Pick best item: prefer branded (has serving size), then foundation
+          const items = data.foods || [];
+          const item = items.find(f => f.dataType === 'Branded') || items[0];
           if (item) {
             const nutrients = item.foodNutrients || [];
-            const get = (name) => {
-              const n = nutrients.find(n => (n.nutrientName || '').toLowerCase().includes(name.toLowerCase()));
+            // Energy: nutrientNumber 1008 = kcal, avoid 1062 (kJ) and 2047/2048
+            const getByNumber = (num) => {
+              const n = nutrients.find(n => n.nutrientNumber === String(num) || n.nutrientNumber === num);
               return n ? Math.round(n.value || 0) : 0;
             };
-            const cal = get('energy') || get('Energy');
+            const getByName = (namePart) => {
+              // Prefer exact kcal energy, avoid kJ
+              const n = nutrients.find(n => {
+                const nm = (n.nutrientName || '').toLowerCase();
+                return nm.includes(namePart.toLowerCase()) && !nm.includes('kj') && !nm.includes('kilojoule');
+              });
+              return n ? Math.round(n.value || 0) : 0;
+            };
+
+            // Energy in kcal: USDA nutrientNumber 1008
+            let cal = getByNumber(1008);
+            if (!cal) cal = getByName('energy');
+            // If still looks like kJ (>1000 for a normal food), divide by 4.184
+            if (cal > 900 && cal < 5000 && !item.servingSize) cal = Math.round(cal / 4.184);
+
+            const protein = getByNumber(203) || getByName('protein');
+            const fat = getByNumber(204) || getByName('total lipid');
+            const carbs = getByNumber(205) || getByName('carbohydrate');
+            const fiber = getByNumber(291) || getByName('fiber');
+
             if (cal > 0) {
+              let servingLabel = null;
+              if (item.servingSize && item.servingSizeUnit) {
+                servingLabel = `per ${item.servingSize}${item.servingSizeUnit}`;
+              } else if (item.dataType !== 'Branded') {
+                servingLabel = 'per 100g';
+              }
               food = {
                 name: item.description || foodQuery,
                 cal,
-                protein: get('protein') || get('Protein'),
-                fat: get('total lipid') || get('fat') || get('lipid'),
-                carbs: get('carbohydrate') || get('Carbohydrate'),
-                fiber: get('fiber') || get('Fiber'),
-                servingSize: item.servingSize ? `${item.servingSize}${item.servingSizeUnit || 'g'}` : null,
+                protein,
+                fat,
+                carbs,
+                fiber,
+                servingSize: servingLabel,
+                source: 'USDA',
               };
             }
           }
@@ -410,11 +457,14 @@ export function ChatInterface({
       if (!food) {
         try {
           const res = await fetch(
-            `https://world.openfoodfacts.org/cgi/search.pl?search_terms=${encodeURIComponent(foodQuery)}&search_simple=1&action=process&json=1&page_size=1`
+            `https://world.openfoodfacts.org/cgi/search.pl?search_terms=${encodeURIComponent(foodQuery)}&search_simple=1&action=process&json=1&page_size=3`
           );
           if (res.ok) {
             const data = await res.json();
-            const item = data.products?.[0];
+            // Find product with actual calorie data
+            const item = (data.products || []).find(p =>
+              p.nutriments && (p.nutriments['energy-kcal_100g'] || p.nutriments['energy-kcal']) && p.product_name
+            );
             if (item?.nutriments) {
               const n = item.nutriments;
               const cal = Math.round(n['energy-kcal_100g'] || n['energy-kcal'] || 0);
@@ -426,7 +476,8 @@ export function ChatInterface({
                   fat: Math.round(n.fat_100g || n.fat || 0),
                   carbs: Math.round(n.carbohydrates_100g || n.carbohydrates || 0),
                   fiber: Math.round(n.fiber_100g || n.fiber || 0),
-                  servingSize: item.serving_size || null,
+                  servingSize: item.serving_size || 'per 100g',
+                  source: 'Open Food Facts',
                 };
               }
             }

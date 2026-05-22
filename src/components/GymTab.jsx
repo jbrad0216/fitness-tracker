@@ -1,8 +1,9 @@
 import { useState, useEffect, useRef } from 'react';
-import { getTodaysWorkoutType, getDaySchedule } from '../data/constants';
-import { getExerciseInfo, MUSCLE_COLORS } from '../data/exercises';
+import { getTodaysWorkoutType, getDaySchedule, getToday } from '../data/constants';
+import { getExerciseInfo, MUSCLE_COLORS, ALTERNATIVE_EXERCISES } from '../data/exercises';
 
 const EQUIPMENT_KEY = 'ft_equipment-setup';
+const SWAPS_KEY = () => `ft_exercise-swaps-${getToday()}`;
 
 function RestTimer({ onDismiss }) {
   const [seconds, setSeconds] = useState(90);
@@ -75,14 +76,23 @@ function MuscleBadge({ muscleKey, group }) {
   );
 }
 
-function ExerciseCard({ ex, isLogged, prev, onLog }) {
+function ExerciseCard({ ex, isLogged, prev, onLog, onSwap }) {
   const [expanded, setExpanded] = useState(false);
+  const [showWhy, setShowWhy] = useState(false);
+  const [showSwap, setShowSwap] = useState(false);
   const [weight, setWeight] = useState(String(prev?.weight || ex.defaultWeight));
   const [sets, setSets] = useState(String(ex.sets || 3));
   const [reps, setReps] = useState(String(ex.reps || 12));
 
   const info = getExerciseInfo(ex.name);
   const isPR = prev && parseFloat(weight) > prev.weight;
+
+  const handleSwapSelect = (altName) => {
+    const altInfo = ALTERNATIVE_EXERCISES[altName];
+    onSwap(ex.name, { name: altName, sets: altInfo?.sets || ex.sets, reps: altInfo?.reps || ex.reps, defaultWeight: altInfo?.defaultWeight || ex.defaultWeight });
+    setShowSwap(false);
+    setExpanded(false);
+  };
 
   return (
     <div className={`bg-white/[0.05] border rounded-2xl mb-3 overflow-hidden transition-all
@@ -126,12 +136,84 @@ function ExerciseCard({ ex, isLogged, prev, onLog }) {
                   ))}
                 </div>
               )}
+
+              {/* Why this exercise */}
+              {info.why && (
+                <div className="mb-3">
+                  <button
+                    onClick={() => setShowWhy(w => !w)}
+                    className="flex items-center gap-1.5 text-[13px] text-amber-400 font-semibold
+                      bg-amber-500/10 border border-amber-500/20 rounded-xl px-3 py-2 w-full text-left cursor-pointer"
+                  >
+                    <span>💡</span>
+                    <span className="flex-1">Why this exercise?</span>
+                    <span className="text-white/30">{showWhy ? '▾' : '›'}</span>
+                  </button>
+                  {showWhy && (
+                    <div className="mt-2 px-3 py-3 bg-amber-500/[0.06] border border-amber-500/15 rounded-xl">
+                      <p className="text-[13px] text-white/70 leading-relaxed mb-2">{info.why}</p>
+                      {info.benefit && (
+                        <p className="text-[12px] text-amber-400/80"><span className="font-semibold">Benefit:</span> {info.benefit}</p>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Why 3×12 tooltip */}
+              <div className="mb-3 px-3 py-2.5 bg-blue-500/[0.07] border border-blue-500/15 rounded-xl">
+                <p className="text-[12px] text-blue-300/80">
+                  <span className="font-semibold">Why {ex.sets}×{ex.reps}?</span> This rep range builds muscular endurance and hypertrophy — ideal for the first 4-6 weeks to build form and volume before increasing weight.
+                </p>
+              </div>
+
               {info.youtubeUrl && (
                 <a href={info.youtubeUrl} target="_blank" rel="noopener noreferrer"
                   className="flex items-center gap-2 bg-red-500/15 border border-red-500/30
-                    rounded-xl px-3 py-2.5 text-red-400 text-sm font-semibold no-underline">
+                    rounded-xl px-3 py-2.5 text-red-400 text-sm font-semibold no-underline mb-3">
                   <span>▶</span> Watch on YouTube
                 </a>
+              )}
+
+              {/* Swap exercise */}
+              {info.alternatives && info.alternatives.length > 0 && (
+                <div>
+                  <button
+                    onClick={() => setShowSwap(s => !s)}
+                    className="flex items-center gap-1.5 text-[13px] text-white/50 font-semibold
+                      bg-white/[0.04] border border-white/[0.08] rounded-xl px-3 py-2 w-full text-left cursor-pointer"
+                  >
+                    <span>🔄</span>
+                    <span className="flex-1">Swap for different exercise</span>
+                    <span className="text-white/30">{showSwap ? '▾' : '›'}</span>
+                  </button>
+                  {showSwap && (
+                    <div className="mt-2 space-y-1.5">
+                      {info.alternatives.map(alt => (
+                        <button
+                          key={alt}
+                          onClick={() => handleSwapSelect(alt)}
+                          className="w-full text-left px-3 py-3 bg-white/[0.04] border border-white/[0.08]
+                            rounded-xl text-[14px] text-white/70 cursor-pointer active:bg-white/[0.08]"
+                        >
+                          {alt}
+                          {ALTERNATIVE_EXERCISES[alt] && (
+                            <span className="text-[12px] text-white/30 ml-2">
+                              {ALTERNATIVE_EXERCISES[alt].muscleGroup}
+                            </span>
+                          )}
+                        </button>
+                      ))}
+                      <button
+                        onClick={() => setShowSwap(false)}
+                        className="w-full text-center px-3 py-2 text-[13px] text-white/30
+                          bg-transparent border-none cursor-pointer"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  )}
+                </div>
               )}
             </div>
           )}
@@ -429,11 +511,196 @@ function WeekCalendar({ selectedIdx, onSelect, templates }) {
   );
 }
 
+// ─── Focus Area Workout Generator ───
+const FOCUS_AREAS = [
+  { id: 'chest', label: 'Chest', group: 'Upper' },
+  { id: 'back', label: 'Back', group: 'Upper' },
+  { id: 'shoulders', label: 'Shoulders', group: 'Upper' },
+  { id: 'arms', label: 'Arms', group: 'Upper' },
+  { id: 'quads', label: 'Quads', group: 'Lower' },
+  { id: 'hamstrings', label: 'Hamstrings', group: 'Lower' },
+  { id: 'glutes', label: 'Glutes', group: 'Lower' },
+  { id: 'core', label: 'Core', group: 'Core' },
+];
+
+const FOCUS_EXERCISE_MAP = {
+  chest: [
+    { name: 'DB Bench Press', sets: 3, reps: 12, defaultWeight: 30 },
+    { name: 'Push-up', sets: 3, reps: 15, defaultWeight: 0 },
+    { name: 'DB Incline Press', sets: 3, reps: 12, defaultWeight: 25 },
+  ],
+  back: [
+    { name: 'Lat Pulldown', sets: 3, reps: 12, defaultWeight: 85 },
+    { name: 'DB Row (each arm)', sets: 3, reps: 12, defaultWeight: 25 },
+    { name: 'Seated Cable Row', sets: 3, reps: 12, defaultWeight: 70 },
+  ],
+  shoulders: [
+    { name: 'Overhead Press', sets: 3, reps: 12, defaultWeight: 27.5 },
+    { name: 'Lateral Raise', sets: 3, reps: 15, defaultWeight: 12 },
+    { name: 'Arnold Press', sets: 3, reps: 12, defaultWeight: 20 },
+  ],
+  arms: [
+    { name: 'DB Curl', sets: 3, reps: 12, defaultWeight: 20 },
+    { name: 'Tricep Dip', sets: 3, reps: 12, defaultWeight: 0 },
+    { name: 'Hammer Curl', sets: 3, reps: 12, defaultWeight: 20 },
+  ],
+  quads: [
+    { name: 'Goblet Squat', sets: 3, reps: 12, defaultWeight: 30 },
+    { name: 'Leg Press', sets: 3, reps: 12, defaultWeight: 90 },
+    { name: 'Bulgarian Split Squat', sets: 3, reps: 10, defaultWeight: 20 },
+  ],
+  hamstrings: [
+    { name: 'DB Romanian Deadlift', sets: 3, reps: 12, defaultWeight: 25 },
+    { name: 'Leg Curl', sets: 3, reps: 12, defaultWeight: 60 },
+    { name: 'Good Morning', sets: 3, reps: 12, defaultWeight: 25 },
+  ],
+  glutes: [
+    { name: 'DB Reverse Lunge (each)', sets: 3, reps: 10, defaultWeight: 20 },
+    { name: 'Step-up', sets: 3, reps: 12, defaultWeight: 20 },
+    { name: 'Hip Thrust', sets: 3, reps: 12, defaultWeight: 25 },
+  ],
+  core: [
+    { name: 'Plank', sets: 3, reps: 45, defaultWeight: 0 },
+    { name: 'Dead Bug', sets: 3, reps: 10, defaultWeight: 0 },
+    { name: 'Cable Crunch', sets: 3, reps: 15, defaultWeight: 40 },
+  ],
+};
+
+function CustomWorkoutModal({ onApply, onClose }) {
+  const [selected, setSelected] = useState([]);
+  const [generated, setGenerated] = useState(null);
+
+  const toggle = (id) => {
+    setSelected(prev =>
+      prev.includes(id) ? prev.filter(x => x !== id) : prev.length < 3 ? [...prev, id] : prev
+    );
+  };
+
+  const generate = () => {
+    const exercises = [];
+    const usedNames = new Set();
+    selected.forEach(area => {
+      const pool = FOCUS_EXERCISE_MAP[area] || [];
+      pool.slice(0, 2).forEach(ex => {
+        if (!usedNames.has(ex.name)) {
+          exercises.push(ex);
+          usedNames.add(ex.name);
+        }
+      });
+    });
+    setGenerated(exercises.slice(0, 5));
+  };
+
+  const groups = ['Upper', 'Lower', 'Core'];
+
+  return (
+    <div className="fixed inset-0 z-50 bg-[#0f1117]/95 flex flex-col overflow-y-auto"
+      style={{ paddingTop: 'max(env(safe-area-inset-top), 16px)', paddingBottom: 'max(env(safe-area-inset-bottom), 16px)' }}>
+      <div className="flex items-center justify-between px-4 mb-4">
+        <h2 className="text-[20px] font-bold">Customize Workout</h2>
+        <button onClick={onClose}
+          className="w-10 h-10 rounded-xl bg-white/[0.08] text-white/60 border-none cursor-pointer text-lg flex items-center justify-center">
+          ✕
+        </button>
+      </div>
+
+      {!generated ? (
+        <div className="px-4">
+          <p className="text-[14px] text-white/50 mb-4">Select 2-3 focus areas for today's workout:</p>
+          {groups.map(grp => (
+            <div key={grp} className="mb-4">
+              <div className="text-[12px] text-white/40 uppercase tracking-wider mb-2">{grp}</div>
+              <div className="flex flex-wrap gap-2">
+                {FOCUS_AREAS.filter(a => a.group === grp).map(area => (
+                  <button
+                    key={area.id}
+                    onClick={() => toggle(area.id)}
+                    className={`px-4 py-3 rounded-2xl text-[15px] font-semibold border cursor-pointer active:scale-95 transition-all
+                      ${selected.includes(area.id)
+                        ? 'bg-blue-500 border-blue-400 text-white'
+                        : 'bg-white/[0.06] border-white/[0.1] text-white/60'}`}
+                  >
+                    {area.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          ))}
+          <button
+            onClick={generate}
+            disabled={selected.length < 2}
+            className="w-full bg-blue-500 text-white rounded-2xl py-4 text-[17px] font-bold
+              border-none cursor-pointer active:opacity-80 mt-2 disabled:opacity-40"
+          >
+            Generate Workout ({selected.length}/3 areas)
+          </button>
+        </div>
+      ) : (
+        <div className="px-4">
+          <p className="text-[14px] text-white/50 mb-3">Custom workout for today:</p>
+          {generated.map((ex, i) => (
+            <div key={i} className="bg-white/[0.05] border border-white/[0.08] rounded-2xl px-4 py-3 mb-2">
+              <div className="text-[16px] font-bold">{ex.name}</div>
+              <div className="text-[13px] text-white/50">{ex.sets}×{ex.reps} @ {ex.defaultWeight} lbs</div>
+            </div>
+          ))}
+          <button
+            onClick={() => {
+              const today = getToday();
+              localStorage.setItem(`ft_custom-workout-${today}`, JSON.stringify(generated));
+              onApply(generated);
+            }}
+            className="w-full bg-green-500 text-white rounded-2xl py-4 text-[17px] font-bold
+              border-none cursor-pointer active:opacity-80 mt-2"
+          >
+            Apply This Workout Today
+          </button>
+          <button
+            onClick={() => setGenerated(null)}
+            className="w-full bg-white/[0.08] text-white/50 rounded-2xl py-3 text-[15px]
+              border-none cursor-pointer mt-2"
+          >
+            Try Different Areas
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function getWeekKey() {
+  const today = new Date();
+  const startOfYear = new Date(today.getFullYear(), 0, 1);
+  const weekNum = Math.floor((today - startOfYear) / 604800000);
+  return `ft_schedule-overrides-${today.getFullYear()}-${weekNum}`;
+}
+
+function loadOverrides() {
+  try { return JSON.parse(localStorage.getItem(getWeekKey()) || '{}'); } catch { return {}; }
+}
+
+function saveOverrides(overrides) {
+  localStorage.setItem(getWeekKey(), JSON.stringify(overrides));
+}
+
 export function GymTab({ daily, addRun, addExercise, removeExercise, getLastLift, logLift, templates, notify }) {
   const [showTimer, setShowTimer] = useState(false);
   const [runInput, setRunInput] = useState('');
   const [showRunInput, setShowRunInput] = useState(false);
   const [selectedDayIdx, setSelectedDayIdx] = useState(null);
+  const [showCustomize, setShowCustomize] = useState(false);
+  const [showSkipMenu, setShowSkipMenu] = useState(false);
+  const [overrides, setOverrides] = useState(loadOverrides);
+  const [customWorkout, setCustomWorkout] = useState(() => {
+    try {
+      const today = getToday();
+      const raw = localStorage.getItem(`ft_custom-workout-${today}`);
+      return raw ? JSON.parse(raw) : null;
+    } catch { return null; }
+  });
+  const [swaps, setSwaps] = useState(() => {
+    try { return JSON.parse(localStorage.getItem(SWAPS_KEY()) || '{}'); } catch { return {}; }
+  });
 
   const equipmentSetup = (() => {
     try { return JSON.parse(localStorage.getItem(EQUIPMENT_KEY) || ''); } catch { return null; }
@@ -451,6 +718,49 @@ export function GymTab({ daily, addRun, addExercise, removeExercise, getLastLift
       }} />
     );
   }
+
+  const todayKey = getToday();
+  const todayOverride = overrides[todayKey];
+
+  const handleSkipToday = (action) => {
+    const next = { ...overrides };
+    if (action === 'skip') {
+      next[todayKey] = 'skipped';
+    } else {
+      // Reschedule: move to next available day (just mark today as rescheduled)
+      next[todayKey] = 'rescheduled';
+      // Find next non-rest day
+      const today = new Date();
+      let checkDay = new Date(today);
+      checkDay.setDate(today.getDate() + 1);
+      let found = false;
+      for (let i = 0; i < 6 && !found; i++) {
+        const d = checkDay.getDay();
+        const dStr = `${checkDay.getFullYear()}-${String(checkDay.getMonth() + 1).padStart(2, '0')}-${String(checkDay.getDate()).padStart(2, '0')}`;
+        if (d !== 0) { // not Sunday
+          next[dStr] = `moved-${workoutType || 'A'}`;
+          found = true;
+        }
+        checkDay.setDate(checkDay.getDate() + 1);
+      }
+    }
+    setOverrides(next);
+    saveOverrides(next);
+    setShowSkipMenu(false);
+    notify(action === 'skip' ? 'Workout skipped' : 'Workout rescheduled to tomorrow');
+  };
+
+  const handleSwap = (originalName, newEx) => {
+    const next = { ...swaps, [originalName]: newEx };
+    setSwaps(next);
+    localStorage.setItem(SWAPS_KEY(), JSON.stringify(next));
+    notify(`Swapped to ${newEx.name}`);
+  };
+
+  const getEffectiveExercise = (ex) => {
+    if (swaps[ex.name]) return { ...ex, ...swaps[ex.name] };
+    return ex;
+  };
 
   const handleLog = (name, weight, sets, reps) => {
     addExercise({ name, weight, sets, reps });
@@ -477,15 +787,53 @@ export function GymTab({ daily, addRun, addExercise, removeExercise, getLastLift
   };
   const { text: schedLabel, color: schedColor } = scheduleLabels[schedule] || scheduleLabels.rest;
 
-  const allDone = schedule === 'strength' && exercises.length > 0 &&
-    exercises.every(ex => daily.exercises.some(e => e.name === ex.name));
+  const activeExercises = customWorkout || exercises;
+  const allDone = (schedule === 'strength' || !!customWorkout) && activeExercises.length > 0 &&
+    activeExercises.every(ex => daily.exercises.some(e => e.name === ex.name));
 
   return (
     <div className="px-4 pb-6" style={{ paddingTop: 'max(env(safe-area-inset-top), 16px)' }}>
+      {showCustomize && (
+        <CustomWorkoutModal
+          onApply={(workout) => { setCustomWorkout(workout); setShowCustomize(false); }}
+          onClose={() => setShowCustomize(false)}
+        />
+      )}
+
       {/* Header */}
-      <div className={`text-[17px] font-bold mb-1 ${schedColor}`}>{schedLabel}</div>
-      <div className="text-[13px] text-white/40 mb-4">
+      <div className="flex items-center justify-between mb-1">
+        <div className={`text-[17px] font-bold ${schedColor}`}>
+          {customWorkout ? '🎯 Custom Workout' : schedLabel}
+        </div>
+        <div className="flex gap-2">
+          {(schedule === 'strength' || customWorkout) && !todayOverride && !allDone && (
+            <button
+              onClick={() => setShowSkipMenu(s => !s)}
+              className="text-[13px] text-white/40 font-semibold bg-white/[0.05] border border-white/[0.08]
+                rounded-xl px-3 py-1.5 cursor-pointer active:opacity-70"
+            >
+              Skip
+            </button>
+          )}
+          <button
+            onClick={() => setShowCustomize(true)}
+            className="text-[13px] text-blue-400 font-semibold bg-blue-500/10 border border-blue-500/20
+              rounded-xl px-3 py-1.5 cursor-pointer active:opacity-70"
+          >
+            Customize
+          </button>
+        </div>
+      </div>
+      <div className="text-[13px] text-white/40 mb-4 flex items-center gap-2">
         {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}
+        {customWorkout && (
+          <button
+            onClick={() => { localStorage.removeItem(`ft_custom-workout-${getToday()}`); setCustomWorkout(null); }}
+            className="text-[12px] text-white/30 bg-transparent border-none cursor-pointer"
+          >
+            (reset to schedule)
+          </button>
+        )}
       </div>
 
       {/* Weekly calendar — Task 3 */}
@@ -529,24 +877,74 @@ export function GymTab({ daily, addRun, addExercise, removeExercise, getLastLift
         )}
       </div>
 
-      {/* Strength workout */}
-      {schedule === 'strength' && workoutType && (
+      {/* Skip today menu */}
+      {showSkipMenu && (
+        <div className="bg-white/[0.06] border border-white/[0.1] rounded-2xl px-4 py-4 mb-4">
+          <div className="text-[15px] font-semibold mb-3">Skip today's workout?</div>
+          <div className="space-y-2">
+            <button
+              onClick={() => handleSkipToday('reschedule')}
+              className="w-full bg-blue-500/15 border border-blue-500/30 text-blue-300 rounded-xl
+                py-3.5 text-[15px] font-semibold cursor-pointer active:opacity-70 text-left px-4"
+            >
+              📅 Reschedule to tomorrow
+            </button>
+            <button
+              onClick={() => handleSkipToday('skip')}
+              className="w-full bg-white/[0.06] border border-white/[0.08] text-white/50 rounded-xl
+                py-3.5 text-[15px] font-semibold cursor-pointer active:opacity-70 text-left px-4"
+            >
+              ⏭ Skip entirely — continue schedule
+            </button>
+            <button
+              onClick={() => setShowSkipMenu(false)}
+              className="w-full bg-transparent border-none text-white/30 py-2 cursor-pointer text-sm"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Skipped/rescheduled indicator */}
+      {todayOverride === 'skipped' && (
+        <div className="bg-white/[0.05] border border-white/[0.08] rounded-2xl px-4 py-3 mb-4 flex items-center gap-3">
+          <span className="text-2xl">—</span>
+          <div className="flex-1">
+            <div className="text-[15px] font-semibold text-white/50">Workout skipped today</div>
+            <div className="text-[12px] text-white/30">Schedule continues normally tomorrow.</div>
+          </div>
+          <button onClick={() => { const n = {...overrides}; delete n[todayKey]; setOverrides(n); saveOverrides(n); }}
+            className="text-[12px] text-blue-400 bg-transparent border-none cursor-pointer">Undo</button>
+        </div>
+      )}
+      {todayOverride === 'rescheduled' && (
+        <div className="bg-blue-500/[0.08] border border-blue-500/20 rounded-2xl px-4 py-3 mb-4">
+          <div className="text-[15px] font-semibold text-blue-300">Workout rescheduled to tomorrow</div>
+          <div className="text-[12px] text-white/40 mt-0.5">Rest today. Tomorrow's workout is moved up.</div>
+        </div>
+      )}
+
+      {/* Strength workout — regular or custom */}
+      {(schedule === 'strength' || customWorkout) && activeExercises.length > 0 && !todayOverride && (
         <div>
           {allDone && (
             <div className="text-center py-4 text-green-400 text-lg font-bold mb-4">
               🎉 Workout Complete!
             </div>
           )}
-          {exercises.map((ex, i) => {
-            const prev = getLastLift(ex.name);
-            const isLogged = daily.exercises.some(e => e.name === ex.name);
+          {activeExercises.map((ex, i) => {
+            const effective = getEffectiveExercise(ex);
+            const prev = getLastLift(effective.name);
+            const isLogged = daily.exercises.some(e => e.name === effective.name);
             return (
               <ExerciseCard
                 key={i}
-                ex={ex}
+                ex={effective}
                 isLogged={isLogged}
                 prev={prev}
                 onLog={handleLog}
+                onSwap={handleSwap}
               />
             );
           })}
