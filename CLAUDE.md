@@ -48,7 +48,6 @@ src/
     useAppData.js       # Weigh-ins, lift log, custom foods hooks with validation
     useSettings.js      # App settings (profile, targets, theme)
     useWorkoutTemplates.js  # A/B workout template management
-    useFoodSearch.js    # USDA FoodData Central + OpenFoodFacts API search hook
 public/
   icon-192.png          # PWA icon
   icon-512.png          # PWA icon

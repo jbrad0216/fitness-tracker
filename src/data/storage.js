@@ -76,6 +76,7 @@ export function clearAllData() {
 let backupThrottleTimer = null;
 function saveBackup() {
   if (backupThrottleTimer) return;
+  if (localStorage.getItem('ft_auto-backup') === 'off') return;
   backupThrottleTimer = setTimeout(() => {
     backupThrottleTimer = null;
     try {

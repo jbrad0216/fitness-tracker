@@ -158,7 +158,7 @@ function SwipeFoodItem({ item, onDelete }) {
 }
 
 export function DashboardTab({
-  daily, totalCal, totalProtein, setWater, toggleMeditation, addRun, removeFood,
+  daily, totalCal, totalProtein, setWater, toggleMeditation, addRun, addFood, removeFood,
   weighIns, addWeighIn, latest, startWeight, goalWeight, targets, name, notify, settings,
   onNavigate, onOpenLog,
 }) {
@@ -274,9 +274,9 @@ export function DashboardTab({
         ].map(stat => (
           <div key={stat.label}
             className="bg-white/[0.05] border border-white/[0.08] rounded-2xl px-3 py-3">
-            <div className="text-[11px] text-white/40 mb-1">{stat.label}</div>
+            <div className="text-[12px] text-white/40 mb-1">{stat.label}</div>
             <div className="text-[18px] font-bold leading-none mb-1">{stat.value}</div>
-            <div className="text-[11px] text-white/30 mb-2">of {stat.total}</div>
+            <div className="text-[12px] text-white/30 mb-2">of {stat.total}</div>
             <div className="h-1.5 bg-white/[0.08] rounded-full overflow-hidden">
               <div
                 className="h-full rounded-full transition-all"
@@ -289,7 +289,7 @@ export function DashboardTab({
 
       {/* Water tap row */}
       <div className="bg-white/[0.05] border border-white/[0.08] rounded-2xl px-4 py-3 mb-4">
-        <div className="text-[12px] text-white/40 mb-2">
+        <div className="text-[13px] text-white/40 mb-2">
           Water · {daily.water * 32}oz / {targets.waterBottles * 32}oz
         </div>
         <WaterBottles count={daily.water} total={targets.waterBottles} onTap={setWater} />
@@ -391,7 +391,7 @@ export function DashboardTab({
           shadow-xl max-w-xs w-[90vw]">
           <span className="text-sm text-white/70 flex-1">Removed {undoItem.name}</span>
           <button
-            onClick={() => { clearTimeout(undoTimer.current); setUndoItem(null); /* undo not implemented in addFood */ }}
+            onClick={() => { clearTimeout(undoTimer.current); if (undoItem) addFood(undoItem); setUndoItem(null); }}
             className="text-blue-400 text-sm font-bold bg-transparent border-none cursor-pointer"
           >
             Undo

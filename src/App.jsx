@@ -182,6 +182,7 @@ export default function App() {
                 setWater={daily.setWater}
                 toggleMeditation={daily.toggleMeditation}
                 addRun={daily.addRun}
+                addFood={daily.addFood}
                 removeFood={daily.removeFood}
                 weighIns={weighIns}
                 addWeighIn={addWeighIn}

@@ -140,10 +140,10 @@ function ExerciseCard({ ex, isLogged, prev, onLog, showTimer }) {
           )}
 
           {/* Log set form */}
-          <div className="text-[12px] text-white/40 mb-2 uppercase tracking-wider">Log Set</div>
+          <div className="text-[13px] text-white/40 mb-2 uppercase tracking-wider">Log Set</div>
           <div className="flex gap-2 mb-3">
             <div className="flex-1">
-              <div className="text-[11px] text-white/40 mb-1">Weight (lbs)</div>
+              <div className="text-[12px] text-white/40 mb-1">Weight (lbs)</div>
               <input
                 type="number"
                 value={weight}
@@ -154,8 +154,8 @@ function ExerciseCard({ ex, isLogged, prev, onLog, showTimer }) {
               />
             </div>
             <div className="w-20">
-              <div className="text-[11px] text-white/40 mb-1">Sets</div>
-              <input
+              <div className="text-[12px] text-white/40 mb-1">Sets</div>
+<input
                 type="number"
                 value={sets}
                 onChange={e => setSets(e.target.value)}
@@ -164,7 +164,7 @@ function ExerciseCard({ ex, isLogged, prev, onLog, showTimer }) {
               />
             </div>
             <div className="w-20">
-              <div className="text-[11px] text-white/40 mb-1">Reps</div>
+              <div className="text-[12px] text-white/40 mb-1">Reps</div>
               <input
                 type="number"
                 value={reps}

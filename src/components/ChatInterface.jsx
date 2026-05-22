@@ -79,7 +79,7 @@ function FoodConfirmCard({ msg, onConfirm, onReject }) {
     <div className="bg-white/[0.06] border border-white/[0.12] rounded-2xl p-4 w-full">
       <div className="text-[17px] font-bold mb-1 leading-snug">{food.name}</div>
       {food.servingSize && (
-        <div className="text-[12px] text-white/40 mb-3">{food.servingSize}</div>
+        <div className="text-[13px] text-white/40 mb-3">{food.servingSize}</div>
       )}
       <div className="grid grid-cols-4 gap-2 mb-4">
         {[
@@ -90,7 +90,7 @@ function FoodConfirmCard({ msg, onConfirm, onReject }) {
         ].map(({ label, value, color }) => (
           <div key={label} className="text-center bg-white/[0.04] rounded-xl py-2 px-1">
             <div className={`text-[15px] font-bold ${color}`}>{value}</div>
-            <div className="text-[10px] text-white/40 mt-0.5">{label}</div>
+            <div className="text-[11px] text-white/40 mt-0.5">{label}</div>
           </div>
         ))}
       </div>
