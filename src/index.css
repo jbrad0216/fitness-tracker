@@ -92,7 +92,7 @@ input[type="number"] {
 }
 
 .animate-tab-in {
-  animation: tabIn 0.18s ease-out;
+  animation: tabIn 0.15s ease-out;
 }
 
 .animate-pulse {

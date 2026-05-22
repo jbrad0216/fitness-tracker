@@ -1,7 +1,6 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
-import { getDaySchedule, getTodaysWorkoutType } from './data/constants';
 import { useDaily } from './hooks/useDaily';
-import { useWeighIns, useLiftLog, useCustomFoods } from './hooks/useAppData';
+import { useWeighIns, useLiftLog } from './hooks/useAppData';
 import { useSettings } from './hooks/useSettings';
 import { useWorkoutTemplates } from './hooks/useWorkoutTemplates';
 import { Toast, ErrorBoundary, LandscapeHint, OfflineIndicator } from './components/UI';
@@ -78,7 +77,6 @@ export default function App() {
   const daily = useDaily();
   const { weighIns, addWeighIn, latest } = useWeighIns();
   const { log: liftLog, logLift, getLastLift } = useLiftLog();
-  const { foods: customFoods, addCustomFood } = useCustomFoods();
 
   const notify = useCallback((msg) => setNotification(msg), []);
   const clearNotify = useCallback(() => setNotification(null), []);
