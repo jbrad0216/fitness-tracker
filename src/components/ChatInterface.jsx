@@ -595,6 +595,7 @@ export function ChatInterface({
     { label: '🏃 Run', prefill: 'I ran ' },
     { label: '💧 Water', prefill: 'drank water' },
     { label: '⚖️ Weight', prefill: 'weight is ' },
+    { label: '🧘 TM', prefill: 'did my meditation' },
     { label: '📸 Scan', action: 'scan' },
   ];
 

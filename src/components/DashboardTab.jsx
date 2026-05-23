@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { isWednesday, getToday, getTodaysWorkoutType, getDaySchedule, WORKOUT_A, WORKOUT_B } from '../data/constants';
 import { load, save } from '../data/storage';
 import { MUSCLE_COLORS } from '../data/exercises';
