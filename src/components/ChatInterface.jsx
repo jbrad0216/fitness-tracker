@@ -397,99 +397,83 @@ export function ChatInterface({
 
     setIsSearching(true);
     try {
-      // Try USDA first
       let food = null;
+
+      // Try Open Food Facts first — no key required, good global coverage
       try {
-        const url = `https://api.nal.usda.gov/fdc/v1/foods/search?query=${encodeURIComponent(foodQuery)}&api_key=DEMO_KEY&pageSize=5&dataType=Survey%20(FNDDS),Branded,Foundation,SR%20Legacy`;
-        const res = await fetch(url);
+        const res = await fetch(
+          `https://world.openfoodfacts.org/cgi/search.pl?search_terms=${encodeURIComponent(foodQuery)}&search_simple=1&action=process&json=1&page_size=5`,
+          { signal: AbortSignal.timeout(8000) }
+        );
         if (res.ok) {
           const data = await res.json();
-          // Pick best item: prefer branded (has serving size), then foundation
-          const items = data.foods || [];
-          const item = items.find(f => f.dataType === 'Branded') || items[0];
-          if (item) {
-            const nutrients = item.foodNutrients || [];
-            // Energy: nutrientNumber 1008 = kcal, avoid 1062 (kJ) and 2047/2048
-            const getByNumber = (num) => {
-              const n = nutrients.find(n => n.nutrientNumber === String(num) || n.nutrientNumber === num);
-              return n ? Math.round(n.value || 0) : 0;
-            };
-            const getByName = (namePart) => {
-              // Prefer exact kcal energy, avoid kJ
-              const n = nutrients.find(n => {
-                const nm = (n.nutrientName || '').toLowerCase();
-                return nm.includes(namePart.toLowerCase()) && !nm.includes('kj') && !nm.includes('kilojoule');
-              });
-              return n ? Math.round(n.value || 0) : 0;
-            };
-
-            // Energy in kcal: USDA nutrientNumber 1008
-            let cal = getByNumber(1008);
-            if (!cal) cal = getByName('energy');
-            // If still looks like kJ (>1000 for a normal food), divide by 4.184
-            if (cal > 900 && cal < 5000 && !item.servingSize) cal = Math.round(cal / 4.184);
-
-            const protein = getByNumber(203) || getByName('protein');
-            const fat = getByNumber(204) || getByName('total lipid');
-            const carbs = getByNumber(205) || getByName('carbohydrate');
-            const fiber = getByNumber(291) || getByName('fiber');
-
-            if (cal > 0) {
-              let servingLabel = null;
-              if (item.servingSize && item.servingSizeUnit) {
-                servingLabel = `per ${item.servingSize}${item.servingSizeUnit}`;
-              } else if (item.dataType !== 'Branded') {
-                servingLabel = 'per 100g';
-              }
+          const item = (data.products || []).find(p =>
+            p.nutriments && (p.nutriments['energy-kcal_100g'] || p.nutriments['energy-kcal']) && p.product_name
+          );
+          if (item?.nutriments) {
+            const n = item.nutriments;
+            const calPer100 = n['energy-kcal_100g'] || n['energy-kcal'] || 0;
+            if (calPer100 > 0) {
+              // Use serving_quantity when available for per-serving values; otherwise per 100g
+              const servingQty = parseFloat(item.serving_quantity);
+              const mult = servingQty > 0 && servingQty <= 2000 ? servingQty / 100 : 1;
+              const servingLabel = servingQty > 0 && servingQty <= 2000
+                ? (item.serving_size || `${Math.round(servingQty)}g`)
+                : 'per 100g';
               food = {
-                name: item.description || foodQuery,
-                cal,
-                protein,
-                fat,
-                carbs,
-                fiber,
+                name: item.product_name || foodQuery,
+                brand: item.brands || '',
+                cal: Math.round(calPer100 * mult),
+                protein: Math.round((n.proteins_100g || n.proteins || 0) * mult),
+                fat: Math.round((n.fat_100g || n.fat || 0) * mult),
+                carbs: Math.round((n.carbohydrates_100g || n.carbohydrates || 0) * mult),
+                fiber: Math.round((n.fiber_100g || n.fiber || 0) * mult),
                 servingSize: servingLabel,
-                source: 'USDA',
+                source: 'Open Food Facts',
               };
             }
           }
         }
-      } catch {
-        // USDA failed, try Open Food Facts
-      }
+      } catch { /* fall through to USDA */ }
 
-      // Try Open Food Facts if USDA didn't return usable results
+      // Fall back to USDA FDC
       if (!food) {
         try {
-          const res = await fetch(
-            `https://world.openfoodfacts.org/cgi/search.pl?search_terms=${encodeURIComponent(foodQuery)}&search_simple=1&action=process&json=1&page_size=3`
-          );
+          const url = `https://api.nal.usda.gov/fdc/v1/foods/search?query=${encodeURIComponent(foodQuery)}&api_key=DEMO_KEY&pageSize=5&dataType=Survey%20(FNDDS),Branded,Foundation`;
+          const res = await fetch(url, { signal: AbortSignal.timeout(8000) });
           if (res.ok) {
             const data = await res.json();
-            // Find product with actual calorie data
-            const item = (data.products || []).find(p =>
-              p.nutriments && (p.nutriments['energy-kcal_100g'] || p.nutriments['energy-kcal']) && p.product_name
-            );
-            if (item?.nutriments) {
-              const n = item.nutriments;
-              const cal = Math.round(n['energy-kcal_100g'] || n['energy-kcal'] || 0);
-              if (cal > 0) {
+            const items = data.foods || [];
+            const item = items.find(f => f.dataType === 'Branded') || items[0];
+            if (item) {
+              const nutrients = item.foodNutrients || [];
+              const getN = (num) => {
+                const n = nutrients.find(n => n.nutrientNumber === String(num) || n.nutrientNumber === num);
+                return n ? (n.value || 0) : 0;
+              };
+              // All USDA types return per-100g; apply serving size if available
+              const calPer100 = getN(1008);
+              if (calPer100 > 0) {
+                const servingGrams = item.servingSize && item.servingSizeUnit?.toLowerCase() === 'g'
+                  ? item.servingSize : null;
+                const mult = servingGrams ? servingGrams / 100 : 1;
+                const servingLabel = servingGrams
+                  ? (item.householdServingFullText || `${Math.round(servingGrams)}g`)
+                  : 'per 100g';
                 food = {
-                  name: item.product_name || foodQuery,
-                  cal,
-                  protein: Math.round(n.proteins_100g || n.proteins || 0),
-                  fat: Math.round(n.fat_100g || n.fat || 0),
-                  carbs: Math.round(n.carbohydrates_100g || n.carbohydrates || 0),
-                  fiber: Math.round(n.fiber_100g || n.fiber || 0),
-                  servingSize: item.serving_size || 'per 100g',
-                  source: 'Open Food Facts',
+                  name: item.description || foodQuery,
+                  cal: Math.round(calPer100 * mult),
+                  protein: Math.round(getN(203) * mult),
+                  fat: Math.round(getN(204) * mult),
+                  carbs: Math.round(getN(205) * mult),
+                  fiber: Math.round(getN(291) * mult),
+                  servingSize: servingLabel,
+                  source: 'USDA',
                 };
               }
             }
           }
-        } catch {
-          // Both APIs failed
-        }
+        } catch { /* both APIs failed */ }
       }
 
       if (food) {
@@ -505,10 +489,10 @@ export function ChatInterface({
           }];
         });
       } else {
-        addMsg('assistant', `Couldn't find "${foodQuery}". Try a simpler name, or type the calories manually (e.g. "apple 95 cal 0g protein").`, 'error');
+        addMsg('assistant', `Couldn't find "${foodQuery}". Try a simpler name, or type calories manually (e.g. "apple 95 cal 0g protein").`, 'error');
       }
     } catch {
-      addMsg('assistant', `Search unavailable. Log food manually.`, 'error');
+      addMsg('assistant', 'Search unavailable. Log food manually.', 'error');
     } finally {
       setIsSearching(false);
     }

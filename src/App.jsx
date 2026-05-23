@@ -192,6 +192,8 @@ export default function App() {
                 notify={notify}
                 onNavigate={changeTab}
                 onOpenLog={openLog}
+                settings={settings}
+                updateSettings={updateSettings}
               />
             </ErrorBoundary>
           )}

@@ -4,6 +4,7 @@ import { JourneyTab } from './JourneyTab';
 import { SettingsTab } from './SettingsTab';
 import { WorkoutPlanTab } from './WorkoutPlanTab';
 import { ScienceTab } from './ScienceTab';
+import { MotivationTab } from './MotivationTab';
 import { ErrorBoundary } from './UI';
 
 function BackButton({ onBack, label }) {
@@ -110,6 +111,17 @@ export function MoreTab({
     );
   }
 
+  if (subPage === 'motivation') {
+    return (
+      <div>
+        <BackButton onBack={() => setSubPage(null)} label="More" />
+        <ErrorBoundary>
+          <MotivationTab weighIns={weighIns} liftLog={liftLog} />
+        </ErrorBoundary>
+      </div>
+    );
+  }
+
   const items = [
     {
       id: 'stats',
@@ -134,6 +146,12 @@ export function MoreTab({
       icon: '🔬',
       label: 'About My Plan',
       desc: 'Why these calories, protein, reps, and more',
+    },
+    {
+      id: 'motivation',
+      icon: '🔥',
+      label: 'Progress & Motivation',
+      desc: 'Streaks, consistency, projections, weekly trends',
     },
     {
       id: 'settings',
