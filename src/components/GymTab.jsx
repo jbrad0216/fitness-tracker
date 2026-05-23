@@ -76,7 +76,14 @@ function MuscleBadge({ muscleKey, group }) {
   );
 }
 
-function ExerciseCard({ ex, isLogged, prev, onLog, onSwap }) {
+const GOAL_CONTEXT = {
+  'fat-loss': 'Compound movements burn more calories and preserve muscle during a deficit.',
+  'muscle': 'Progressive overload on compound lifts drives muscle growth.',
+  'heart-health': 'Moderate resistance training improves cardiovascular function without excessive strain.',
+  'lifestyle': 'Functional movements that build practical, everyday strength.',
+};
+
+function ExerciseCard({ ex, isLogged, prev, onLog, onSwap, goal }) {
   const [expanded, setExpanded] = useState(false);
   const [showWhy, setShowWhy] = useState(false);
   const [showSwap, setShowSwap] = useState(false);
@@ -89,7 +96,9 @@ function ExerciseCard({ ex, isLogged, prev, onLog, onSwap }) {
 
   const handleSwapSelect = (altName) => {
     const altInfo = ALTERNATIVE_EXERCISES[altName];
-    onSwap(ex.name, { name: altName, sets: altInfo?.sets || ex.sets, reps: altInfo?.reps || ex.reps, defaultWeight: altInfo?.defaultWeight || ex.defaultWeight });
+    const altMuscle = altInfo?.muscleGroup || '';
+    const origMuscle = info?.muscleGroup || '';
+    onSwap(ex.name, { name: altName, sets: altInfo?.sets || ex.sets, reps: altInfo?.reps || ex.reps, defaultWeight: altInfo?.defaultWeight || ex.defaultWeight, swapNote: `Swapped ${ex.name} → ${altName}. ${origMuscle && altMuscle ? `Both target ${altMuscle === altMuscle ? altMuscle : `${origMuscle}/${altMuscle}`}.` : ''}` });
     setShowSwap(false);
     setExpanded(false);
   };
@@ -153,7 +162,12 @@ function ExerciseCard({ ex, isLogged, prev, onLog, onSwap }) {
                     <div className="mt-2 px-3 py-3 bg-amber-500/[0.06] border border-amber-500/15 rounded-xl">
                       <p className="text-[15px] text-white/70 leading-relaxed mb-2">{info.why}</p>
                       {info.benefit && (
-                        <p className="text-sm text-amber-400/80"><span className="font-semibold">Benefit:</span> {info.benefit}</p>
+                        <p className="text-sm text-amber-400/80 mb-2"><span className="font-semibold">Benefit:</span> {info.benefit}</p>
+                      )}
+                      {goal && GOAL_CONTEXT[goal] && (
+                        <p className="text-sm text-blue-300/80 mt-1 pt-2 border-t border-white/[0.06]">
+                          <span className="font-semibold">For your goal:</span> {GOAL_CONTEXT[goal]}
+                        </p>
                       )}
                     </div>
                   )}
@@ -691,7 +705,7 @@ function saveOverrides(overrides) {
   localStorage.setItem(getWeekKey(), JSON.stringify(overrides));
 }
 
-export function GymTab({ daily, addRun, addExercise, removeExercise, getLastLift, logLift, templates, notify }) {
+export function GymTab({ daily, addRun, addExercise, removeExercise, getLastLift, logLift, templates, notify, goal }) {
   const [showTimer, setShowTimer] = useState(false);
   const [runInput, setRunInput] = useState('');
   const [showRunInput, setShowRunInput] = useState(false);
@@ -971,6 +985,7 @@ export function GymTab({ daily, addRun, addExercise, removeExercise, getLastLift
                 prev={prev}
                 onLog={handleLog}
                 onSwap={handleSwap}
+                goal={goal}
               />
             );
           })}

@@ -4,7 +4,7 @@ import { useWeighIns, useLiftLog } from './hooks/useAppData';
 import { useSettings } from './hooks/useSettings';
 import { useWorkoutTemplates } from './hooks/useWorkoutTemplates';
 import { Toast, ErrorBoundary, LandscapeHint, OfflineIndicator } from './components/UI';
-import { ChatInterface } from './components/ChatInterface';
+import { LogTab } from './components/LogTab';
 import { BottomNav } from './components/BottomNav';
 import { DashboardTab } from './components/DashboardTab';
 import { GymTab } from './components/GymTab';
@@ -111,21 +111,6 @@ export default function App() {
     changeTab('log');
   };
 
-  const chatProps = {
-    daily: { ...daily.data, totalCal: daily.totalCal, totalProtein: daily.totalProtein },
-    targets,
-    addFood: daily.addFood,
-    setWater: daily.setWater,
-    toggleMeditation: daily.toggleMeditation,
-    addRun: daily.addRun,
-    addWeighIn,
-    addExercise: daily.addExercise,
-    logLift,
-    getLastLift,
-    removeFood: daily.removeFood,
-    onOpenScanner: () => setShowScanner(true),
-  };
-
   return (
     <div
       className={`min-h-screen max-w-lg mx-auto ${isLight ? 'light-mode' : ''}`}
@@ -158,10 +143,21 @@ export default function App() {
             bottom: `calc(64px + max(env(safe-area-inset-bottom), 8px))`,
           }}
         >
-          <ChatInterface
-            {...chatProps}
-            embedded
+          <LogTab
+            daily={{ ...daily.data, totalCal: daily.totalCal, totalProtein: daily.totalProtein }}
+            targets={targets}
+            addFood={daily.addFood}
+            setWater={daily.setWater}
+            toggleMeditation={daily.toggleMeditation}
+            addRun={daily.addRun}
+            addWeighIn={addWeighIn}
+            addExercise={daily.addExercise}
+            logLift={logLift}
+            getLastLift={getLastLift}
+            removeFood={daily.removeFood}
+            onOpenScanner={() => setShowScanner(true)}
             initialInput={chatPrefill}
+            notify={notify}
           />
         </div>
       )}
@@ -209,6 +205,7 @@ export default function App() {
                 logLift={logLift}
                 templates={templates}
                 notify={notify}
+                goal={settings.goal}
               />
             </ErrorBoundary>
           )}

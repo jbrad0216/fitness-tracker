@@ -14,6 +14,9 @@ export const DEFAULT_SETTINGS = {
   sodiumMg: TARGETS.sodiumMg,
   cloudStorage: 'device',
   theme: 'dark',
+  goal: 'fat-loss',
+  pace: 'moderate',
+  goalCustomText: '',
 };
 
 export function useSettings() {

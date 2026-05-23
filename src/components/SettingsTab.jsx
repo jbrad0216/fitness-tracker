@@ -163,11 +163,76 @@ function buildHeightStr(feet, inches) {
   return `${parseInt(feet) || 6}'${parseInt(inches) || 0}"`;
 }
 
+function computeChangeSummary(prev, next) {
+  const changes = [];
+
+  const toNum = (v, fallback) => parseFloat(v) || fallback;
+
+  const prevCal = toNum(prev.calories, 2400);
+  const nextCal = toNum(next.calories, 2400);
+  if (Math.abs(prevCal - nextCal) >= 50) {
+    const delta = nextCal - prevCal;
+    const reason = delta < 0
+      ? 'larger deficit targets faster fat loss'
+      : 'smaller deficit is more sustainable';
+    changes.push({ label: 'Calories', from: `${prevCal.toLocaleString()} cal`, to: `${nextCal.toLocaleString()} cal`, reason });
+  }
+
+  const prevPro = toNum(prev.protein, 160);
+  const nextPro = toNum(next.protein, 160);
+  if (Math.abs(prevPro - nextPro) >= 5) {
+    const reason = nextPro > prevPro
+      ? 'higher protein preserves muscle during fat loss'
+      : 'protein target reduced';
+    changes.push({ label: 'Protein', from: `${prevPro}g`, to: `${nextPro}g`, reason });
+  }
+
+  const prevGoal = toNum(prev.goalWeight, 200);
+  const nextGoal = toNum(next.goalWeight, 200);
+  if (Math.abs(prevGoal - nextGoal) >= 0.5) {
+    const reason = nextGoal < prevGoal ? 'more ambitious target' : 'more conservative target';
+    changes.push({ label: 'Goal weight', from: `${prevGoal} lbs`, to: `${nextGoal} lbs`, reason });
+  }
+
+  const prevStart = toNum(prev.startWeight, 221);
+  const nextStart = toNum(next.startWeight, 221);
+  if (Math.abs(prevStart - nextStart) >= 0.5) {
+    changes.push({ label: 'Current weight', from: `${prevStart} lbs`, to: `${nextStart} lbs`, reason: 'updates base calculations' });
+  }
+
+  const prevWater = toNum(prev.waterBottles, 3);
+  const nextWater = toNum(next.waterBottles, 3);
+  if (prevWater !== nextWater) {
+    changes.push({ label: 'Water target', from: `${prevWater * 32}oz`, to: `${nextWater * 32}oz`, reason: 'hydration target adjusted' });
+  }
+
+  const prevSodium = toNum(prev.sodiumMg, 2000);
+  const nextSodium = toNum(next.sodiumMg, 2000);
+  if (Math.abs(prevSodium - nextSodium) >= 100) {
+    changes.push({ label: 'Sodium limit', from: `${prevSodium}mg`, to: `${nextSodium}mg`, reason: nextSodium < prevSodium ? 'stricter sodium limit for blood pressure' : 'sodium limit relaxed' });
+  }
+
+  // Timeline impact: if calories or goal weight changed
+  const prevWeeks = prevGoal > 0 && prevCal > 0
+    ? Math.max(0, Math.ceil(((prevStart - prevGoal) / ((2900 - prevCal) * 7 / 3500))))
+    : null;
+  const nextWeeks = nextGoal > 0 && nextCal > 0
+    ? Math.max(0, Math.ceil(((nextStart - nextGoal) / ((2900 - nextCal) * 7 / 3500))))
+    : null;
+  if (prevWeeks && nextWeeks && Math.abs(prevWeeks - nextWeeks) >= 1) {
+    const reason = nextWeeks < prevWeeks ? 'faster pace' : 'slower, more sustainable pace';
+    changes.push({ label: 'Est. timeline', from: `~${prevWeeks} weeks`, to: `~${nextWeeks} weeks`, reason });
+  }
+
+  return changes;
+}
+
 export function SettingsTab({ settings, updateSettings, resetSettings, templates, workoutOps, notify }) {
   const [form, setForm] = useState({ ...settings });
   const [showBackups, setShowBackups] = useState(false);
   const [backupDates, setBackupDates] = useState([]);
   const [autoBackup, setAutoBackup] = useState(() => localStorage.getItem('ft_auto-backup') !== 'off');
+  const [pendingChanges, setPendingChanges] = useState(null);
 
   useEffect(() => { setForm({ ...settings }); }, [settings]);
 
@@ -215,20 +280,37 @@ export function SettingsTab({ settings, updateSettings, resetSettings, templates
     else notify('Restore failed');
   };
 
+  const buildNextSettings = () => ({
+    name: form.name || DEFAULT_SETTINGS.name,
+    age: parseInt(form.age) || DEFAULT_SETTINGS.age,
+    height: form.height || DEFAULT_SETTINGS.height,
+    startWeight: parseFloat(form.startWeight) || DEFAULT_SETTINGS.startWeight,
+    goalWeight: parseFloat(form.goalWeight) || DEFAULT_SETTINGS.goalWeight,
+    calories: parseInt(form.calories) || DEFAULT_SETTINGS.calories,
+    protein: parseInt(form.protein) || DEFAULT_SETTINGS.protein,
+    waterBottles: Math.max(1, Math.min(6, parseInt(form.waterBottles) || DEFAULT_SETTINGS.waterBottles)),
+    sodiumMg: parseInt(form.sodiumMg) || DEFAULT_SETTINGS.sodiumMg,
+    theme: form.theme || 'dark',
+    goal: form.goal || DEFAULT_SETTINGS.goal,
+    pace: form.pace || DEFAULT_SETTINGS.pace,
+  });
+
   const handleSave = () => {
-    updateSettings({
-      name: form.name || DEFAULT_SETTINGS.name,
-      age: parseInt(form.age) || DEFAULT_SETTINGS.age,
-      height: form.height || DEFAULT_SETTINGS.height,
-      startWeight: parseFloat(form.startWeight) || DEFAULT_SETTINGS.startWeight,
-      goalWeight: parseFloat(form.goalWeight) || DEFAULT_SETTINGS.goalWeight,
-      calories: parseInt(form.calories) || DEFAULT_SETTINGS.calories,
-      protein: parseInt(form.protein) || DEFAULT_SETTINGS.protein,
-      waterBottles: Math.max(1, Math.min(6, parseInt(form.waterBottles) || DEFAULT_SETTINGS.waterBottles)),
-      sodiumMg: parseInt(form.sodiumMg) || DEFAULT_SETTINGS.sodiumMg,
-      theme: form.theme || 'dark',
-    });
-    notify('Settings saved');
+    const next = buildNextSettings();
+    const changes = computeChangeSummary(settings, next);
+    if (changes.length > 0) {
+      setPendingChanges({ next, changes });
+    } else {
+      updateSettings(next);
+      notify('Settings saved');
+    }
+  };
+
+  const confirmSave = () => {
+    if (!pendingChanges) return;
+    updateSettings(pendingChanges.next);
+    setPendingChanges(null);
+    notify('Settings saved ✓');
   };
 
   const f = (field) => ({
@@ -302,6 +384,76 @@ export function SettingsTab({ settings, updateSettings, resetSettings, templates
           <div className="flex gap-2">
             <div className="flex-1"><Label>Water (32oz bottles)</Label><Input type="text" inputMode="numeric" autoComplete="off" enterKeyHint="done" {...f('waterBottles')} placeholder="3" /></div>
             <div className="flex-1"><Label>Sodium Max (mg)</Label><Input type="text" inputMode="numeric" autoComplete="off" enterKeyHint="done" {...f('sodiumMg')} placeholder="2000" /></div>
+          </div>
+        </div>
+      </Card>
+
+      {/* Change comparison panel */}
+      {pendingChanges && (
+        <div className="bg-blue-500/[0.07] border border-blue-500/20 rounded-2xl p-4 mb-4">
+          <div className="text-[16px] font-bold mb-3 text-blue-300">Changes to your plan:</div>
+          <div className="space-y-2 mb-4">
+            {pendingChanges.changes.map((c, i) => (
+              <div key={i} className="flex flex-col gap-0.5">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="text-[14px] font-semibold text-white/60 w-28 shrink-0">{c.label}:</span>
+                  <span className="text-[14px] text-white/40 line-through">{c.from}</span>
+                  <span className="text-white/40">→</span>
+                  <span className="text-[14px] font-bold text-white">{c.to}</span>
+                </div>
+                <div className="text-[13px] text-white/40 pl-28">({c.reason})</div>
+              </div>
+            ))}
+          </div>
+          <div className="flex gap-2">
+            <button
+              onClick={confirmSave}
+              className="flex-1 bg-blue-500 text-white rounded-xl py-3.5 text-[16px] font-bold
+                border-none cursor-pointer active:opacity-80"
+            >
+              Save changes
+            </button>
+            <button
+              onClick={() => setPendingChanges(null)}
+              className="flex-1 bg-white/[0.08] text-white/60 rounded-xl py-3.5 text-[16px] font-semibold
+                border-none cursor-pointer active:opacity-70"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
+
+      <Card>
+        <CardTitle>Goal & Pace</CardTitle>
+        <div className="flex flex-col gap-3">
+          <div>
+            <Label>Primary Goal</Label>
+            <select
+              value={form.goal || 'fat-loss'}
+              onChange={e => setForm(prev => ({ ...prev, goal: e.target.value }))}
+              className="w-full bg-white/[0.06] border border-white/[0.1] rounded-xl px-3 py-3
+                text-[16px] text-white outline-none min-h-[52px]"
+            >
+              <option value="fat-loss">🔥 Fat Loss — lose weight and burn fat</option>
+              <option value="muscle">💪 Build Muscle — get stronger and bigger</option>
+              <option value="heart-health">❤️ Heart Health — blood pressure &amp; cardio</option>
+              <option value="lifestyle">🌱 Lifestyle Change — sustainable long-term</option>
+              <option value="custom">✏️ Custom</option>
+            </select>
+          </div>
+          <div>
+            <Label>Pace</Label>
+            <select
+              value={form.pace || 'moderate'}
+              onChange={e => setForm(prev => ({ ...prev, pace: e.target.value }))}
+              className="w-full bg-white/[0.06] border border-white/[0.1] rounded-xl px-3 py-3
+                text-[16px] text-white outline-none min-h-[52px]"
+            >
+              <option value="aggressive">⚡ Aggressive (4–6 weeks, larger deficit)</option>
+              <option value="moderate">🎯 Moderate (8–12 weeks, recommended)</option>
+              <option value="gradual">🌿 Gradual (16–20 weeks, most sustainable)</option>
+            </select>
           </div>
         </div>
       </Card>

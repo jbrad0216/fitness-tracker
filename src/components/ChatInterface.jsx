@@ -333,7 +333,7 @@ function parseMessage(text, ctx) {
 export function ChatInterface({
   daily, targets, addFood, setWater, toggleMeditation, addRun, addWeighIn,
   addExercise, logLift, getLastLift, removeFood, onClose, embedded,
-  onOpenScanner, initialInput,
+  onOpenScanner, initialInput, hideHeader,
 }) {
   const today = getToday();
   const storageKey = `chat-${today}`;
@@ -632,7 +632,7 @@ export function ChatInterface({
         </div>
       )}
 
-      {embedded && (
+      {embedded && !hideHeader && (
         <div className="px-4 py-3 border-b border-white/[0.08] shrink-0"
           style={{ paddingTop: 'max(env(safe-area-inset-top), 12px)' }}>
           <h2 className="text-[20px] font-bold">Log</h2>

@@ -195,6 +195,48 @@ function ScheduledMealsBanner({ daily, addFood, notify }) {
   );
 }
 
+// ─── Mini Weight Sparkline ───
+function MiniSparkline({ weighIns }) {
+  const pts = [...(weighIns || [])].sort((a, b) => a.date.localeCompare(b.date)).slice(-6);
+  if (pts.length < 2) return null;
+
+  const W = 200;
+  const H = 32;
+  const PAD = 4;
+  const weights = pts.map(p => p.weight);
+  const minW = Math.min(...weights) - 0.5;
+  const maxW = Math.max(...weights) + 0.5;
+  const range = maxW - minW || 1;
+
+  const x = (i) => PAD + (i / (pts.length - 1)) * (W - PAD * 2);
+  const y = (w) => PAD + ((maxW - w) / range) * (H - PAD * 2);
+
+  const path = pts.map((p, i) => `${i === 0 ? 'M' : 'L'} ${x(i)} ${y(p.weight)}`).join(' ');
+  const first = pts[0].weight;
+  const last = pts[pts.length - 1].weight;
+  const isDown = last <= first;
+  const color = isDown ? '#22c55e' : '#f59e0b';
+  const diff = (first - last).toFixed(1);
+  const sign = isDown ? '-' : '+';
+
+  return (
+    <div className="flex items-center gap-2 mb-3 px-1">
+      <svg width={W} height={H} viewBox={`0 0 ${W} ${H}`} className="flex-1">
+        <path d={path} fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+        {pts.map((p, i) => (
+          <circle key={i} cx={x(i)} cy={y(p.weight)} r="2.5" fill={color} />
+        ))}
+      </svg>
+      <div className="text-right shrink-0">
+        <div className={`text-[15px] font-bold ${isDown ? 'text-green-400' : 'text-amber-400'}`}>
+          {sign}{Math.abs(diff)} lbs
+        </div>
+        <div className="text-[11px] text-white/30">last {pts.length} weigh-ins</div>
+      </div>
+    </div>
+  );
+}
+
 // ─── Goal Banner ───
 function GoalBanner({ startWeight, goalWeight, weighIns, onEdit }) {
   if (!startWeight || !goalWeight || startWeight <= goalWeight) return null;
@@ -635,6 +677,9 @@ export function DashboardTab({
           </div>
         )}
       </div>
+
+      {/* Mini weight sparkline — only if 2+ weigh-ins */}
+      <MiniSparkline weighIns={weighIns} />
 
       {/* Scheduled Meals */}
       <ScheduledMealsBanner daily={daily} addFood={addFood} notify={notify} />

@@ -3,8 +3,8 @@ import { StatsTab } from './StatsTab';
 import { JourneyTab } from './JourneyTab';
 import { SettingsTab } from './SettingsTab';
 import { WorkoutPlanTab } from './WorkoutPlanTab';
-import { ScienceTab } from './ScienceTab';
 import { MotivationTab } from './MotivationTab';
+import { PlanExplanation } from './PlanExplanation';
 import { ErrorBoundary } from './UI';
 
 function BackButton({ onBack, label }) {
@@ -49,7 +49,7 @@ export function MoreTab({
       <div>
         <BackButton onBack={() => setSubPage(null)} label="More" />
         <ErrorBoundary>
-          <ScienceTab
+          <PlanExplanation
             settings={settings}
             updateSettings={updateSettings}
             notify={notify}
@@ -131,9 +131,9 @@ export function MoreTab({
     },
     {
       id: 'journey',
-      icon: '🗺️',
-      label: 'Journey',
-      desc: 'Timeline, milestones, monthly calendar',
+      icon: '📈',
+      label: 'Progress',
+      desc: 'Weight graph, streaks, weekly summaries, milestones',
     },
     {
       id: 'plan',
@@ -144,8 +144,8 @@ export function MoreTab({
     {
       id: 'science',
       icon: '🔬',
-      label: 'About My Plan',
-      desc: 'Why these calories, protein, reps, and more',
+      label: 'My Plan',
+      desc: 'Personalized plan with sources — why every number',
     },
     {
       id: 'motivation',
