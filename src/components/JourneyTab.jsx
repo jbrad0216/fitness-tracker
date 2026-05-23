@@ -131,7 +131,7 @@ export function JourneyTab({ weighIns, startWeight, goalWeight }) {
         <div className="flex justify-around text-center">
           <div>
             <div className="text-3xl font-bold text-amber-400">{streak}</div>
-            <div className="text-[11px] text-white/50">day streak 🔥</div>
+            <div className="text-sm text-white/50">day streak 🔥</div>
           </div>
           {progress && (
             <>
@@ -140,12 +140,12 @@ export function JourneyTab({ weighIns, startWeight, goalWeight }) {
                 <div className="text-2xl font-bold text-green-400">
                   {progress.lostTotal > 0 ? `-${progress.lostTotal.toFixed(1)}` : '0'}
                 </div>
-                <div className="text-[11px] text-white/50">lbs lost</div>
+                <div className="text-sm text-white/50">lbs lost</div>
               </div>
               <div className="w-px bg-white/[0.08]" />
               <div>
                 <div className="text-2xl font-bold">{progress.toGo?.toFixed(1) ?? progress.totalToLose?.toFixed(1)}</div>
-                <div className="text-[11px] text-white/50">lbs to go</div>
+                <div className="text-sm text-white/50">lbs to go</div>
               </div>
             </>
           )}
@@ -156,7 +156,7 @@ export function JourneyTab({ weighIns, startWeight, goalWeight }) {
       {progress && (
         <Card>
           <CardTitle>Week Progress</CardTitle>
-          <div className="flex justify-between text-[11px] text-white/40 mb-1">
+          <div className="flex justify-between text-sm text-white/40 mb-1">
             <span>Week {progress.weeksElapsed}</span>
             <span>of ~{progress.totalWeeks} weeks</span>
           </div>
@@ -197,12 +197,12 @@ export function JourneyTab({ weighIns, startWeight, goalWeight }) {
                       <span className={`text-sm font-semibold ${reached ? 'text-green-400' : 'text-white/60'}`}>
                         {m.label}
                       </span>
-                      <span className="text-[11px] text-white/30 ml-2">{m.weight} lbs</span>
+                      <span className="text-sm text-white/30 ml-2">{m.weight} lbs</span>
                     </div>
                   </div>
                   {reached && <span className="text-green-400 text-xs font-bold">✓ Reached!</span>}
                   {!reached && (
-                    <span className="text-[11px] text-white/30">
+                    <span className="text-sm text-white/30">
                       {(progress.currentWeight - m.weight).toFixed(1)} lbs away
                     </span>
                   )}
@@ -220,7 +220,7 @@ export function JourneyTab({ weighIns, startWeight, goalWeight }) {
         {/* Day of week headers */}
         <div className="grid grid-cols-7 mb-1">
           {dayOfWeek.map(d => (
-            <div key={d} className="text-center text-[10px] text-white/30 font-semibold py-1">{d}</div>
+            <div key={d} className="text-center text-xs text-white/30 font-semibold py-1">{d}</div>
           ))}
         </div>
 
@@ -259,11 +259,11 @@ export function JourneyTab({ weighIns, startWeight, goalWeight }) {
           ].map(l => (
             <div key={l.label} className="flex items-center gap-1.5">
               <div className={`w-3 h-3 rounded-sm ${l.color}`} />
-              <span className="text-[10px] text-white/40">{l.label}</span>
+              <span className="text-xs text-white/40">{l.label}</span>
             </div>
           ))}
         </div>
-        <p className="text-[10px] text-white/25 text-center mt-1">
+        <p className="text-xs text-white/25 text-center mt-1">
           Food · Workout · Water · Meditation
         </p>
       </Card>

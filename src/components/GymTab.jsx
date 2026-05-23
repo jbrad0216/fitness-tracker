@@ -47,10 +47,10 @@ function RestTimer({ onDismiss }) {
         </div>
       </div>
       <div className="flex-1">
-        <div className="text-base font-semibold">
+        <div className="text-[17px] font-semibold">
           {seconds === 0 ? '✓ Rest done!' : running ? 'Rest timer' : 'Paused'}
         </div>
-        <div className="text-xs text-white/40">90 second rest</div>
+        <div className="text-sm text-white/40">90 second rest</div>
       </div>
       <div className="flex gap-2">
         <button onClick={() => setRunning(r => !r)}
@@ -106,7 +106,7 @@ function ExerciseCard({ ex, isLogged, prev, onLog, onSwap }) {
             {isLogged && <span className="text-green-400 text-sm">✓</span>}
             <span className="text-[18px] font-bold leading-tight">{ex.name}</span>
             {info && <MuscleBadge muscleKey={info.muscleKey} group={info.muscleGroup} />}
-            {isPR && !isLogged && <span className="text-[11px] text-green-400 font-bold bg-green-500/15 rounded-full px-2 py-0.5">↑ New PR!</span>}
+            {isPR && !isLogged && <span className="text-xs text-green-400 font-bold bg-green-500/15 rounded-full px-2 py-0.5">↑ New PR!</span>}
           </div>
           <div className="text-[15px] font-semibold text-white/70">
             {ex.sets}×{ex.reps} @ {prev ? prev.weight : ex.defaultWeight} lbs
@@ -126,11 +126,11 @@ function ExerciseCard({ ex, isLogged, prev, onLog, onSwap }) {
         <div className="border-t border-white/[0.06] px-4 pb-4">
           {info && (
             <div className="py-3 mb-3 border-b border-white/[0.06]">
-              <p className="text-[14px] text-white/70 leading-relaxed mb-3">{info.description}</p>
+              <p className="text-[15px] text-white/70 leading-relaxed mb-3">{info.description}</p>
               {info.tips && (
                 <div className="mb-3 space-y-1">
                   {info.tips.slice(0, 2).map((tip, i) => (
-                    <div key={i} className="flex gap-2 text-[13px] text-white/50">
+                    <div key={i} className="flex gap-2 text-sm text-white/50">
                       <span className="text-green-400 shrink-0">▸</span>{tip}
                     </div>
                   ))}
@@ -142,8 +142,8 @@ function ExerciseCard({ ex, isLogged, prev, onLog, onSwap }) {
                 <div className="mb-3">
                   <button
                     onClick={() => setShowWhy(w => !w)}
-                    className="flex items-center gap-1.5 text-[13px] text-amber-400 font-semibold
-                      bg-amber-500/10 border border-amber-500/20 rounded-xl px-3 py-2 w-full text-left cursor-pointer"
+                    className="flex items-center gap-1.5 text-sm text-amber-400 font-semibold
+                      bg-amber-500/10 border border-amber-500/20 rounded-xl px-3 py-2.5 w-full text-left cursor-pointer active:opacity-70"
                   >
                     <span>💡</span>
                     <span className="flex-1">Why this exercise?</span>
@@ -151,9 +151,9 @@ function ExerciseCard({ ex, isLogged, prev, onLog, onSwap }) {
                   </button>
                   {showWhy && (
                     <div className="mt-2 px-3 py-3 bg-amber-500/[0.06] border border-amber-500/15 rounded-xl">
-                      <p className="text-[13px] text-white/70 leading-relaxed mb-2">{info.why}</p>
+                      <p className="text-[15px] text-white/70 leading-relaxed mb-2">{info.why}</p>
                       {info.benefit && (
-                        <p className="text-[12px] text-amber-400/80"><span className="font-semibold">Benefit:</span> {info.benefit}</p>
+                        <p className="text-sm text-amber-400/80"><span className="font-semibold">Benefit:</span> {info.benefit}</p>
                       )}
                     </div>
                   )}
@@ -162,7 +162,7 @@ function ExerciseCard({ ex, isLogged, prev, onLog, onSwap }) {
 
               {/* Why 3×12 tooltip */}
               <div className="mb-3 px-3 py-2.5 bg-blue-500/[0.07] border border-blue-500/15 rounded-xl">
-                <p className="text-[12px] text-blue-300/80">
+                <p className="text-sm text-blue-300/80">
                   <span className="font-semibold">Why {ex.sets}×{ex.reps}?</span> This rep range builds muscular endurance and hypertrophy — ideal for the first 4-6 weeks to build form and volume before increasing weight.
                 </p>
               </div>
@@ -180,8 +180,8 @@ function ExerciseCard({ ex, isLogged, prev, onLog, onSwap }) {
                 <div>
                   <button
                     onClick={() => setShowSwap(s => !s)}
-                    className="flex items-center gap-1.5 text-[13px] text-white/50 font-semibold
-                      bg-white/[0.04] border border-white/[0.08] rounded-xl px-3 py-2 w-full text-left cursor-pointer"
+                    className="flex items-center gap-1.5 text-sm text-white/50 font-semibold
+                      bg-white/[0.04] border border-white/[0.08] rounded-xl px-3 py-2.5 w-full text-left cursor-pointer active:opacity-70"
                   >
                     <span>🔄</span>
                     <span className="flex-1">Swap for different exercise</span>
@@ -193,12 +193,12 @@ function ExerciseCard({ ex, isLogged, prev, onLog, onSwap }) {
                         <button
                           key={alt}
                           onClick={() => handleSwapSelect(alt)}
-                          className="w-full text-left px-3 py-3 bg-white/[0.04] border border-white/[0.08]
-                            rounded-xl text-[14px] text-white/70 cursor-pointer active:bg-white/[0.08]"
+                          className="w-full text-left px-3 py-3.5 bg-white/[0.04] border border-white/[0.08]
+                            rounded-xl text-[15px] text-white/70 cursor-pointer active:bg-white/[0.08] active:scale-[0.99] min-h-[52px]"
                         >
                           {alt}
                           {ALTERNATIVE_EXERCISES[alt] && (
-                            <span className="text-[12px] text-white/30 ml-2">
+                            <span className="text-sm text-white/30 ml-2">
                               {ALTERNATIVE_EXERCISES[alt].muscleGroup}
                             </span>
                           )}
@@ -217,37 +217,45 @@ function ExerciseCard({ ex, isLogged, prev, onLog, onSwap }) {
               )}
             </div>
           )}
-          <div className="text-[13px] text-white/40 mb-2 uppercase tracking-wider">Log Set</div>
+          <div className="text-sm text-white/40 mb-2 uppercase tracking-wider">Log Set</div>
           <div className="flex gap-2 mb-3">
             <div className="flex-1">
-              <div className="text-[12px] text-white/40 mb-1">Weight (lbs)</div>
+              <div className="text-sm text-white/40 mb-1">Weight (lbs)</div>
               <input
-                type="number"
+                type="text"
+                inputMode="decimal"
+                autoComplete="off"
+                enterKeyHint="done"
                 value={weight}
                 onChange={e => setWeight(e.target.value)}
-                step="2.5"
                 className="w-full bg-white/[0.08] border border-white/[0.1] rounded-xl px-3 py-3
-                  text-[17px] font-bold text-white outline-none"
+                  text-[17px] font-bold text-white outline-none min-h-[52px]"
               />
             </div>
             <div className="w-20">
-              <div className="text-[12px] text-white/40 mb-1">Sets</div>
+              <div className="text-sm text-white/40 mb-1">Sets</div>
               <input
-                type="number"
+                type="text"
+                inputMode="numeric"
+                autoComplete="off"
+                enterKeyHint="done"
                 value={sets}
                 onChange={e => setSets(e.target.value)}
                 className="w-full bg-white/[0.08] border border-white/[0.1] rounded-xl px-3 py-3
-                  text-[17px] font-bold text-white outline-none"
+                  text-[17px] font-bold text-white outline-none min-h-[52px]"
               />
             </div>
             <div className="w-20">
-              <div className="text-[12px] text-white/40 mb-1">Reps</div>
+              <div className="text-sm text-white/40 mb-1">Reps</div>
               <input
-                type="number"
+                type="text"
+                inputMode="numeric"
+                autoComplete="off"
+                enterKeyHint="done"
                 value={reps}
                 onChange={e => setReps(e.target.value)}
                 className="w-full bg-white/[0.08] border border-white/[0.1] rounded-xl px-3 py-3
-                  text-[17px] font-bold text-white outline-none"
+                  text-[17px] font-bold text-white outline-none min-h-[52px]"
               />
             </div>
           </div>
@@ -438,7 +446,7 @@ function WeekCalendar({ selectedIdx, onSelect, templates }) {
                   active:opacity-70 ${day.isFuture ? 'opacity-35' : ''}`}
                 style={{ minWidth: '40px' }}
               >
-                <span className="text-[11px] text-white/40 font-medium">{DAY_LABELS[i]}</span>
+                <span className="text-xs text-white/40 font-medium">{DAY_LABELS[i]}</span>
                 <div className={`w-10 h-10 rounded-full flex items-center justify-center
                   ${day.isToday ? 'bg-blue-500/25 ring-2 ring-blue-400' : 'bg-white/[0.06]'}
                   ${isSelected && !day.isToday ? 'ring-1 ring-white/40' : ''}`}>
@@ -448,7 +456,7 @@ function WeekCalendar({ selectedIdx, onSelect, templates }) {
                     <span className="font-bold text-sm" style={{ color }}>{text}</span>
                   )}
                 </div>
-                {day.isToday && <span className="text-[10px] text-blue-400 font-medium">today</span>}
+                {day.isToday && <span className="text-xs text-blue-400 font-medium">today</span>}
               </button>
             );
           })}
@@ -458,22 +466,22 @@ function WeekCalendar({ selectedIdx, onSelect, templates }) {
       {/* Selected day detail */}
       {selectedDay && (
         <div className="bg-white/[0.05] border border-white/[0.08] rounded-2xl px-4 py-4 mb-4">
-          <div className="text-[15px] font-semibold mb-1">
+          <div className="text-[17px] font-semibold mb-1">
             {selectedDay.date.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}
           </div>
           {(selectedDay.schedType === 'A' || selectedDay.schedType === 'B') && (
             <>
-              <div className="text-[13px] text-blue-400 mb-2">Workout {selectedDay.schedType} — Strength</div>
+              <div className="text-sm text-blue-400 mb-2">Workout {selectedDay.schedType} — Strength</div>
               {(selectedDay.schedType === 'A' ? templates?.A : templates?.B || []).map((ex, i) => (
-                <div key={i} className="text-[14px] text-white/60 py-1.5 border-b border-white/[0.06] last:border-0">
+                <div key={i} className="text-[15px] text-white/60 py-1.5 border-b border-white/[0.06] last:border-0">
                   {ex.name} — {ex.sets}×{ex.reps}
                 </div>
               ))}
               {selectedDayData?.exercises?.length > 0 && (
                 <div className="mt-3">
-                  <div className="text-[12px] text-white/40 mb-1 uppercase tracking-wider">Logged:</div>
+                  <div className="text-sm text-white/40 mb-1 uppercase tracking-wider">Logged:</div>
                   {selectedDayData.exercises.map((e, i) => (
-                    <div key={i} className="text-[13px] text-green-400 py-1">
+                    <div key={i} className="text-[15px] text-green-400 py-1">
                       ✓ {e.name} — {e.weight}lbs × {e.sets}×{e.reps}
                     </div>
                   ))}
@@ -482,26 +490,26 @@ function WeekCalendar({ selectedIdx, onSelect, templates }) {
             </>
           )}
           {selectedDay.schedType === 'cardio' && (
-            <div className="text-white/60">
-              <div className="text-[13px] text-amber-400 mb-1">Cardio + Mobility Day</div>
+            <div className="text-[15px] text-white/60">
+              <div className="text-sm text-amber-400 mb-1">Cardio + Mobility Day</div>
               Run + 15 min stretching
               {selectedDayData?.ranMiles > 0 && (
-                <div className="text-green-400 mt-2 text-sm">✓ {selectedDayData.ranMiles}mi logged</div>
+                <div className="text-green-400 mt-2 text-[15px]">✓ {selectedDayData.ranMiles}mi logged</div>
               )}
             </div>
           )}
           {selectedDay.schedType === 'longrun' && (
-            <div className="text-white/60">
-              <div className="text-[13px] text-green-400 mb-1">Long Run Day</div>
+            <div className="text-[15px] text-white/60">
+              <div className="text-sm text-green-400 mb-1">Long Run Day</div>
               Push the distance. Stretch after.
               {selectedDayData?.ranMiles > 0 && (
-                <div className="text-green-400 mt-2 text-sm">✓ {selectedDayData.ranMiles}mi logged</div>
+                <div className="text-green-400 mt-2 text-[15px]">✓ {selectedDayData.ranMiles}mi logged</div>
               )}
             </div>
           )}
           {selectedDay.schedType === 'rest' && (
-            <div className="text-white/60">
-              <div className="text-[13px] text-purple-400 mb-1">Rest Day</div>
+            <div className="text-[15px] text-white/60">
+              <div className="text-sm text-purple-400 mb-1">Rest Day</div>
               Recover. Walk if you feel like it.
             </div>
           )}
@@ -802,29 +810,29 @@ export function GymTab({ daily, addRun, addExercise, removeExercise, getLastLift
 
       {/* Header */}
       <div className="flex items-center justify-between mb-1">
-        <div className={`text-[17px] font-bold ${schedColor}`}>
+        <div className={`text-[18px] font-bold ${schedColor}`}>
           {customWorkout ? '🎯 Custom Workout' : schedLabel}
         </div>
         <div className="flex gap-2">
           {(schedule === 'strength' || customWorkout) && !todayOverride && !allDone && (
             <button
               onClick={() => setShowSkipMenu(s => !s)}
-              className="text-[13px] text-white/40 font-semibold bg-white/[0.05] border border-white/[0.08]
-                rounded-xl px-3 py-1.5 cursor-pointer active:opacity-70"
+              className="text-sm text-white/40 font-semibold bg-white/[0.05] border border-white/[0.08]
+                rounded-xl px-3 py-2 cursor-pointer active:opacity-70 min-h-[44px]"
             >
               Skip
             </button>
           )}
           <button
             onClick={() => setShowCustomize(true)}
-            className="text-[13px] text-blue-400 font-semibold bg-blue-500/10 border border-blue-500/20
-              rounded-xl px-3 py-1.5 cursor-pointer active:opacity-70"
+            className="text-sm text-blue-400 font-semibold bg-blue-500/10 border border-blue-500/20
+              rounded-xl px-3 py-2 cursor-pointer active:opacity-70 min-h-[44px]"
           >
             Customize
           </button>
         </div>
       </div>
-      <div className="text-[13px] text-white/40 mb-4 flex items-center gap-2">
+      <div className="text-sm text-white/40 mb-4 flex items-center gap-2">
         {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}
         {customWorkout && (
           <button
@@ -849,13 +857,15 @@ export function GymTab({ daily, addRun, addExercise, removeExercise, getLastLift
         ) : showRunInput ? (
           <div className="flex gap-2">
             <input
-              type="number"
+              type="text"
+              inputMode="decimal"
+              autoComplete="off"
+              enterKeyHint="done"
               value={runInput}
               onChange={e => setRunInput(e.target.value)}
               placeholder="Miles"
-              step="0.1"
               className="flex-1 bg-white/[0.08] border border-white/[0.1] rounded-xl px-4 py-3
-                text-[17px] text-white outline-none"
+                text-[17px] text-white outline-none min-h-[52px] placeholder:text-white/30"
             />
             <button onClick={handleLogRun}
               className="bg-green-500 text-white rounded-xl px-5 py-3 text-base font-bold border-none cursor-pointer active:scale-95">
@@ -920,14 +930,30 @@ export function GymTab({ daily, addRun, addExercise, removeExercise, getLastLift
       )}
       {todayOverride === 'rescheduled' && (
         <div className="bg-blue-500/[0.08] border border-blue-500/20 rounded-2xl px-4 py-3 mb-4">
-          <div className="text-[15px] font-semibold text-blue-300">Workout rescheduled to tomorrow</div>
-          <div className="text-[12px] text-white/40 mt-0.5">Rest today. Tomorrow's workout is moved up.</div>
+          <div className="text-[17px] font-semibold text-blue-300">Workout rescheduled to tomorrow</div>
+          <div className="text-sm text-white/40 mt-0.5">Rest today. Tomorrow's workout is moved up.</div>
         </div>
       )}
 
       {/* Strength workout — regular or custom */}
       {(schedule === 'strength' || customWorkout) && activeExercises.length > 0 && !todayOverride && (
         <div>
+          {/* Workout summary card */}
+          {!allDone && !customWorkout && (
+            <div className="bg-blue-500/[0.07] border border-blue-500/15 rounded-2xl px-4 py-4 mb-4">
+              <div className="text-[18px] font-bold mb-1">
+                {workoutType === 'A' ? 'Workout A — Push & Squat' : 'Workout B — Pull & Hinge'}
+              </div>
+              <div className="text-[15px] text-white/60 leading-relaxed">
+                {workoutType === 'A'
+                  ? 'Targets chest, shoulders, quads, and triceps. Compound pushing movements plus lower body for balanced strength.'
+                  : 'Targets back, hamstrings, glutes, and biceps. Pulling movements and hip hinges to balance your pushing muscles.'}
+              </div>
+              <div className="text-sm text-blue-300/70 mt-2">
+                💡 A/B split hits each muscle group 2–3× per week — optimal for strength gains while running.
+              </div>
+            </div>
+          )}
           {allDone && (
             <div className="text-center py-4 text-green-400 text-lg font-bold mb-4">
               🎉 Workout Complete!
@@ -963,12 +989,12 @@ export function GymTab({ daily, addRun, addExercise, removeExercise, getLastLift
       {/* Logged exercises summary */}
       {daily.exercises.length > 0 && (
         <div className="mt-4">
-          <div className="text-[13px] text-white/40 mb-2 uppercase tracking-wider">Logged today</div>
+          <div className="text-sm text-white/40 mb-2 uppercase tracking-wider">Logged today</div>
           {daily.exercises.map(e => (
-            <div key={e.id} className="flex items-center py-2.5 border-b border-white/[0.06] last:border-0">
-              <span className="text-green-400 mr-3 text-sm">✓</span>
-              <span className="text-[15px] flex-1">{e.name}</span>
-              <span className="text-[13px] text-white/40 mr-3">{e.weight}lbs × {e.sets}×{e.reps}</span>
+            <div key={e.id} className="flex items-center py-3 border-b border-white/[0.06] last:border-0">
+              <span className="text-green-400 mr-3 text-[17px]">✓</span>
+              <span className="text-[17px] flex-1">{e.name}</span>
+              <span className="text-sm text-white/40 mr-3">{e.weight}lbs × {e.sets}×{e.reps}</span>
               <button onClick={() => removeExercise(e.id)}
                 className="w-7 h-7 rounded-lg bg-red-500/15 text-red-400 border-none cursor-pointer text-sm active:scale-95">
                 ×

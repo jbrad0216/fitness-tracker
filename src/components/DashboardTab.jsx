@@ -3,6 +3,30 @@ import { isWednesday, getToday } from '../data/constants';
 import { ProgressRing, WaterBottles } from './UI';
 import { load, save } from '../data/storage';
 
+// ─── Collapsible "Why?" section ───
+function WhySection({ id, children }) {
+  const storageKey = `ft_why-dismissed-${id}`;
+  const [open, setOpen] = useState(false);
+
+  return (
+    <div className="mt-2">
+      <button
+        onClick={() => setOpen(o => !o)}
+        className="flex items-center gap-1 text-sm text-white/35 bg-transparent border-none cursor-pointer active:opacity-60 py-1"
+      >
+        <span>💡</span>
+        <span>{open ? 'Hide explanation' : 'Why this target?'}</span>
+        <span className="text-white/20">{open ? '▾' : '›'}</span>
+      </button>
+      {open && (
+        <div className="mt-1 bg-white/[0.03] border border-white/[0.06] rounded-xl px-3 py-3 text-sm text-white/50 leading-relaxed">
+          {children}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function getGreeting() {
   const h = new Date().getHours();
   if (h < 12) return 'Good morning';
@@ -63,11 +87,11 @@ function ReminderBanner({ daily, targets, weighIns, totalCal, totalProtein, onNa
   return (
     <div className={`flex items-center gap-3 rounded-2xl px-4 py-3 mb-3 border ${c.bg}`}>
       <span className="text-xl shrink-0">{reminder.icon}</span>
-      <span className={`flex-1 text-[13px] font-medium ${c.text}`}>{reminder.text}</span>
+      <span className={`flex-1 text-sm font-medium ${c.text}`}>{reminder.text}</span>
       {reminder.action === 'log' && (
         <button
           onClick={() => { onOpenLog?.(reminder.prefill); dismiss(); }}
-          className={`${c.btn} text-white text-xs font-bold rounded-xl px-3 py-2 border-none cursor-pointer shrink-0`}
+          className={`${c.btn} text-white text-sm font-bold rounded-xl px-3 py-2.5 border-none cursor-pointer shrink-0 active:scale-95`}
         >
           Log
         </button>
@@ -75,7 +99,7 @@ function ReminderBanner({ daily, targets, weighIns, totalCal, totalProtein, onNa
       {reminder.action === 'water' && (
         <button
           onClick={() => { onNavigate?.('home'); dismiss(); }}
-          className={`${c.btn} text-white text-xs font-bold rounded-xl px-3 py-2 border-none cursor-pointer shrink-0`}
+          className={`${c.btn} text-white text-sm font-bold rounded-xl px-3 py-2.5 border-none cursor-pointer shrink-0 active:scale-95`}
         >
           +Water
         </button>
@@ -83,7 +107,7 @@ function ReminderBanner({ daily, targets, weighIns, totalCal, totalProtein, onNa
       {reminder.action === 'gym' && (
         <button
           onClick={() => { onNavigate?.('gym'); dismiss(); }}
-          className={`${c.btn} text-white text-xs font-bold rounded-xl px-3 py-2 border-none cursor-pointer shrink-0`}
+          className={`${c.btn} text-white text-sm font-bold rounded-xl px-3 py-2.5 border-none cursor-pointer shrink-0 active:scale-95`}
         >
           Open Gym
         </button>
@@ -157,19 +181,19 @@ function GoalChecklist({ daily, targets, totalProtein }) {
     <div className={`rounded-2xl border mb-4 overflow-hidden transition-all
       ${allDone ? 'border-green-500/40 bg-green-500/[0.04]' : 'border-white/[0.08] bg-white/[0.05]'}`}>
       <div className="px-4 pt-3.5 pb-0.5">
-        <div className="text-[15px] font-semibold">Today's Goals</div>
+        <div className="text-[17px] font-semibold">Today's Goals</div>
       </div>
       <div className="px-4 pb-3">
         {goals.map((goal, i) => (
-          <div key={goal.key} className={`flex items-center gap-3 py-2.5
+          <div key={goal.key} className={`flex items-center gap-3 py-3
             ${i < goals.length - 1 ? 'border-b border-white/[0.06]' : ''}`}>
-            <span className="text-[20px] shrink-0 leading-none">{goal.done ? '✅' : '⬜'}</span>
-            <span className="flex-1 text-[15px] font-medium">{goal.label}</span>
-            <span className="text-[13px] text-white/40 text-right shrink-0">{goal.detail}</span>
+            <span className="text-[22px] shrink-0 leading-none">{goal.done ? '✅' : '⬜'}</span>
+            <span className="flex-1 text-[17px] font-medium">{goal.label}</span>
+            <span className="text-sm text-white/40 text-right shrink-0">{goal.detail}</span>
           </div>
         ))}
         {allDone && (
-          <div className="text-center pt-2 pb-0.5 text-green-400 font-semibold text-sm">
+          <div className="text-center pt-2 pb-0.5 text-green-400 font-semibold text-[15px]">
             🎉 All goals hit!
           </div>
         )}
@@ -220,8 +244,8 @@ function GoalBanner({ startWeight, goalWeight, weighIns }) {
   return (
     <div className="bg-white/[0.05] border border-white/[0.08] rounded-2xl px-4 py-3 mb-4">
       <div className="flex items-center justify-between mb-1.5">
-        <span className="text-[14px] font-bold">🎯 Lose {totalToLose} lbs</span>
-        <span className="text-[13px] text-white/40">{Math.round(pct * 100)}% there</span>
+        <span className="text-[15px] font-bold">🎯 Lose {totalToLose} lbs</span>
+        <span className="text-sm text-white/40">{Math.round(pct * 100)}% there</span>
       </div>
       <div className="h-2 bg-white/[0.08] rounded-full overflow-hidden mb-1.5">
         <div
@@ -230,11 +254,11 @@ function GoalBanner({ startWeight, goalWeight, weighIns }) {
         />
       </div>
       <div className="flex justify-between items-center">
-        <span className="text-[12px] text-white/40">{startWeight} → {goalWeight} lbs</span>
+        <span className="text-sm text-white/40">{startWeight} → {goalWeight} lbs</span>
         <div className="flex items-center gap-2">
-          {paceLabel && <span className={`text-[12px] font-semibold ${paceColor}`}>{paceLabel}</span>}
-          {weeksLeft && <span className="text-[12px] text-white/30">~{weeksLeft}w left</span>}
-          {weeklyRate > 0 && <span className="text-[12px] text-white/25">({weeklyRate.toFixed(1)}/wk)</span>}
+          {paceLabel && <span className={`text-sm font-semibold ${paceColor}`}>{paceLabel}</span>}
+          {weeksLeft && <span className="text-sm text-white/30">~{weeksLeft}w left</span>}
+          {weeklyRate > 0 && <span className="text-sm text-white/25">({weeklyRate.toFixed(1)}/wk)</span>}
         </div>
       </div>
     </div>
@@ -264,8 +288,8 @@ function ScheduledMealsBanner({ daily, addFood, notify }) {
       {todayMeals.map(m => (
         <div key={m.id} className="bg-blue-500/10 border border-blue-500/20 rounded-2xl px-4 py-3 mb-2 flex items-center gap-3">
           <div className="flex-1 min-w-0">
-            <div className="text-[14px] font-semibold">{m.name}</div>
-            <div className="text-[12px] text-white/40">{m.cal} cal · {m.protein}g protein · {m.meal}</div>
+            <div className="text-[16px] font-semibold">{m.name}</div>
+            <div className="text-sm text-white/40">{m.cal} cal · {m.protein}g protein · {m.meal}</div>
           </div>
           <button
             onClick={() => {
@@ -342,8 +366,8 @@ function SwipeFoodItem({ item, onDelete, onLogAgain }) {
         onTouchMove={onTouchMove}
         onTouchEnd={onTouchEnd}
       >
-        <span className="text-[15px] truncate flex-1 min-w-0">{item.name}</span>
-        <span className="text-sm text-white/40 shrink-0 mr-1">
+        <span className="text-[17px] truncate flex-1 min-w-0">{item.name}</span>
+        <span className="text-[15px] text-white/40 shrink-0 mr-1">
           {item.cal} cal{item.protein ? ` · ${item.protein}g` : ''}
         </span>
         {onLogAgain && (
@@ -445,17 +469,17 @@ export function DashboardTab({
       {/* Header */}
       <div className="flex justify-between items-start mb-4">
         <div>
-          <div className="text-[22px] font-bold leading-tight">
+          <div className="text-[24px] font-bold leading-tight">
             {getGreeting()}, {name || 'Jason'}
           </div>
-          <div className="text-[13px] text-white/40 mt-0.5">
+          <div className="text-sm text-white/40 mt-0.5">
             {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}
           </div>
         </div>
         {currentWeight && (
           <div className="text-right">
             <div className="text-[22px] font-bold">{currentWeight}</div>
-            <div className={`text-[12px] ${weightLost > 0 ? 'text-green-400' : 'text-white/40'}`}>
+            <div className={`text-sm ${weightLost > 0 ? 'text-green-400' : 'text-white/40'}`}>
               {weightLost > 0 ? `↓${weightLost.toFixed(1)} lbs lost` : 'lbs'}
             </div>
           </div>
@@ -476,41 +500,54 @@ export function DashboardTab({
 
       {/* Quick stats row */}
       <div className="grid grid-cols-3 gap-3 mb-4">
-        {[
-          {
-            label: 'Calories', value: `${totalCal}`, total: targets.calories,
-            pct: calPct, color: calPct > 1.1 ? '#ef4444' : '#f59e0b',
-          },
-          {
-            label: 'Protein', value: `${totalProtein}g`, total: `${targets.protein}g`,
-            pct: proteinPct, color: proteinPct >= 1 ? '#22c55e' : '#3b82f6',
-          },
-          {
-            label: 'Water', value: `${daily.water}`, total: `/ ${targets.waterBottles}`,
-            pct: waterPct, color: waterPct >= 1 ? '#22c55e' : '#38bdf8',
-          },
-        ].map(stat => (
-          <div key={stat.label}
-            className="bg-white/[0.05] border border-white/[0.08] rounded-2xl px-3 py-3">
-            <div className="text-[13px] text-white/40 mb-1">{stat.label}</div>
-            <div className="text-[18px] font-bold leading-none mb-1">{stat.value}</div>
-            <div className="text-[12px] text-white/30 mb-2">of {stat.total}</div>
-            <div className="h-1.5 bg-white/[0.08] rounded-full overflow-hidden">
-              <div
-                className="h-full rounded-full transition-all"
-                style={{ width: `${Math.min(stat.pct * 100, 100)}%`, background: stat.color }}
-              />
-            </div>
+        <div className="bg-white/[0.05] border border-white/[0.08] rounded-2xl px-3 py-3">
+          <div className="text-sm text-white/40 mb-1">Calories</div>
+          <div className="text-[20px] font-bold leading-none mb-1"
+            style={{ color: calPct > 1.1 ? '#ef4444' : '#f59e0b' }}>{totalCal}</div>
+          <div className="text-sm text-white/30 mb-2">of {targets.calories}</div>
+          <div className="h-1.5 bg-white/[0.08] rounded-full overflow-hidden mb-2">
+            <div className="h-full rounded-full transition-all"
+              style={{ width: `${Math.min(calPct * 100, 100)}%`, background: calPct > 1.1 ? '#ef4444' : '#f59e0b' }} />
           </div>
-        ))}
+          <WhySection id="calories">
+            Your target is {targets.calories} cal/day — a ~500 cal deficit from estimated maintenance, which creates roughly 1 lb/week of fat loss. Tap More → About My Plan for the full science.
+          </WhySection>
+        </div>
+        <div className="bg-white/[0.05] border border-white/[0.08] rounded-2xl px-3 py-3">
+          <div className="text-sm text-white/40 mb-1">Protein</div>
+          <div className="text-[20px] font-bold leading-none mb-1"
+            style={{ color: proteinPct >= 1 ? '#22c55e' : '#3b82f6' }}>{totalProtein}g</div>
+          <div className="text-sm text-white/30 mb-2">of {targets.protein}g</div>
+          <div className="h-1.5 bg-white/[0.08] rounded-full overflow-hidden mb-2">
+            <div className="h-full rounded-full transition-all"
+              style={{ width: `${Math.min(proteinPct * 100, 100)}%`, background: proteinPct >= 1 ? '#22c55e' : '#3b82f6' }} />
+          </div>
+          <WhySection id="protein">
+            {targets.protein}g protein preserves muscle while losing fat. Research shows 0.7–1.0g per lb of body weight during a cut is optimal. High protein also keeps you full longer.
+          </WhySection>
+        </div>
+        <div className="bg-white/[0.05] border border-white/[0.08] rounded-2xl px-3 py-3">
+          <div className="text-sm text-white/40 mb-1">Water</div>
+          <div className="text-[20px] font-bold leading-none mb-1"
+            style={{ color: waterPct >= 1 ? '#22c55e' : '#38bdf8' }}>{daily.water}</div>
+          <div className="text-sm text-white/30 mb-2">/ {targets.waterBottles} bottles</div>
+          <div className="h-1.5 bg-white/[0.08] rounded-full overflow-hidden" />
+        </div>
       </div>
 
       {/* Water tap row */}
       <div className="bg-white/[0.05] border border-white/[0.08] rounded-2xl px-4 py-3 mb-4">
-        <div className="text-[13px] text-white/40 mb-2">
-          Water · {daily.water * 32}oz / {targets.waterBottles * 32}oz
+        <div className="flex items-center justify-between mb-1">
+          <div className="text-[17px] font-semibold">Water Intake</div>
+          <div className="text-[17px] font-bold text-blue-300">{daily.water} of {targets.waterBottles}</div>
+        </div>
+        <div className="text-sm text-white/40 mb-2">
+          {daily.water * 32} oz / {targets.waterBottles * 32} oz today
         </div>
         <WaterBottles count={daily.water} total={targets.waterBottles} onTap={setWater} />
+        <WhySection id="water">
+          Why {targets.waterBottles * 32} oz? A common guideline is half your body weight in ounces (~{Math.round((currentWeight || 222) / 2)} oz for your weight). We round to {targets.waterBottles} × 32 oz bottles for simplicity. Staying hydrated also helps manage blood pressure and curbs false hunger signals.
+        </WhySection>
       </div>
 
       {/* Quick toggles row */}
@@ -540,17 +577,17 @@ export function DashboardTab({
       {/* Food log — grouped by meal (Tasks 1 & 2) */}
       <div className="bg-white/[0.05] border border-white/[0.08] rounded-2xl overflow-hidden mb-4">
         <div className="flex justify-between items-center px-4 py-3 border-b border-white/[0.06]">
-          <span className="text-[15px] font-semibold">Today's Food</span>
+          <span className="text-[17px] font-semibold">Today's Food</span>
           {daily.food.length > 0 && (
-            <span className="text-[12px] text-white/40">{daily.food.length} items · {totalCal} cal</span>
+            <span className="text-sm text-white/40">{daily.food.length} items · {totalCal} cal</span>
           )}
         </div>
         {daily.food.length === 0 ? (
           <div className="px-4 py-5 text-center">
-            <p className="text-[14px] text-white/30">Nothing logged yet</p>
+            <p className="text-[15px] text-white/30">Nothing logged yet</p>
             <button
               onClick={() => onOpenLog?.('I ate ')}
-              className="mt-3 text-blue-400 text-sm font-semibold bg-transparent border-none cursor-pointer active:opacity-70"
+              className="mt-3 text-blue-400 text-[16px] font-semibold bg-transparent border-none cursor-pointer active:opacity-70"
             >
               + Log food
             </button>
@@ -565,10 +602,10 @@ export function DashboardTab({
               return (
                 <div key={meal.key} className="border-b border-white/[0.06] last:border-0">
                   <div className="flex justify-between items-center px-4 py-2 bg-white/[0.03]">
-                    <span className="text-[13px] font-semibold text-white/60">
+                    <span className="text-sm font-semibold text-white/60">
                       {meal.icon} {meal.label}
                     </span>
-                    <span className="text-[12px] text-white/35">
+                    <span className="text-sm text-white/35">
                       {mealCal} cal · {mealProtein}g
                     </span>
                   </div>
@@ -595,12 +632,12 @@ export function DashboardTab({
       {/* Exercises summary */}
       {daily.exercises.length > 0 && (
         <div className="bg-white/[0.05] border border-white/[0.08] rounded-2xl px-4 py-3 mb-4">
-          <div className="text-[15px] font-semibold mb-2">Today's Lifts</div>
+          <div className="text-[17px] font-semibold mb-2">Today's Lifts</div>
           {daily.exercises.map(e => (
-            <div key={e.id} className="flex items-center py-2 border-b border-white/[0.06] last:border-0">
-              <span className="text-green-400 mr-2 text-sm">✓</span>
-              <span className="text-[14px] flex-1">{e.name}</span>
-              <span className="text-[12px] text-white/40">{e.weight}lbs × {e.sets}×{e.reps}</span>
+            <div key={e.id} className="flex items-center py-2.5 border-b border-white/[0.06] last:border-0">
+              <span className="text-green-400 mr-2 text-[17px]">✓</span>
+              <span className="text-[17px] flex-1">{e.name}</span>
+              <span className="text-sm text-white/40">{e.weight}lbs × {e.sets}×{e.reps}</span>
             </div>
           ))}
         </div>
@@ -609,16 +646,18 @@ export function DashboardTab({
       {/* Wednesday weigh-in */}
       {isWednesday() && !todayLogged && (
         <div className="bg-amber-500/10 border border-amber-500/30 rounded-2xl px-4 py-4 mb-4">
-          <div className="text-[15px] font-semibold text-amber-400 mb-3">⚖️ Wednesday Weigh-In</div>
+          <div className="text-[17px] font-semibold text-amber-400 mb-3">⚖️ Wednesday Weigh-In</div>
           <div className="flex gap-2">
             <input
-              type="number"
+              type="text"
+              inputMode="decimal"
+              autoComplete="off"
+              enterKeyHint="done"
               value={weightInput}
               onChange={e => setWeightInput(e.target.value)}
               placeholder="Weight (lbs)"
-              step="0.1"
               className="flex-1 bg-white/[0.08] border border-white/[0.1] rounded-xl px-4 py-3
-                text-[16px] text-white outline-none placeholder:text-white/30"
+                text-[17px] text-white outline-none placeholder:text-white/30"
             />
             <button
               onClick={handleWeighIn}

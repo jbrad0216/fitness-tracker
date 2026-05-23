@@ -21,6 +21,14 @@
   -webkit-tap-highlight-color: transparent;
 }
 
+button {
+  -webkit-touch-callout: none;
+}
+
+a, button, [role="button"] {
+  touch-action: manipulation;
+}
+
 body {
   background: var(--bg);
   color: var(--text-primary);

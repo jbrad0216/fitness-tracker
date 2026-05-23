@@ -58,7 +58,7 @@ export function Toast({ message, onDone }) {
 
   return (
     <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50
-      bg-green-500/90 text-white px-5 py-2 rounded-full text-sm font-semibold
+      bg-green-500/90 text-white px-5 py-2.5 rounded-full text-[15px] font-semibold
       backdrop-blur-sm shadow-lg"
       style={{ animation: 'toastIn 0.2s ease-out' }}
     >
@@ -143,8 +143,8 @@ export function Card({ children, className = '', highlight = false, pressable = 
 export function CardTitle({ children, right }) {
   return (
     <div className="flex justify-between items-center mb-2">
-      <span className="text-[13px] font-semibold">{children}</span>
-      {right && <span className="text-xs text-white/50">{right}</span>}
+      <span className="text-[15px] font-semibold">{children}</span>
+      {right && <span className="text-sm text-white/50">{right}</span>}
     </div>
   );
 }
@@ -154,9 +154,9 @@ export function Input({ className = '', ...props }) {
   return (
     <input
       className={`bg-white/[0.06] border border-white/[0.08] rounded-[10px]
-        px-3.5 py-2.5 text-white/90 text-sm outline-none w-full
-        placeholder:text-white/25 focus:border-blue-500/50 transition-colors
-        min-h-[44px]
+        px-3.5 py-3 text-white/90 text-[17px] outline-none w-full
+        placeholder:text-white/30 focus:border-blue-500/50 transition-colors
+        min-h-[52px]
         ${className}`}
       {...props}
     />
@@ -180,8 +180,8 @@ export function Button({ children, variant = 'primary', className = '', onClick,
 
   return (
     <button
-      className={`rounded-[10px] px-4 py-2.5 text-sm font-semibold cursor-pointer
-        transition-all duration-150 active:scale-95 border-none min-h-[44px]
+      className={`rounded-[10px] px-4 py-3 text-[16px] font-semibold cursor-pointer
+        transition-all duration-150 active:scale-95 active:opacity-80 border-none min-h-[52px]
         ${variants[variant] || variants.primary}
         ${className}`}
       onClick={handleClick}
@@ -195,7 +195,7 @@ export function Button({ children, variant = 'primary', className = '', onClick,
 // ─── Label ───
 export function Label({ children }) {
   return (
-    <label className="text-[12px] text-white/50 uppercase tracking-wider mb-1 block">
+    <label className="text-sm text-white/50 uppercase tracking-wider mb-1 block">
       {children}
     </label>
   );
@@ -260,8 +260,8 @@ export function LandscapeHint() {
 export function StatBox({ value, label, color }) {
   return (
     <div className="text-center py-1">
-      <div className="text-xl font-bold" style={{ color }}>{value}</div>
-      <div className="text-[11px] text-white/50">{label}</div>
+      <div className="text-[20px] font-bold" style={{ color }}>{value}</div>
+      <div className="text-sm text-white/50">{label}</div>
     </div>
   );
 }

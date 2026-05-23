@@ -47,8 +47,11 @@ function FoodConfirmCard({ msg, onConfirm, onReject }) {
       <div className="bg-white/[0.06] border border-white/[0.12] rounded-2xl p-4 w-full">
         <div className="text-sm font-semibold mb-3 text-white/80">Edit nutrition:</div>
         <input
+          type="text"
+          inputMode="text"
+          autoComplete="off"
           className="w-full bg-white/[0.08] border border-white/[0.1] rounded-xl px-3 py-2.5
-            text-sm text-white outline-none mb-2 placeholder:text-white/30"
+            text-[16px] text-white outline-none mb-2 placeholder:text-white/30"
           value={form.name}
           onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
           placeholder="Food name"
@@ -61,11 +64,13 @@ function FoodConfirmCard({ msg, onConfirm, onReject }) {
             { k: 'carbs', label: 'Carbs (g)' },
           ].map(({ k, label }) => (
             <div key={k}>
-              <div className="text-[12px] text-white/40 mb-1">{label}</div>
+              <div className="text-sm text-white/40 mb-1">{label}</div>
               <input
-                type="number"
+                type="text"
+                inputMode="decimal"
+                autoComplete="off"
                 className="w-full bg-white/[0.08] border border-white/[0.1] rounded-xl px-3 py-2
-                  text-sm text-white outline-none placeholder:text-white/30"
+                  text-[16px] text-white outline-none placeholder:text-white/30"
                 value={form[k] || ''}
                 onChange={e => setForm(f => ({ ...f, [k]: parseFloat(e.target.value) || 0 }))}
               />
@@ -94,13 +99,13 @@ function FoodConfirmCard({ msg, onConfirm, onReject }) {
 
   return (
     <div className="bg-white/[0.06] border border-white/[0.12] rounded-2xl p-4 w-full">
-      <div className="text-[17px] font-bold mb-1 leading-snug">{food.name}</div>
+      <div className="text-[18px] font-bold mb-1 leading-snug">{food.name}</div>
       <div className="flex items-center gap-2 mb-2">
         {food.servingSize && (
-          <span className="text-[13px] text-white/40">{food.servingSize}</span>
+          <span className="text-sm text-white/40">{food.servingSize}</span>
         )}
         {food.source && (
-          <span className="text-[11px] text-white/25 bg-white/[0.04] rounded-full px-2 py-0.5">{food.source}</span>
+          <span className="text-sm text-white/25 bg-white/[0.04] rounded-full px-2 py-0.5">{food.source}</span>
         )}
       </div>
       <div className="grid grid-cols-4 gap-2 mb-3">
@@ -111,20 +116,20 @@ function FoodConfirmCard({ msg, onConfirm, onReject }) {
           { label: 'Carbs', value: `${food.carbs || 0}g`, color: 'text-white/60' },
         ].map(({ label, value, color }) => (
           <div key={label} className="text-center bg-white/[0.04] rounded-xl py-2 px-1">
-            <div className={`text-[15px] font-bold ${color}`}>{value}</div>
-            <div className="text-[12px] text-white/40 mt-0.5">{label}</div>
+            <div className={`text-[16px] font-bold ${color}`}>{value}</div>
+            <div className="text-sm text-white/40 mt-0.5">{label}</div>
           </div>
         ))}
       </div>
       {/* Meal selector */}
       <div className="mb-3">
-        <div className="text-[12px] text-white/40 mb-1.5">Logging as:</div>
+        <div className="text-sm text-white/40 mb-1.5">Logging as:</div>
         <div className="flex gap-1.5">
           {MEAL_OPTIONS.map(opt => (
             <button
               key={opt.key}
               onClick={() => setMeal(opt.key)}
-              className={`flex-1 rounded-xl py-1.5 text-xs font-semibold border-none cursor-pointer
+              className={`flex-1 rounded-xl py-2 text-sm font-semibold border-none cursor-pointer
                 active:scale-95 transition-all
                 ${meal === opt.key ? 'bg-blue-500 text-white' : 'bg-white/[0.06] text-white/50'}`}
             >
@@ -132,7 +137,7 @@ function FoodConfirmCard({ msg, onConfirm, onReject }) {
             </button>
           ))}
         </div>
-        <div className="text-[12px] text-white/40 text-center mt-1">
+        <div className="text-sm text-white/40 text-center mt-1">
           {MEAL_OPTIONS.find(o => o.key === meal)?.label}
         </div>
       </div>
@@ -167,11 +172,11 @@ function FoodConfirmCard({ msg, onConfirm, onReject }) {
 function RecentFoodCard({ food, onYes, onSearchAgain }) {
   return (
     <div className="bg-blue-500/10 border border-blue-500/25 rounded-2xl p-4 w-full">
-      <div className="text-[13px] text-blue-300 mb-2">
+      <div className="text-sm text-blue-300 mb-2">
         Last time you logged this as:
       </div>
-      <div className="text-base font-semibold mb-1">{food.name}</div>
-      <div className="text-sm text-white/60 mb-3">
+      <div className="text-[17px] font-semibold mb-1">{food.name}</div>
+      <div className="text-[15px] text-white/60 mb-3">
         {food.cal} cal · {food.protein}g protein
       </div>
       <div className="flex gap-2">
@@ -238,8 +243,8 @@ function parseMessage(text, ctx) {
     }
   }
 
-  // Water
-  if (/\b(water|bottle|drank|drink|hydrat)\b/.test(lower)) {
+  // Water — only match when water/bottle/hydrat keyword is present
+  if (/\b(water|bottle|hydrat)\b/.test(lower)) {
     const b = num(lower);
     if (b !== null && b >= 0 && b <= 10) {
       setWater(Math.round(b));
@@ -295,7 +300,7 @@ function parseMessage(text, ctx) {
     // Extract food name: remove the log keyword and common prefixes/suffixes
     let foodName = lower
       .replace(/\b(i|just|already|also|for|today|this morning|tonight|at)\b/g, ' ')
-      .replace(/\b(ate|eat|had|eaten|consumed|having|eating)\b/g, ' ')
+      .replace(/\b(ate|eat|had|eaten|consumed|having|eating|drink|drank)\b/g, ' ')
       .replace(/\b(for\s+)?(lunch|dinner|breakfast|snack)\b/g, ' ')
       .replace(/\b(a|an|some|my|the|some)\b/g, ' ')
       .replace(/\s+/g, ' ')
@@ -645,8 +650,8 @@ export function ChatInterface({
       {embedded && (
         <div className="px-4 py-3 border-b border-white/[0.08] shrink-0"
           style={{ paddingTop: 'max(env(safe-area-inset-top), 12px)' }}>
-          <h2 className="text-[18px] font-bold">Log</h2>
-          <p className="text-[12px] text-white/40">Type anything — food, run, water, weight</p>
+          <h2 className="text-[20px] font-bold">Log</h2>
+          <p className="text-sm text-white/40">Type anything — food, run, water, weight</p>
         </div>
       )}
 
@@ -655,8 +660,8 @@ export function ChatInterface({
         {messages.length === 0 && (
           <div className="text-center py-6">
             <div className="text-5xl mb-3">💬</div>
-            <p className="text-base text-white/60 mb-1">Tell me what you did.</p>
-            <p className="text-sm text-white/35 mb-5">I'll log it for you.</p>
+            <p className="text-[17px] text-white/60 mb-1">Tell me what you did.</p>
+            <p className="text-[15px] text-white/35 mb-5">I'll log it for you.</p>
             <div className="grid grid-cols-2 gap-2">
               {[
                 'I ran 2 miles',
@@ -669,8 +674,8 @@ export function ChatInterface({
                 <button
                   key={i}
                   onClick={() => { setInput(s); inputRef.current?.focus(); }}
-                  className="text-left text-sm text-white/50 bg-white/[0.04] rounded-xl
-                    px-3 py-3 border border-white/[0.06] cursor-pointer active:opacity-70"
+                  className="text-left text-[15px] text-white/50 bg-white/[0.04] rounded-xl
+                    px-3 py-3 border border-white/[0.06] cursor-pointer active:opacity-70 active:scale-95"
                 >
                   {s}
                 </button>
@@ -687,7 +692,7 @@ export function ChatInterface({
                   <div className="bg-green-500/15 border border-green-500/30 text-green-300
                     rounded-2xl rounded-bl-sm px-3.5 py-2.5 text-sm max-w-[85%]">
                     ✓ Logged: {msg.food.name} — {msg.food.cal} cal, {msg.food.protein}g protein
-                    <p className="text-[12px] opacity-50 mt-1">{msg.time}</p>
+                    <p className="text-sm opacity-50 mt-1">{msg.time}</p>
                   </div>
                 </div>
               );
@@ -737,7 +742,7 @@ export function ChatInterface({
 
           return (
             <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-              <div className={`max-w-[85%] rounded-2xl px-3.5 py-2.5 text-sm
+              <div className={`max-w-[85%] rounded-2xl px-3.5 py-2.5 text-[15px]
                 ${msg.role === 'user'
                   ? 'bg-blue-500 text-white rounded-br-sm'
                   : msg.type === 'success'
@@ -748,7 +753,7 @@ export function ChatInterface({
                 }`}
               >
                 <p className="leading-relaxed">{msg.text}</p>
-                <p className="text-[12px] opacity-50 mt-1">{msg.time}</p>
+                <p className="text-sm opacity-50 mt-1">{msg.time}</p>
               </div>
             </div>
           );
@@ -784,8 +789,8 @@ export function ChatInterface({
             }}
             className={`shrink-0 border rounded-full cursor-pointer active:scale-95 whitespace-nowrap
               ${chip.large
-                ? 'bg-blue-500/15 border-blue-500/40 text-blue-300 px-4 py-2.5 text-[14px] font-semibold'
-                : 'bg-white/[0.08] border-white/[0.1] text-white/70 px-3.5 py-2 text-[13px]'}`}
+                ? 'bg-blue-500/15 border-blue-500/40 text-blue-300 px-4 py-2.5 text-[15px] font-semibold'
+                : 'bg-white/[0.08] border-white/[0.1] text-white/70 px-3.5 py-2 text-sm'}`}
           >
             {chip.label}
           </button>
@@ -798,6 +803,9 @@ export function ChatInterface({
           <input
             ref={inputRef}
             type="text"
+            inputMode="text"
+            enterKeyHint="send"
+            autoComplete="off"
             value={input}
             onChange={e => setInput(e.target.value)}
             onKeyDown={handleKey}

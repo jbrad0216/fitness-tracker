@@ -200,19 +200,19 @@ export function StatsTab({ weighIns, addWeighIn, latest, liftLog, startWeight, g
         <div className="flex justify-around text-center">
           <div>
             <div className="text-2xl font-bold text-amber-400">{streak}</div>
-            <div className="text-[11px] text-white/50">day streak 🔥</div>
+            <div className="text-sm text-white/50">day streak 🔥</div>
           </div>
           <div className="w-px bg-white/[0.08]" />
           {weeklyAvg ? (
             <>
               <div>
                 <div className="text-xl font-bold">{weeklyAvg.cal}</div>
-                <div className="text-[11px] text-white/50">avg cal/day</div>
+                <div className="text-sm text-white/50">avg cal/day</div>
               </div>
               <div className="w-px bg-white/[0.08]" />
               <div>
                 <div className="text-xl font-bold">{weeklyAvg.protein}g</div>
-                <div className="text-[11px] text-white/50">avg protein/day</div>
+                <div className="text-sm text-white/50">avg protein/day</div>
               </div>
             </>
           ) : (
@@ -222,7 +222,7 @@ export function StatsTab({ weighIns, addWeighIn, latest, liftLog, startWeight, g
           )}
         </div>
         {weeklyAvg && (
-          <p className="text-[10px] text-white/25 text-center mt-2">
+          <p className="text-sm text-white/25 text-center mt-2">
             Based on {weeklyAvg.days} day{weeklyAvg.days !== 1 ? 's' : ''} this week
           </p>
         )}
@@ -265,16 +265,18 @@ export function StatsTab({ weighIns, addWeighIn, latest, liftLog, startWeight, g
         <CardTitle>Log Weigh-In</CardTitle>
         <div className="flex gap-2">
           <Input
-            type="number"
+            type="text"
+            inputMode="decimal"
+            autoComplete="off"
+            enterKeyHint="done"
             value={weightInput}
             onChange={e => setWeightInput(e.target.value)}
             placeholder="Weight (lbs)"
-            step="0.1"
             className="flex-1"
           />
           <Button onClick={handleWeighIn}>Log</Button>
         </div>
-        <p className="text-[11px] text-white/40 mt-1.5">Best practice: Wednesday mornings only</p>
+        <p className="text-sm text-white/40 mt-1.5">Best practice: Wednesday mornings only</p>
       </Card>
 
       {/* Personal Records */}
@@ -285,12 +287,12 @@ export function StatsTab({ weighIns, addWeighIn, latest, liftLog, startWeight, g
             <div key={i} className="flex justify-between items-center py-2
               border-b border-white/[0.06] last:border-0">
               <div>
-                <span className="text-[13px]">{pr.name || pr.key}</span>
-                <div className="text-[11px] text-white/30">{formatDateShort(pr.date)}</div>
+                <span className="text-[15px]">{pr.name || pr.key}</span>
+                <div className="text-sm text-white/30">{formatDateShort(pr.date)}</div>
               </div>
               <div className="text-right">
-                <span className="text-[13px] text-blue-400 font-semibold">{pr.weight}lbs</span>
-                <div className="text-[11px] text-white/30">{pr.sets}×{pr.reps}</div>
+                <span className="text-[15px] text-blue-400 font-semibold">{pr.weight}lbs</span>
+                <div className="text-sm text-white/30">{pr.sets}×{pr.reps}</div>
               </div>
             </div>
           ))}
@@ -309,11 +311,11 @@ export function StatsTab({ weighIns, addWeighIn, latest, liftLog, startWeight, g
             return (
               <div key={i}
                 className="flex justify-between py-2 border-b border-white/[0.06] last:border-0">
-                <span className="text-[13px] text-white/50">{formatDateShort(wi.date)}</span>
-                <span className="text-[13px]">
+                <span className="text-[15px] text-white/50">{formatDateShort(wi.date)}</span>
+                <span className="text-[15px]">
                   {wi.weight} lbs
                   {diff !== 0 && (
-                    <span className={`ml-2 text-[11px] ${diff < 0 ? 'text-green-400' : 'text-red-400'}`}>
+                    <span className={`ml-2 text-sm ${diff < 0 ? 'text-green-400' : 'text-red-400'}`}>
                       {diff > 0 ? '+' : ''}{diff.toFixed(1)}
                     </span>
                   )}
@@ -330,7 +332,7 @@ export function StatsTab({ weighIns, addWeighIn, latest, liftLog, startWeight, g
         <Button onClick={handleExport} variant="ghost" className="w-full mb-2">
           📥 Export All Data (JSON)
         </Button>
-        <p className="text-[11px] text-white/30 text-center">
+        <p className="text-sm text-white/30 text-center">
           Download a full backup of all your data
         </p>
       </Card>

@@ -27,11 +27,11 @@ function WorkoutEditor({ label, exercises, onUpdate, onRemove, onMove, onAdd }) 
         <div key={i} className="mb-2 rounded-xl bg-white/[0.03] border border-white/[0.06] p-3">
           {editIndex === i ? (
             <div className="flex flex-col gap-2">
-              <Input type="text" value={editForm.name} onChange={e => setEditForm(f => ({ ...f, name: e.target.value }))} placeholder="Exercise name" />
+              <Input type="text" inputMode="text" autoComplete="off" value={editForm.name} onChange={e => setEditForm(f => ({ ...f, name: e.target.value }))} placeholder="Exercise name" />
               <div className="flex gap-1.5">
-                <div className="flex-1"><Label>Wt (lbs)</Label><Input type="number" value={editForm.defaultWeight} onChange={e => setEditForm(f => ({ ...f, defaultWeight: e.target.value }))} step="2.5" /></div>
-                <div className="w-14"><Label>Sets</Label><Input type="number" value={editForm.sets} onChange={e => setEditForm(f => ({ ...f, sets: e.target.value }))} /></div>
-                <div className="w-14"><Label>Reps</Label><Input type="number" value={editForm.reps} onChange={e => setEditForm(f => ({ ...f, reps: e.target.value }))} /></div>
+                <div className="flex-1"><Label>Wt (lbs)</Label><Input type="text" inputMode="decimal" autoComplete="off" enterKeyHint="done" value={editForm.defaultWeight} onChange={e => setEditForm(f => ({ ...f, defaultWeight: e.target.value }))} /></div>
+                <div className="w-14"><Label>Sets</Label><Input type="text" inputMode="numeric" autoComplete="off" enterKeyHint="done" value={editForm.sets} onChange={e => setEditForm(f => ({ ...f, sets: e.target.value }))} /></div>
+                <div className="w-14"><Label>Reps</Label><Input type="text" inputMode="numeric" autoComplete="off" enterKeyHint="done" value={editForm.reps} onChange={e => setEditForm(f => ({ ...f, reps: e.target.value }))} /></div>
               </div>
               <div className="flex gap-1.5">
                 <Button onClick={saveEdit} className="flex-1 text-xs py-2">Save</Button>
@@ -41,8 +41,8 @@ function WorkoutEditor({ label, exercises, onUpdate, onRemove, onMove, onAdd }) 
           ) : (
             <div className="flex items-center justify-between">
               <div className="flex-1 min-w-0">
-                <div className="text-sm truncate">{ex.name}</div>
-                <div className="text-[12px] text-white/40">{ex.defaultWeight}lbs · {ex.sets}×{ex.reps}</div>
+                <div className="text-[15px] truncate">{ex.name}</div>
+                <div className="text-sm text-white/40">{ex.defaultWeight}lbs · {ex.sets}×{ex.reps}</div>
               </div>
               <div className="flex gap-1 ml-2 shrink-0">
                 <button onClick={() => onMove(i, -1)} disabled={i === 0} className="w-7 h-7 rounded-lg bg-white/[0.05] text-white/50 border-none cursor-pointer text-xs disabled:opacity-20">↑</button>
@@ -57,11 +57,11 @@ function WorkoutEditor({ label, exercises, onUpdate, onRemove, onMove, onAdd }) 
       <div className="rounded-xl bg-white/[0.02] border border-white/[0.05] p-3">
         <p className="text-[12px] text-white/30 mb-2 uppercase tracking-wider">Add Exercise</p>
         <div className="flex flex-col gap-1.5">
-          <Input type="text" value={newEx.name} onChange={e => setNewEx(f => ({ ...f, name: e.target.value }))} placeholder="Exercise name" />
+          <Input type="text" inputMode="text" autoComplete="off" value={newEx.name} onChange={e => setNewEx(f => ({ ...f, name: e.target.value }))} placeholder="Exercise name" />
           <div className="flex gap-1.5">
-            <Input type="number" value={newEx.defaultWeight} onChange={e => setNewEx(f => ({ ...f, defaultWeight: e.target.value }))} placeholder="Wt" step="2.5" className="flex-1" />
-            <Input type="number" value={newEx.sets} onChange={e => setNewEx(f => ({ ...f, sets: e.target.value }))} placeholder="Sets" className="w-16" />
-            <Input type="number" value={newEx.reps} onChange={e => setNewEx(f => ({ ...f, reps: e.target.value }))} placeholder="Reps" className="w-16" />
+            <Input type="text" inputMode="decimal" autoComplete="off" enterKeyHint="done" value={newEx.defaultWeight} onChange={e => setNewEx(f => ({ ...f, defaultWeight: e.target.value }))} placeholder="Wt" className="flex-1" />
+            <Input type="text" inputMode="numeric" autoComplete="off" enterKeyHint="done" value={newEx.sets} onChange={e => setNewEx(f => ({ ...f, sets: e.target.value }))} placeholder="Sets" className="w-16" />
+            <Input type="text" inputMode="numeric" autoComplete="off" enterKeyHint="done" value={newEx.reps} onChange={e => setNewEx(f => ({ ...f, reps: e.target.value }))} placeholder="Reps" className="w-16" />
           </div>
           <Button onClick={handleAdd} variant="ghost" className="w-full text-xs py-2">+ Add</Button>
         </div>
@@ -105,8 +105,8 @@ function ScheduledMealsEditor({ notify }) {
       {meals.map(m => (
         <div key={m.id} className="bg-white/[0.04] border border-white/[0.06] rounded-xl px-3 py-2.5 mb-2 flex items-center gap-2">
           <div className="flex-1 min-w-0">
-            <div className="text-[14px] font-semibold truncate">{m.name}</div>
-            <div className="text-[12px] text-white/40">
+            <div className="text-[16px] font-semibold truncate">{m.name}</div>
+            <div className="text-sm text-white/40">
               {m.cal} cal · {m.protein}g · {m.meal} · {m.days.map(d => DAYS_OF_WEEK[d].slice(0,3)).join(', ')}
             </div>
           </div>
@@ -116,10 +116,10 @@ function ScheduledMealsEditor({ notify }) {
       ))}
       {adding ? (
         <div className="bg-white/[0.04] border border-white/[0.08] rounded-xl p-3 mt-2">
-          <Input type="text" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} placeholder="Meal name (e.g. Overnight Oats)" className="mb-2" />
+          <Input type="text" inputMode="text" autoComplete="off" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} placeholder="Meal name (e.g. Overnight Oats)" className="mb-2" />
           <div className="flex gap-1.5 mb-2">
-            <Input type="number" value={form.cal} onChange={e => setForm(f => ({ ...f, cal: e.target.value }))} placeholder="Cal" className="flex-1" />
-            <Input type="number" value={form.protein} onChange={e => setForm(f => ({ ...f, protein: e.target.value }))} placeholder="Protein g" className="flex-1" />
+            <Input type="text" inputMode="numeric" autoComplete="off" enterKeyHint="done" value={form.cal} onChange={e => setForm(f => ({ ...f, cal: e.target.value }))} placeholder="Cal" className="flex-1" />
+            <Input type="text" inputMode="numeric" autoComplete="off" enterKeyHint="done" value={form.protein} onChange={e => setForm(f => ({ ...f, protein: e.target.value }))} placeholder="Protein g" className="flex-1" />
           </div>
           <select
             value={form.meal}
@@ -152,6 +152,15 @@ function ScheduledMealsEditor({ notify }) {
       )}
     </div>
   );
+}
+
+function parseHeightStr(h) {
+  const m = String(h || '').match(/^(\d+)['\s"]*(\d+)/);
+  if (m) return { feet: m[1], inches: m[2] };
+  return { feet: '6', inches: '1' };
+}
+function buildHeightStr(feet, inches) {
+  return `${parseInt(feet) || 6}'${parseInt(inches) || 0}"`;
 }
 
 export function SettingsTab({ settings, updateSettings, resetSettings, templates, workoutOps, notify }) {
@@ -238,14 +247,47 @@ export function SettingsTab({ settings, updateSettings, resetSettings, templates
       <Card>
         <CardTitle>Profile</CardTitle>
         <div className="flex flex-col gap-3">
-          <div><Label>Name</Label><Input type="text" {...f('name')} placeholder="Your name" /></div>
+          <div><Label>Name</Label><Input type="text" inputMode="text" autoComplete="off" {...f('name')} placeholder="Your name" /></div>
           <div className="flex gap-2">
-            <div className="flex-1"><Label>Age</Label><Input type="number" {...f('age')} placeholder="48" /></div>
-            <div className="flex-1"><Label>Height</Label><Input type="text" {...f('height')} placeholder="6'1&quot;" /></div>
+            <div className="flex-1">
+              <Label>Age</Label>
+              <Input type="text" inputMode="numeric" autoComplete="off" enterKeyHint="done" {...f('age')} placeholder="48" />
+            </div>
+            <div className="flex-1">
+              <Label>Height</Label>
+              <div className="flex gap-2">
+                <div className="flex-1">
+                  <Input
+                    type="text"
+                    inputMode="numeric"
+                    autoComplete="off"
+                    enterKeyHint="next"
+                    value={parseHeightStr(form.height).feet}
+                    onChange={e => setForm(prev => ({ ...prev, height: buildHeightStr(e.target.value, parseHeightStr(prev.height).inches) }))}
+                    placeholder="6"
+                    className="text-center"
+                  />
+                  <div className="text-sm text-white/40 text-center mt-1">ft</div>
+                </div>
+                <div className="flex-1">
+                  <Input
+                    type="text"
+                    inputMode="numeric"
+                    autoComplete="off"
+                    enterKeyHint="done"
+                    value={parseHeightStr(form.height).inches}
+                    onChange={e => setForm(prev => ({ ...prev, height: buildHeightStr(parseHeightStr(prev.height).feet, e.target.value) }))}
+                    placeholder="1"
+                    className="text-center"
+                  />
+                  <div className="text-sm text-white/40 text-center mt-1">in</div>
+                </div>
+              </div>
+            </div>
           </div>
           <div className="flex gap-2">
-            <div className="flex-1"><Label>Start Weight (lbs)</Label><Input type="number" {...f('startWeight')} step="0.1" /></div>
-            <div className="flex-1"><Label>Goal Weight (lbs)</Label><Input type="number" {...f('goalWeight')} step="0.1" /></div>
+            <div className="flex-1"><Label>Start Weight (lbs)</Label><Input type="text" inputMode="decimal" autoComplete="off" enterKeyHint="done" {...f('startWeight')} placeholder="222" /></div>
+            <div className="flex-1"><Label>Goal Weight (lbs)</Label><Input type="text" inputMode="decimal" autoComplete="off" enterKeyHint="done" {...f('goalWeight')} placeholder="200" /></div>
           </div>
         </div>
       </Card>
@@ -254,12 +296,12 @@ export function SettingsTab({ settings, updateSettings, resetSettings, templates
         <CardTitle>Daily Targets</CardTitle>
         <div className="flex flex-col gap-3">
           <div className="flex gap-2">
-            <div className="flex-1"><Label>Calories</Label><Input type="number" {...f('calories')} placeholder="2400" /></div>
-            <div className="flex-1"><Label>Protein (g)</Label><Input type="number" {...f('protein')} placeholder="160" /></div>
+            <div className="flex-1"><Label>Calories</Label><Input type="text" inputMode="numeric" autoComplete="off" enterKeyHint="done" {...f('calories')} placeholder="2400" /></div>
+            <div className="flex-1"><Label>Protein (g)</Label><Input type="text" inputMode="numeric" autoComplete="off" enterKeyHint="done" {...f('protein')} placeholder="160" /></div>
           </div>
           <div className="flex gap-2">
-            <div className="flex-1"><Label>Water (32oz bottles)</Label><Input type="number" {...f('waterBottles')} min="1" max="6" /></div>
-            <div className="flex-1"><Label>Sodium Max (mg)</Label><Input type="number" {...f('sodiumMg')} /></div>
+            <div className="flex-1"><Label>Water (32oz bottles)</Label><Input type="text" inputMode="numeric" autoComplete="off" enterKeyHint="done" {...f('waterBottles')} placeholder="3" /></div>
+            <div className="flex-1"><Label>Sodium Max (mg)</Label><Input type="text" inputMode="numeric" autoComplete="off" enterKeyHint="done" {...f('sodiumMg')} placeholder="2000" /></div>
           </div>
         </div>
       </Card>
@@ -271,7 +313,7 @@ export function SettingsTab({ settings, updateSettings, resetSettings, templates
 
       <Card>
         <CardTitle>Scheduled Meals</CardTitle>
-        <p className="text-[12px] text-white/40 mb-3">Meals that auto-appear on selected days for quick logging.</p>
+        <p className="text-sm text-white/40 mb-3">Meals that auto-appear on selected days for quick logging.</p>
         <ScheduledMealsEditor notify={notify} />
       </Card>
 

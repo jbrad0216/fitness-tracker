@@ -12,6 +12,16 @@ const STEPS = [
   { id: 'data', title: 'Your data', subtitle: '' },
 ];
 
+function parseHeightStr(h) {
+  const m = String(h || '').match(/^(\d+)['\s"]*(\d+)/);
+  if (m) return { feet: m[1], inches: m[2] };
+  return { feet: '', inches: '' };
+}
+function buildHeightStr(feet, inches) {
+  if (!feet && !inches) return '';
+  return `${parseInt(feet) || 6}'${parseInt(inches) || 0}"`;
+}
+
 export function OnboardingFlow({ onComplete }) {
   const [step, setStep] = useState(0);
   const [form, setForm] = useState({
@@ -86,7 +96,7 @@ export function OnboardingFlow({ onComplete }) {
       <div className="w-full max-w-sm">
         <div className="mb-8 text-center">
           <h1 className="text-2xl font-bold mb-2">{current.title}</h1>
-          {current.subtitle && <p className="text-sm text-white/50">{current.subtitle}</p>}
+          {current.subtitle && <p className="text-[15px] text-white/50">{current.subtitle}</p>}
         </div>
 
         {current.id === 'welcome' && (
@@ -101,8 +111,8 @@ export function OnboardingFlow({ onComplete }) {
                 <div key={item.icon} className="flex items-center gap-3">
                   <span className="text-xl">{item.icon}</span>
                   <div>
-                    <div className="text-sm font-semibold">{item.title}</div>
-                    <div className="text-xs text-white/40">{item.desc}</div>
+                    <div className="text-[16px] font-semibold">{item.title}</div>
+                    <div className="text-sm text-white/40">{item.desc}</div>
                   </div>
                 </div>
               ))}
@@ -112,10 +122,43 @@ export function OnboardingFlow({ onComplete }) {
 
         {current.id === 'profile' && (
           <div className="space-y-4">
-            <div><Label>Your name</Label><Input {...f('name')} type="text" placeholder="e.g. Jason" className="text-lg py-3" /></div>
+            <div><Label>Your name</Label><Input {...f('name')} type="text" inputMode="text" autoComplete="off" placeholder="e.g. Jason" className="text-lg py-3" /></div>
             <div className="flex gap-3">
-              <div className="flex-1"><Label>Age</Label><Input {...f('age')} type="number" placeholder="48" /></div>
-              <div className="flex-1"><Label>Height</Label><Input {...f('height')} type="text" placeholder="6'1&quot;" /></div>
+              <div className="flex-1">
+                <Label>Age</Label>
+                <Input {...f('age')} type="text" inputMode="numeric" autoComplete="off" enterKeyHint="done" placeholder="48" />
+              </div>
+              <div className="flex-1">
+                <Label>Height</Label>
+                <div className="flex gap-2">
+                  <div className="flex-1">
+                    <Input
+                      type="text"
+                      inputMode="numeric"
+                      autoComplete="off"
+                      enterKeyHint="next"
+                      value={parseHeightStr(form.height).feet}
+                      onChange={e => setForm(prev => ({ ...prev, height: buildHeightStr(e.target.value, parseHeightStr(prev.height).inches) }))}
+                      placeholder="6"
+                      className="text-center"
+                    />
+                    <div className="text-sm text-white/40 text-center mt-1">ft</div>
+                  </div>
+                  <div className="flex-1">
+                    <Input
+                      type="text"
+                      inputMode="numeric"
+                      autoComplete="off"
+                      enterKeyHint="done"
+                      value={parseHeightStr(form.height).inches}
+                      onChange={e => setForm(prev => ({ ...prev, height: buildHeightStr(parseHeightStr(prev.height).feet, e.target.value) }))}
+                      placeholder="1"
+                      className="text-center"
+                    />
+                    <div className="text-sm text-white/40 text-center mt-1">in</div>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         )}
@@ -124,12 +167,12 @@ export function OnboardingFlow({ onComplete }) {
           <div className="space-y-4">
             <div>
               <Label>Current weight (lbs)</Label>
-              <Input {...f('startWeight')} type="number" step="0.1" placeholder="e.g. 221" className="text-lg py-3" />
-              <p className="text-xs text-white/30 mt-1">This becomes your starting weight baseline</p>
+              <Input {...f('startWeight')} type="text" inputMode="decimal" autoComplete="off" enterKeyHint="done" placeholder="e.g. 221" className="text-lg py-3" />
+              <p className="text-sm text-white/30 mt-1">This becomes your starting weight baseline</p>
             </div>
             <div>
               <Label>Goal weight (lbs)</Label>
-              <Input {...f('goalWeight')} type="number" step="0.1" placeholder="e.g. 200" />
+              <Input {...f('goalWeight')} type="text" inputMode="decimal" autoComplete="off" enterKeyHint="done" placeholder="e.g. 200" />
               {form.startWeight && form.goalWeight && (
                 <p className="text-xs text-green-400/70 mt-1">
                   Goal: lose {(parseFloat(form.startWeight) - parseFloat(form.goalWeight)).toFixed(1)} lbs
@@ -142,16 +185,16 @@ export function OnboardingFlow({ onComplete }) {
         {current.id === 'targets' && (
           <div className="space-y-4">
             <div className="flex gap-3">
-              <div className="flex-1"><Label>Daily calories</Label><Input {...f('calories')} type="number" placeholder="2400" /></div>
-              <div className="flex-1"><Label>Protein (g)</Label><Input {...f('protein')} type="number" placeholder="160" /></div>
+              <div className="flex-1"><Label>Daily calories</Label><Input {...f('calories')} type="text" inputMode="numeric" autoComplete="off" enterKeyHint="done" placeholder="2400" /></div>
+              <div className="flex-1"><Label>Protein (g)</Label><Input {...f('protein')} type="text" inputMode="numeric" autoComplete="off" enterKeyHint="done" placeholder="160" /></div>
             </div>
             <div className="flex gap-3">
               <div className="flex-1">
                 <Label>Water bottles</Label>
-                <Input {...f('waterBottles')} type="number" min="1" max="6" placeholder="3" />
-                <p className="text-[10px] text-white/30 mt-0.5">32oz each</p>
+                <Input {...f('waterBottles')} type="text" inputMode="numeric" autoComplete="off" enterKeyHint="done" placeholder="3" />
+                <p className="text-sm text-white/30 mt-0.5">32oz each</p>
               </div>
-              <div className="flex-1"><Label>Sodium limit (mg)</Label><Input {...f('sodiumMg')} type="number" placeholder="2000" /></div>
+              <div className="flex-1"><Label>Sodium limit (mg)</Label><Input {...f('sodiumMg')} type="text" inputMode="numeric" autoComplete="off" enterKeyHint="done" placeholder="2000" /></div>
             </div>
           </div>
         )}
