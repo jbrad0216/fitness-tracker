@@ -102,7 +102,7 @@ export function BarcodeScanner({ onScan, onClose }) {
           <div className="text-white/60 text-center mb-4">
             <div className="text-4xl mb-3 animate-pulse">📸</div>
             <p className="text-base">Starting camera...</p>
-            <p className="text-sm text-white/30 mt-2">Allow camera access if prompted</p>
+            <p className="text-base text-white/30 mt-2">Allow camera access if prompted</p>
           </div>
         )}
 
@@ -110,7 +110,7 @@ export function BarcodeScanner({ onScan, onClose }) {
           <div className="text-center">
             <div className="text-5xl mb-4">📷</div>
             <p className="text-white/70 text-base mb-2 font-semibold">Camera unavailable</p>
-            <p className="text-white/40 text-sm mb-6 leading-relaxed">{errorMsg}</p>
+            <p className="text-white/40 text-base mb-6 leading-relaxed">{errorMsg}</p>
             <button
               onClick={onClose}
               className="bg-blue-500 text-white rounded-2xl px-6 py-3 font-semibold
@@ -125,7 +125,7 @@ export function BarcodeScanner({ onScan, onClose }) {
           <div className="text-center">
             <div className="text-5xl mb-4">⏱️</div>
             <p className="text-white/70 text-base mb-2 font-semibold">No barcode found</p>
-            <p className="text-white/40 text-sm mb-6">Try holding your phone closer, or enter the food name manually.</p>
+            <p className="text-white/40 text-base mb-6">Try holding your phone closer, or enter the food name manually.</p>
             <button
               onClick={onClose}
               className="bg-blue-500 text-white rounded-2xl px-6 py-3 font-semibold
@@ -146,8 +146,8 @@ export function BarcodeScanner({ onScan, onClose }) {
 
         {status === 'scanning' && (
           <div className="mt-4 text-center">
-            <p className="text-white/50 text-sm">Point camera at barcode</p>
-            <p className="text-white/25 text-xs mt-1">Times out in 30 seconds</p>
+            <p className="text-white/50 text-base">Point camera at barcode</p>
+            <p className="text-white/25 text-base mt-1">Times out in 30 seconds</p>
           </div>
         )}
       </div>

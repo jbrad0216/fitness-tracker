@@ -22,7 +22,7 @@ function WorkoutEditor({ label, exercises, onUpdate, onRemove, onMove, onAdd }) 
 
   return (
     <div className="mb-4">
-      <h3 className="text-sm font-semibold text-blue-400 mb-2">Workout {label}</h3>
+      <h3 className="text-base font-semibold text-blue-400 mb-2">Workout {label}</h3>
       {exercises.map((ex, i) => (
         <div key={i} className="mb-2 rounded-xl bg-white/[0.03] border border-white/[0.06] p-3">
           {editIndex === i ? (
@@ -34,20 +34,20 @@ function WorkoutEditor({ label, exercises, onUpdate, onRemove, onMove, onAdd }) 
                 <div className="w-14"><Label>Reps</Label><Input type="text" inputMode="numeric" autoComplete="off" enterKeyHint="done" value={editForm.reps} onChange={e => setEditForm(f => ({ ...f, reps: e.target.value }))} /></div>
               </div>
               <div className="flex gap-1.5">
-                <Button onClick={saveEdit} className="flex-1 text-xs py-2">Save</Button>
-                <Button onClick={() => setEditIndex(null)} variant="ghost" className="text-xs py-2">Cancel</Button>
+                <Button onClick={saveEdit} className="flex-1 text-base py-3">Save</Button>
+                <Button onClick={() => setEditIndex(null)} variant="ghost" className="text-base py-3">Cancel</Button>
               </div>
             </div>
           ) : (
             <div className="flex items-center justify-between">
               <div className="flex-1 min-w-0">
-                <div className="text-[15px] truncate">{ex.name}</div>
-                <div className="text-sm text-white/40">{ex.defaultWeight}lbs · {ex.sets}×{ex.reps}</div>
+                <div className="text-base truncate">{ex.name}</div>
+                <div className="text-base text-white/40">{ex.defaultWeight}lbs · {ex.sets}×{ex.reps}</div>
               </div>
               <div className="flex gap-1 ml-2 shrink-0">
-                <button onClick={() => onMove(i, -1)} disabled={i === 0} className="w-7 h-7 rounded-lg bg-white/[0.05] text-white/50 border-none cursor-pointer text-xs disabled:opacity-20">↑</button>
-                <button onClick={() => onMove(i, 1)} disabled={i === exercises.length - 1} className="w-7 h-7 rounded-lg bg-white/[0.05] text-white/50 border-none cursor-pointer text-xs disabled:opacity-20">↓</button>
-                <button onClick={() => startEdit(i)} className="w-7 h-7 rounded-lg bg-blue-500/15 text-blue-400 border-none cursor-pointer text-xs">✏️</button>
+                <button onClick={() => onMove(i, -1)} disabled={i === 0} className="w-10 h-10 rounded-lg bg-white/[0.05] text-white/50 border-none cursor-pointer text-base disabled:opacity-20">↑</button>
+                <button onClick={() => onMove(i, 1)} disabled={i === exercises.length - 1} className="w-10 h-10 rounded-lg bg-white/[0.05] text-white/50 border-none cursor-pointer text-base disabled:opacity-20">↓</button>
+                <button onClick={() => startEdit(i)} className="w-10 h-10 rounded-lg bg-blue-500/15 text-blue-400 border-none cursor-pointer text-base">✏️</button>
                 <button onClick={() => onRemove(i)} className="w-7 h-7 rounded-lg bg-red-500/15 text-red-400 border-none cursor-pointer text-base">×</button>
               </div>
             </div>
@@ -55,7 +55,7 @@ function WorkoutEditor({ label, exercises, onUpdate, onRemove, onMove, onAdd }) 
         </div>
       ))}
       <div className="rounded-xl bg-white/[0.02] border border-white/[0.05] p-3">
-        <p className="text-[12px] text-white/30 mb-2 uppercase tracking-wider">Add Exercise</p>
+        <p className="text-base text-white/30 mb-2 uppercase tracking-wider">Add Exercise</p>
         <div className="flex flex-col gap-1.5">
           <Input type="text" inputMode="text" autoComplete="off" value={newEx.name} onChange={e => setNewEx(f => ({ ...f, name: e.target.value }))} placeholder="Exercise name" />
           <div className="flex gap-1.5">
@@ -63,7 +63,7 @@ function WorkoutEditor({ label, exercises, onUpdate, onRemove, onMove, onAdd }) 
             <Input type="text" inputMode="numeric" autoComplete="off" enterKeyHint="done" value={newEx.sets} onChange={e => setNewEx(f => ({ ...f, sets: e.target.value }))} placeholder="Sets" className="w-16" />
             <Input type="text" inputMode="numeric" autoComplete="off" enterKeyHint="done" value={newEx.reps} onChange={e => setNewEx(f => ({ ...f, reps: e.target.value }))} placeholder="Reps" className="w-16" />
           </div>
-          <Button onClick={handleAdd} variant="ghost" className="w-full text-xs py-2">+ Add</Button>
+          <Button onClick={handleAdd} variant="ghost" className="w-full text-base py-3">+ Add</Button>
         </div>
       </div>
     </div>
@@ -100,13 +100,13 @@ function ScheduledMealsEditor({ notify }) {
   return (
     <div>
       {meals.length === 0 && !adding && (
-        <p className="text-[13px] text-white/30 mb-3">No scheduled meals yet. Add a recurring meal below.</p>
+        <p className="text-base text-white/30 mb-3">No scheduled meals yet. Add a recurring meal below.</p>
       )}
       {meals.map(m => (
         <div key={m.id} className="bg-white/[0.04] border border-white/[0.06] rounded-xl px-3 py-2.5 mb-2 flex items-center gap-2">
           <div className="flex-1 min-w-0">
-            <div className="text-[16px] font-semibold truncate">{m.name}</div>
-            <div className="text-sm text-white/40">
+            <div className="text-lg font-semibold truncate">{m.name}</div>
+            <div className="text-base text-white/40">
               {m.cal} cal · {m.protein}g · {m.meal} · {m.days.map(d => DAYS_OF_WEEK[d].slice(0,3)).join(', ')}
             </div>
           </div>
@@ -124,28 +124,28 @@ function ScheduledMealsEditor({ notify }) {
           <select
             value={form.meal}
             onChange={e => setForm(f => ({ ...f, meal: e.target.value }))}
-            className="w-full bg-white/[0.06] border border-white/[0.1] rounded-xl px-3 py-2 text-sm text-white outline-none mb-2"
+            className="w-full bg-white/[0.06] border border-white/[0.1] rounded-xl px-3 py-2 text-base text-white outline-none mb-2 h-12"
           >
             {['breakfast','lunch','snack','dinner'].map(m => <option key={m} value={m}>{m}</option>)}
           </select>
-          <div className="text-[12px] text-white/40 mb-1">Which days?</div>
+          <div className="text-base text-white/40 mb-1">Which days?</div>
           <div className="flex gap-1 flex-wrap mb-2">
             {DAYS_OF_WEEK.map((d, i) => (
               <button key={i} onClick={() => toggleDay(i)}
-                className={`px-2 py-1 rounded-lg text-[12px] font-semibold border cursor-pointer
+                className={`px-3 h-12 rounded-lg text-base font-semibold border cursor-pointer
                   ${form.days.includes(i) ? 'bg-blue-500 border-blue-400 text-white' : 'bg-white/[0.05] border-white/[0.08] text-white/50'}`}>
                 {d.slice(0,3)}
               </button>
             ))}
           </div>
           <div className="flex gap-1.5">
-            <Button onClick={handleAdd} className="flex-1 text-sm py-2">Save Meal</Button>
-            <Button onClick={() => setAdding(false)} variant="ghost" className="text-sm py-2">Cancel</Button>
+            <Button onClick={handleAdd} className="flex-1 text-base py-3">Save Meal</Button>
+            <Button onClick={() => setAdding(false)} variant="ghost" className="text-base py-3">Cancel</Button>
           </div>
         </div>
       ) : (
         <button onClick={() => setAdding(true)}
-          className="w-full border border-dashed border-white/[0.1] rounded-xl py-3 text-[14px]
+          className="w-full border border-dashed border-white/[0.1] rounded-xl py-3.5 text-base
             text-white/40 cursor-pointer bg-transparent mt-1">
           + Add Scheduled Meal
         </button>
@@ -349,7 +349,7 @@ export function SettingsTab({ settings, updateSettings, resetSettings, templates
                     placeholder="6"
                     className="text-center"
                   />
-                  <div className="text-sm text-white/40 text-center mt-1">ft</div>
+                  <div className="text-base text-white/40 text-center mt-1">ft</div>
                 </div>
                 <div className="flex-1">
                   <Input
@@ -362,7 +362,7 @@ export function SettingsTab({ settings, updateSettings, resetSettings, templates
                     placeholder="1"
                     className="text-center"
                   />
-                  <div className="text-sm text-white/40 text-center mt-1">in</div>
+                  <div className="text-base text-white/40 text-center mt-1">in</div>
                 </div>
               </div>
             </div>
@@ -391,31 +391,31 @@ export function SettingsTab({ settings, updateSettings, resetSettings, templates
       {/* Change comparison panel */}
       {pendingChanges && (
         <div className="bg-blue-500/[0.07] border border-blue-500/20 rounded-2xl p-4 mb-4">
-          <div className="text-[16px] font-bold mb-3 text-blue-300">Changes to your plan:</div>
+          <div className="text-base font-bold mb-3 text-blue-300">Changes to your plan:</div>
           <div className="space-y-2 mb-4">
             {pendingChanges.changes.map((c, i) => (
               <div key={i} className="flex flex-col gap-0.5">
                 <div className="flex items-center gap-2 flex-wrap">
-                  <span className="text-[14px] font-semibold text-white/60 w-28 shrink-0">{c.label}:</span>
-                  <span className="text-[14px] text-white/40 line-through">{c.from}</span>
+                  <span className="text-base font-semibold text-white/60 w-28 shrink-0">{c.label}:</span>
+                  <span className="text-base text-white/40 line-through">{c.from}</span>
                   <span className="text-white/40">→</span>
-                  <span className="text-[14px] font-bold text-white">{c.to}</span>
+                  <span className="text-base font-bold text-white">{c.to}</span>
                 </div>
-                <div className="text-[13px] text-white/40 pl-28">({c.reason})</div>
+                <div className="text-base text-white/40 pl-28">({c.reason})</div>
               </div>
             ))}
           </div>
           <div className="flex gap-2">
             <button
               onClick={confirmSave}
-              className="flex-1 bg-blue-500 text-white rounded-xl py-3.5 text-[16px] font-bold
+              className="flex-1 bg-blue-500 text-white rounded-xl h-14 text-base font-bold
                 border-none cursor-pointer active:opacity-80"
             >
               Save changes
             </button>
             <button
               onClick={() => setPendingChanges(null)}
-              className="flex-1 bg-white/[0.08] text-white/60 rounded-xl py-3.5 text-[16px] font-semibold
+              className="flex-1 bg-white/[0.08] text-white/60 rounded-xl h-14 text-base font-semibold
                 border-none cursor-pointer active:opacity-70"
             >
               Cancel
@@ -433,7 +433,7 @@ export function SettingsTab({ settings, updateSettings, resetSettings, templates
               value={form.goal || 'fat-loss'}
               onChange={e => setForm(prev => ({ ...prev, goal: e.target.value }))}
               className="w-full bg-white/[0.06] border border-white/[0.1] rounded-xl px-3 py-3
-                text-[16px] text-white outline-none min-h-[52px]"
+                text-base text-white outline-none h-14"
             >
               <option value="fat-loss">🔥 Fat Loss — lose weight and burn fat</option>
               <option value="muscle">💪 Build Muscle — get stronger and bigger</option>
@@ -448,7 +448,7 @@ export function SettingsTab({ settings, updateSettings, resetSettings, templates
               value={form.pace || 'moderate'}
               onChange={e => setForm(prev => ({ ...prev, pace: e.target.value }))}
               className="w-full bg-white/[0.06] border border-white/[0.1] rounded-xl px-3 py-3
-                text-[16px] text-white outline-none min-h-[52px]"
+                text-base text-white outline-none h-14"
             >
               <option value="aggressive">⚡ Aggressive (4–6 weeks, larger deficit)</option>
               <option value="moderate">🎯 Moderate (8–12 weeks, recommended)</option>
@@ -465,7 +465,7 @@ export function SettingsTab({ settings, updateSettings, resetSettings, templates
 
       <Card>
         <CardTitle>Scheduled Meals</CardTitle>
-        <p className="text-sm text-white/40 mb-3">Meals that auto-appear on selected days for quick logging.</p>
+        <p className="text-base text-white/40 mb-3">Meals that auto-appear on selected days for quick logging.</p>
         <ScheduledMealsEditor notify={notify} />
       </Card>
 
@@ -475,7 +475,7 @@ export function SettingsTab({ settings, updateSettings, resetSettings, templates
 
         {(daysSinceExport === null || daysSinceExport >= 30) && (
           <div className="bg-amber-500/10 border border-amber-500/30 rounded-xl px-3 py-2 mb-3">
-            <p className="text-xs text-amber-400/80">
+            <p className="text-base text-amber-400/80">
               {lastExport ? `⚠️ Last backup was ${daysSinceExport} days ago.` : '⚠️ No backup yet. Export soon!'}
             </p>
           </div>
@@ -485,7 +485,7 @@ export function SettingsTab({ settings, updateSettings, resetSettings, templates
           📤 Export Data (share / save file)
         </Button>
 
-        <label className="w-full flex items-center justify-center rounded-xl py-3 text-sm
+        <label className="w-full flex items-center justify-center rounded-xl h-14 text-base
           text-white/60 bg-transparent border border-white/[0.08] cursor-pointer mb-2">
           📥 Import from File
           <input type="file" accept=".json" onChange={handleImportFile} className="hidden" />
@@ -493,8 +493,8 @@ export function SettingsTab({ settings, updateSettings, resetSettings, templates
 
         <div className="flex items-center justify-between py-2 mb-2">
           <div>
-            <div className="text-sm font-semibold">Auto-Backup</div>
-            <div className="text-[12px] text-white/40">
+            <div className="text-base font-semibold">Auto-Backup</div>
+            <div className="text-base text-white/40">
               {lastExport ? `Last backup: ${lastExport}` : 'Saves daily snapshot'}
             </div>
           </div>
@@ -510,20 +510,20 @@ export function SettingsTab({ settings, updateSettings, resetSettings, templates
         </div>
 
         <button onClick={() => { setBackupDates(getBackupDates()); setShowBackups(b => !b); }}
-          className="w-full text-sm text-white/50 bg-transparent border border-white/[0.08]
-            rounded-xl py-2.5 cursor-pointer mb-2">
+          className="w-full text-base text-white/50 bg-transparent border border-white/[0.08]
+            rounded-xl py-3 cursor-pointer mb-2">
           {showBackups ? 'Hide' : '🕐 Restore from Backup'}
         </button>
 
         {showBackups && (
           <div className="mt-1">
             {backupDates.length === 0
-              ? <p className="text-xs text-white/30 text-center py-2">No backups yet</p>
+              ? <p className="text-base text-white/30 text-center py-2">No backups yet</p>
               : backupDates.map(date => (
                 <div key={date} className="flex justify-between items-center py-2 border-b border-white/[0.06] last:border-0">
-                  <span className="text-sm text-white/60">{date}</span>
+                  <span className="text-base text-white/60">{date}</span>
                   <button onClick={() => handleRestore(date)}
-                    className="text-xs px-3 py-1 rounded-lg bg-blue-500/15 text-blue-400 border-none cursor-pointer">
+                    className="text-base px-4 py-2 rounded-lg bg-blue-500/15 text-blue-400 border-none cursor-pointer">
                     Restore
                   </button>
                 </div>
@@ -536,25 +536,25 @@ export function SettingsTab({ settings, updateSettings, resetSettings, templates
       {/* Apple Health — Task 7 */}
       <Card>
         <CardTitle>Apple Health</CardTitle>
-        <p className="text-[13px] text-white/50 mb-3">
+        <p className="text-base text-white/50 mb-3">
           PWAs can't access Health directly. Use Apple Shortcuts to sync data to this app.
         </p>
 
         {healthData && healthData.date === new Date().toISOString().split('T')[0] ? (
           <div className="bg-green-500/10 border border-green-500/30 rounded-xl px-3 py-3 mb-3">
-            <div className="text-sm font-semibold text-green-400 mb-1">✓ Today's Health Data</div>
-            {healthData.steps && <div className="text-sm text-white/70">Steps: {healthData.steps.toLocaleString()}</div>}
-            {healthData.activeCal && <div className="text-sm text-white/70">Active Cal: {healthData.activeCal}</div>}
+            <div className="text-base font-semibold text-green-400 mb-1">✓ Today's Health Data</div>
+            {healthData.steps && <div className="text-base text-white/70">Steps: {healthData.steps.toLocaleString()}</div>}
+            {healthData.activeCal && <div className="text-base text-white/70">Active Cal: {healthData.activeCal}</div>}
           </div>
         ) : (
           <div className="bg-white/[0.03] border border-white/[0.08] rounded-xl px-3 py-3 mb-3">
-            <p className="text-[13px] text-white/40">No Health data today</p>
+            <p className="text-base text-white/40">No Health data today</p>
           </div>
         )}
 
         <div className="bg-blue-500/10 border border-blue-500/20 rounded-xl p-3 mb-3">
-          <p className="text-[13px] text-blue-300 font-semibold mb-2">Setup via Apple Shortcuts:</p>
-          <ol className="text-[12px] text-white/60 space-y-1 list-decimal list-inside">
+          <p className="text-base text-blue-300 font-semibold mb-2">Setup via Apple Shortcuts:</p>
+          <ol className="text-base text-white/60 space-y-1 list-decimal list-inside">
             <li>Open the Shortcuts app on iPhone</li>
             <li>Create a new Shortcut</li>
             <li>Add "Get Health Samples" (Steps, Active Energy)</li>
@@ -563,7 +563,7 @@ export function SettingsTab({ settings, updateSettings, resetSettings, templates
           </ol>
         </div>
 
-        <p className="text-[12px] text-white/30">
+        <p className="text-base text-white/30">
           The app reads the URL parameters and saves your Health data when you open it via the Shortcut.
         </p>
       </Card>
@@ -576,7 +576,7 @@ export function SettingsTab({ settings, updateSettings, resetSettings, templates
           onChange={() => setForm(f => ({ ...f, theme: f.theme === 'light' ? 'dark' : 'light' }))}
           label={form.theme === 'light' ? '☀️ Light Mode' : '🌙 Dark Mode'}
         />
-        <p className="text-[12px] text-white/30 mt-1">Dark mode recommended for gym use</p>
+        <p className="text-base text-white/30 mt-1">Dark mode recommended for gym use</p>
       </Card>
 
       {/* Bug report */}
@@ -584,7 +584,7 @@ export function SettingsTab({ settings, updateSettings, resetSettings, templates
         <CardTitle>Help</CardTitle>
         <a href="https://github.com/jbrad0216/fitness-tracker/issues/new?title=Bug+Report"
           target="_blank" rel="noopener noreferrer"
-          className="flex items-center gap-2 text-sm text-white/60 no-underline py-2 active:opacity-60">
+          className="flex items-center gap-2 text-base text-white/60 no-underline py-3 active:opacity-60">
           <span>🐛</span> Report a Bug on GitHub
         </a>
       </Card>
@@ -593,7 +593,7 @@ export function SettingsTab({ settings, updateSettings, resetSettings, templates
       <Card>
         <CardTitle right={
           <button onClick={() => { workoutOps.resetTemplates(); notify('Templates reset'); }}
-            className="text-[13px] text-red-400/70 bg-transparent border-none cursor-pointer">
+            className="text-base text-red-400/70 bg-transparent border-none cursor-pointer">
             Reset
           </button>
         }>

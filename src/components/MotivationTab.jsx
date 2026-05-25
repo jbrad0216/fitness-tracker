@@ -105,9 +105,9 @@ function computeMetrics(weighIns, liftLog) {
 function StatCard({ label, value, sub, color = 'text-white' }) {
   return (
     <div className="bg-white/[0.05] border border-white/[0.08] rounded-2xl px-4 py-3.5">
-      <div className="text-sm text-white/40 mb-1">{label}</div>
+      <div className="text-base text-white/40 mb-1">{label}</div>
       <div className={`text-[22px] font-bold leading-tight ${color}`}>{value}</div>
-      {sub && <div className="text-sm text-white/40 mt-0.5">{sub}</div>}
+      {sub && <div className="text-base text-white/40 mt-0.5">{sub}</div>}
     </div>
   );
 }
@@ -122,11 +122,11 @@ export function MotivationTab({ weighIns, liftLog }) {
   return (
     <div className="px-4 pb-8" style={{ paddingTop: 'max(env(safe-area-inset-top), 12px)' }}>
       <div className="text-[22px] font-bold mb-1">Progress & Motivation</div>
-      <div className="text-sm text-white/40 mb-5">Your habits are building results.</div>
+      <div className="text-base text-white/40 mb-5">Your habits are building results.</div>
 
       {/* Consistency */}
       <div className="mb-4">
-        <div className="text-[15px] font-semibold text-white/60 mb-2 uppercase tracking-wide text-[13px]">Consistency</div>
+        <div className="text-base font-semibold text-white/60 mb-2 uppercase tracking-wide">Consistency</div>
         <div className="grid grid-cols-2 gap-3">
           <StatCard
             label="Last 30 days"
@@ -135,36 +135,36 @@ export function MotivationTab({ weighIns, liftLog }) {
             color={m.consistency >= 80 ? 'text-green-400' : m.consistency >= 60 ? 'text-amber-400' : 'text-red-400'}
           />
           <div className="bg-white/[0.05] border border-white/[0.08] rounded-2xl px-4 py-3.5">
-            <div className="text-sm text-white/40 mb-1">Streak</div>
-            <div className={`text-[22px] font-bold leading-tight ${streakColor}`}>{m.currentStreak} days</div>
-            <div className="text-sm text-white/40 mt-0.5">Best: {m.bestStreak} days</div>
+            <div className="text-base text-white/40 mb-1">Streak</div>
+            <div className={`text-2xl font-bold leading-tight ${streakColor}`}>{m.currentStreak} days</div>
+            <div className="text-base text-white/40 mt-0.5">Best: {m.bestStreak} days</div>
           </div>
         </div>
       </div>
 
       {/* Weekly comparison */}
       <div className="mb-4">
-        <div className="text-[13px] font-semibold text-white/60 mb-2 uppercase tracking-wide">This Week vs Last Week</div>
+        <div className="text-base font-semibold text-white/60 mb-2 uppercase tracking-wide">This Week vs Last Week</div>
         <div className="bg-white/[0.05] border border-white/[0.08] rounded-2xl px-4 py-4">
           {m.thisWeek.avgCal > 0 || m.lastWeek.avgCal > 0 ? (
             <div className="space-y-3">
               <div className="flex justify-between items-center">
-                <span className="text-[16px] text-white/70">Avg calories</span>
+                <span className="text-lg text-white/70">Avg calories</span>
                 <div className="text-right">
-                  <span className="text-[16px] font-bold">{m.thisWeek.avgCal || '—'}</span>
+                  <span className="text-lg font-bold">{m.thisWeek.avgCal || '—'}</span>
                   {m.lastWeek.avgCal > 0 && m.thisWeek.avgCal > 0 && (
-                    <span className={`text-sm ml-2 ${calDiff < 0 ? 'text-green-400' : calDiff > 100 ? 'text-amber-400' : 'text-white/40'}`}>
+                    <span className={`text-base ml-2 ${calDiff < 0 ? 'text-green-400' : calDiff > 100 ? 'text-amber-400' : 'text-white/40'}`}>
                       ({calDiff > 0 ? '+' : ''}{calDiff} vs last wk)
                     </span>
                   )}
                 </div>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-[16px] text-white/70">Avg protein</span>
+                <span className="text-lg text-white/70">Avg protein</span>
                 <div className="text-right">
-                  <span className="text-[16px] font-bold">{m.thisWeek.avgProt > 0 ? `${m.thisWeek.avgProt}g` : '—'}</span>
+                  <span className="text-lg font-bold">{m.thisWeek.avgProt > 0 ? `${m.thisWeek.avgProt}g` : '—'}</span>
                   {m.lastWeek.avgProt > 0 && m.thisWeek.avgProt > 0 && (
-                    <span className={`text-sm ml-2 ${m.thisWeek.avgProt >= m.lastWeek.avgProt ? 'text-green-400' : 'text-white/40'}`}>
+                    <span className={`text-base ml-2 ${m.thisWeek.avgProt >= m.lastWeek.avgProt ? 'text-green-400' : 'text-white/40'}`}>
                       ({m.thisWeek.avgProt - m.lastWeek.avgProt > 0 ? '+' : ''}{m.thisWeek.avgProt - m.lastWeek.avgProt}g)
                     </span>
                   )}
@@ -172,11 +172,11 @@ export function MotivationTab({ weighIns, liftLog }) {
               </div>
               {(m.thisWeek.totalVol > 0 || m.lastWeek.totalVol > 0) && (
                 <div className="flex justify-between items-center">
-                  <span className="text-[16px] text-white/70">Workout volume</span>
+                  <span className="text-lg text-white/70">Workout volume</span>
                   <div className="text-right">
-                    <span className="text-[16px] font-bold">{m.thisWeek.totalVol > 0 ? `${m.thisWeek.totalVol.toLocaleString()} lbs` : '—'}</span>
+                    <span className="text-lg font-bold">{m.thisWeek.totalVol > 0 ? `${m.thisWeek.totalVol.toLocaleString()} lbs` : '—'}</span>
                     {m.lastWeek.totalVol > 0 && m.thisWeek.totalVol > 0 && (
-                      <span className={`text-sm ml-2 ${volDiff >= 0 ? 'text-green-400' : 'text-amber-400'}`}>
+                      <span className={`text-base ml-2 ${volDiff >= 0 ? 'text-green-400' : 'text-amber-400'}`}>
                         ({volDiff >= 0 ? '+' : ''}{volDiff.toLocaleString()})
                       </span>
                     )}
@@ -185,7 +185,7 @@ export function MotivationTab({ weighIns, liftLog }) {
               )}
             </div>
           ) : (
-            <p className="text-[15px] text-white/30 text-center py-2">Log food this week to see trends.</p>
+            <p className="text-base text-white/30 text-center py-2">Log food this week to see trends.</p>
           )}
         </div>
       </div>
@@ -193,12 +193,12 @@ export function MotivationTab({ weighIns, liftLog }) {
       {/* Body change projection */}
       {m.projection && (
         <div className="mb-4">
-          <div className="text-[13px] font-semibold text-white/60 mb-2 uppercase tracking-wide">Projection</div>
+          <div className="text-base font-semibold text-white/60 mb-2 uppercase tracking-wide">Projection</div>
           <div className="bg-white/[0.05] border border-white/[0.08] rounded-2xl px-4 py-4">
-            <div className="text-[16px] font-semibold mb-1">
+            <div className="text-lg font-semibold mb-1">
               Losing {m.projection.rate.toFixed(1)} lbs/week
             </div>
-            <div className="text-sm text-white/50 mb-3">Based on your recent weigh-ins</div>
+            <div className="text-base text-white/50 mb-3">Based on your recent weigh-ins</div>
             {[
               { label: '1 month', weeks: 4 },
               { label: '3 months', weeks: 13 },
@@ -217,8 +217,8 @@ export function MotivationTab({ weighIns, liftLog }) {
 
       {/* Tips */}
       <div className="bg-blue-500/[0.06] border border-blue-500/15 rounded-2xl px-4 py-4">
-        <div className="text-[15px] font-semibold text-blue-300 mb-2">Keep the momentum</div>
-        <div className="space-y-1.5 text-sm text-white/50">
+        <div className="text-lg font-semibold text-blue-300 mb-2">Keep the momentum</div>
+        <div className="space-y-1.5 text-base text-white/50">
           {m.consistency < 70 && <p>• Log even on hard days — imperfect logging beats no logging.</p>}
           {m.currentStreak < 3 && <p>• Try to log something every day this week to build your streak.</p>}
           {m.thisWeek.avgProt > 0 && m.thisWeek.avgProt < 120 && <p>• Protein is low this week — try adding a high-protein snack.</p>}

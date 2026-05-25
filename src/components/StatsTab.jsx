@@ -44,9 +44,36 @@ function getWeeklyAverages() {
 }
 
 function getPersonalRecords(liftLog) {
-  // liftLog is keyed by slug, each has name, weight, sets, reps, date
-  // We treat the current log entry as the PR since it stores the latest
   return Object.values(liftLog).sort((a, b) => (b.weight || 0) - (a.weight || 0));
+}
+
+function getWorkoutHistory(days = 45) {
+  const history = [];
+  const d = new Date();
+  for (let i = 0; i < days; i++) {
+    const date = new Date(d);
+    date.setDate(d.getDate() - i);
+    const yyyy = date.getFullYear();
+    const mm = String(date.getMonth() + 1).padStart(2, '0');
+    const dd = String(date.getDate()).padStart(2, '0');
+    const dateStr = `${yyyy}-${mm}-${dd}`;
+    try {
+      const raw = localStorage.getItem(`ft_daily-${dateStr}`);
+      if (raw) {
+        const dayData = JSON.parse(raw);
+        if (dayData.exercises && dayData.exercises.length > 0) {
+          const volume = dayData.exercises.reduce((s, e) => s + (e.weight || 0) * (e.sets || 3) * (e.reps || 12), 0);
+          history.push({
+            dateStr,
+            displayDate: date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+            exercises: dayData.exercises,
+            volume,
+          });
+        }
+      }
+    } catch {}
+  }
+  return history;
 }
 
 function projectGoalDate(weighIns, goalWeight) {
@@ -76,7 +103,7 @@ function InteractiveChart({ weighIns, startWeight, goalWeight }) {
 
   if (weighIns.length === 0) {
     return (
-      <p className="text-sm text-white/40 py-3">
+      <p className="text-base text-white/40 py-3">
         No weigh-ins yet. Log your first on Wednesday.
       </p>
     );
@@ -97,7 +124,7 @@ function InteractiveChart({ weighIns, startWeight, goalWeight }) {
       {selected !== null && (
         <div className="text-center mb-2">
           <span className="text-lg font-bold">{weighIns[selected].weight} lbs</span>
-          <span className="text-xs text-white/40 ml-2">{formatDateShort(weighIns[selected].date)}</span>
+          <span className="text-base text-white/40 ml-2">{formatDateShort(weighIns[selected].date)}</span>
         </div>
       )}
       <div className="h-36 relative mb-3">
@@ -161,6 +188,8 @@ export function StatsTab({ weighIns, addWeighIn, latest, liftLog, startWeight, g
   const weeklyAvg = useMemo(() => getWeeklyAverages(), []);
   const projection = useMemo(() => projectGoalDate(weighIns, goalWeight), [weighIns, goalWeight]);
   const prs = useMemo(() => getPersonalRecords(liftLog), [liftLog]);
+  const workoutHistory = useMemo(() => getWorkoutHistory(45), []);
+  const [showAllWorkouts, setShowAllWorkouts] = useState(false);
 
   const handleWeighIn = () => {
     const w = parseFloat(weightInput);
@@ -200,29 +229,29 @@ export function StatsTab({ weighIns, addWeighIn, latest, liftLog, startWeight, g
         <div className="flex justify-around text-center">
           <div>
             <div className="text-2xl font-bold text-amber-400">{streak}</div>
-            <div className="text-sm text-white/50">day streak 🔥</div>
+            <div className="text-base text-white/50">day streak 🔥</div>
           </div>
           <div className="w-px bg-white/[0.08]" />
           {weeklyAvg ? (
             <>
               <div>
                 <div className="text-xl font-bold">{weeklyAvg.cal}</div>
-                <div className="text-sm text-white/50">avg cal/day</div>
+                <div className="text-base text-white/50">avg cal/day</div>
               </div>
               <div className="w-px bg-white/[0.08]" />
               <div>
                 <div className="text-xl font-bold">{weeklyAvg.protein}g</div>
-                <div className="text-sm text-white/50">avg protein/day</div>
+                <div className="text-base text-white/50">avg protein/day</div>
               </div>
             </>
           ) : (
             <div className="flex-1 flex items-center justify-center">
-              <span className="text-xs text-white/30">Log food to see averages</span>
+              <span className="text-base text-white/30">Log food to see averages</span>
             </div>
           )}
         </div>
         {weeklyAvg && (
-          <p className="text-sm text-white/25 text-center mt-2">
+          <p className="text-base text-white/25 text-center mt-2">
             Based on {weeklyAvg.days} day{weeklyAvg.days !== 1 ? 's' : ''} this week
           </p>
         )}
@@ -253,7 +282,7 @@ export function StatsTab({ weighIns, addWeighIn, latest, liftLog, startWeight, g
           <CardTitle>Goal Projection</CardTitle>
           <div className="text-center py-1">
             <div className="text-xl font-bold text-green-400">{projection.date}</div>
-            <div className="text-xs text-white/40 mt-1">
+            <div className="text-base text-white/40 mt-1">
               at {projection.lbsPerWeek} lbs/week · {projection.daysToGoal} days away
             </div>
           </div>
@@ -276,7 +305,7 @@ export function StatsTab({ weighIns, addWeighIn, latest, liftLog, startWeight, g
           />
           <Button onClick={handleWeighIn}>Log</Button>
         </div>
-        <p className="text-sm text-white/40 mt-1.5">Best practice: Wednesday mornings only</p>
+        <p className="text-base text-white/40 mt-1.5">Best practice: Wednesday mornings only</p>
       </Card>
 
       {/* Personal Records */}
@@ -287,12 +316,12 @@ export function StatsTab({ weighIns, addWeighIn, latest, liftLog, startWeight, g
             <div key={i} className="flex justify-between items-center py-2
               border-b border-white/[0.06] last:border-0">
               <div>
-                <span className="text-[15px]">{pr.name || pr.key}</span>
-                <div className="text-sm text-white/30">{formatDateShort(pr.date)}</div>
+                <span className="text-base">{pr.name || pr.key}</span>
+                <div className="text-base text-white/30">{formatDateShort(pr.date)}</div>
               </div>
               <div className="text-right">
-                <span className="text-[15px] text-blue-400 font-semibold">{pr.weight}lbs</span>
-                <div className="text-sm text-white/30">{pr.sets}×{pr.reps}</div>
+                <span className="text-base text-blue-400 font-semibold">{pr.weight}lbs</span>
+                <div className="text-base text-white/30">{pr.sets}×{pr.reps}</div>
               </div>
             </div>
           ))}
@@ -311,11 +340,11 @@ export function StatsTab({ weighIns, addWeighIn, latest, liftLog, startWeight, g
             return (
               <div key={i}
                 className="flex justify-between py-2 border-b border-white/[0.06] last:border-0">
-                <span className="text-[15px] text-white/50">{formatDateShort(wi.date)}</span>
-                <span className="text-[15px]">
+                <span className="text-base text-white/50">{formatDateShort(wi.date)}</span>
+                <span className="text-base">
                   {wi.weight} lbs
                   {diff !== 0 && (
-                    <span className={`ml-2 text-sm ${diff < 0 ? 'text-green-400' : 'text-red-400'}`}>
+                    <span className={`ml-2 text-base ${diff < 0 ? 'text-green-400' : 'text-red-400'}`}>
                       {diff > 0 ? '+' : ''}{diff.toFixed(1)}
                     </span>
                   )}
@@ -326,13 +355,57 @@ export function StatsTab({ weighIns, addWeighIn, latest, liftLog, startWeight, g
         </Card>
       )}
 
+      {/* Workout History (Task 7) */}
+      {workoutHistory.length > 0 && (
+        <Card>
+          <CardTitle>Workout History</CardTitle>
+          {(showAllWorkouts ? workoutHistory : workoutHistory.slice(0, 5)).map((workout, i) => {
+            const prevWorkout = workoutHistory[i + 1];
+            const volumeChange = prevWorkout && prevWorkout.volume > 0
+              ? Math.round(((workout.volume - prevWorkout.volume) / prevWorkout.volume) * 100)
+              : null;
+            return (
+              <div key={workout.dateStr} className="mb-4 pb-4 border-b border-white/[0.06] last:border-0 last:mb-0 last:pb-0">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="text-lg font-bold">{workout.displayDate}</div>
+                  <div className="text-right">
+                    {workout.volume > 0 && (
+                      <div className="text-base font-semibold text-white/60">
+                        {workout.volume.toLocaleString()} lbs
+                      </div>
+                    )}
+                    {volumeChange !== null && (
+                      <div className={`text-base font-semibold ${volumeChange > 0 ? 'text-green-400' : volumeChange < 0 ? 'text-amber-400' : 'text-white/40'}`}>
+                        {volumeChange > 0 ? `↑ ${volumeChange}%` : volumeChange < 0 ? `↓ ${Math.abs(volumeChange)}%` : '—'}
+                      </div>
+                    )}
+                  </div>
+                </div>
+                {workout.exercises.map((ex, j) => (
+                  <div key={j} className="flex justify-between py-1.5 border-b border-white/[0.04] last:border-0">
+                    <span className="text-base text-white/70">{ex.name}</span>
+                    <span className="text-base text-white/50">{ex.weight > 0 ? `${ex.weight} lbs × ` : ''}{ex.sets}×{ex.reps}</span>
+                  </div>
+                ))}
+              </div>
+            );
+          })}
+          {workoutHistory.length > 5 && (
+            <button onClick={() => setShowAllWorkouts(v => !v)}
+              className="w-full text-base text-blue-400 font-semibold bg-transparent border-none cursor-pointer py-2 mt-1">
+              {showAllWorkouts ? 'Show less' : `Show all ${workoutHistory.length} workouts`}
+            </button>
+          )}
+        </Card>
+      )}
+
       {/* Data Export */}
       <Card>
         <CardTitle>Export Data</CardTitle>
         <Button onClick={handleExport} variant="ghost" className="w-full mb-2">
           📥 Export All Data (JSON)
         </Button>
-        <p className="text-sm text-white/30 text-center">
+        <p className="text-base text-white/30 text-center">
           Download a full backup of all your data
         </p>
       </Card>
@@ -340,7 +413,7 @@ export function StatsTab({ weighIns, addWeighIn, latest, liftLog, startWeight, g
       {/* Import */}
       <button
         onClick={() => setShowDataSettings(!showDataSettings)}
-        className="w-full rounded-xl py-3 mb-3 text-sm text-white/40
+        className="w-full rounded-xl h-14 mb-3 text-base text-white/40
           bg-white/[0.03] border border-white/[0.06] cursor-pointer"
       >
         {showDataSettings ? 'Hide Import' : '📤 Import Data'}
@@ -353,7 +426,7 @@ export function StatsTab({ weighIns, addWeighIn, latest, liftLog, startWeight, g
             onChange={e => setImportText(e.target.value)}
             placeholder="Paste exported JSON here..."
             className="w-full bg-white/[0.06] border border-white/[0.08] rounded-xl
-              p-3 text-sm text-white/80 outline-none h-24 resize-none
+              p-3 text-base text-white/80 outline-none h-24 resize-none
               placeholder:text-white/25"
           />
           <Button onClick={handleImport} variant="ghost" className="w-full mt-2">

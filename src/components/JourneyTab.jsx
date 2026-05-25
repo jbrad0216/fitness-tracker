@@ -140,7 +140,7 @@ function getMonthCalendar() {
 function WeightGraph({ weighIns, goalWeight, startWeight }) {
   if (weighIns.length < 2) {
     return (
-      <div className="text-center py-6 text-white/30 text-sm">
+      <div className="text-center py-6 text-white/30 text-base">
         Log at least 2 weigh-ins to see your graph
       </div>
     );
@@ -268,15 +268,15 @@ function WeightGraph({ weighIns, goalWeight, startWeight }) {
       </svg>
 
       <div className="flex justify-center gap-4 mt-1">
-        <div className="flex items-center gap-1.5 text-xs text-white/40">
+        <div className="flex items-center gap-1.5 text-base text-white/40">
           <div className="w-4 h-0.5 bg-green-500" />
           <span>Actual</span>
         </div>
-        <div className="flex items-center gap-1.5 text-xs text-white/40">
+        <div className="flex items-center gap-1.5 text-base text-white/40">
           <div className="w-4 h-0.5 bg-blue-500 opacity-50" style={{ borderTop: '2px dashed' }} />
           <span>Projected</span>
         </div>
-        <div className="flex items-center gap-1.5 text-xs text-white/40">
+        <div className="flex items-center gap-1.5 text-base text-white/40">
           <div className="w-4 h-0.5 bg-green-500 opacity-60" style={{ borderTop: '2px dashed' }} />
           <span>Goal</span>
         </div>
@@ -311,7 +311,7 @@ export function JourneyTab({ weighIns, startWeight, goalWeight }) {
         <div className="flex items-center justify-between mb-3">
           <CardTitle>Weight Progress</CardTitle>
           {lostTotal > 0 && (
-            <span className="text-green-400 text-sm font-bold">-{lostTotal.toFixed(1)} lbs</span>
+            <span className="text-green-400 text-base font-bold">-{lostTotal.toFixed(1)} lbs</span>
           )}
         </div>
         <WeightGraph weighIns={weighIns} goalWeight={goalWeight} startWeight={startWeight} />
@@ -322,12 +322,12 @@ export function JourneyTab({ weighIns, startWeight, goalWeight }) {
         <div className="flex justify-around text-center mb-4">
           <div>
             <div className="text-3xl font-bold text-amber-400">{streak}</div>
-            <div className="text-sm text-white/50">day streak 🔥</div>
+            <div className="text-base text-white/50">day streak 🔥</div>
           </div>
           <div className="w-px bg-white/[0.08]" />
           <div>
             <div className="text-2xl font-bold text-white/60">{bestStreak}</div>
-            <div className="text-sm text-white/50">best streak</div>
+            <div className="text-base text-white/50">best streak</div>
           </div>
           {lostTotal > 0 && (
             <>
@@ -336,14 +336,14 @@ export function JourneyTab({ weighIns, startWeight, goalWeight }) {
                 <div className="text-2xl font-bold text-green-400">
                   {lostTotal > 0 ? `-${lostTotal.toFixed(1)}` : '0'}
                 </div>
-                <div className="text-sm text-white/50">lbs lost</div>
+                <div className="text-base text-white/50">lbs lost</div>
               </div>
             </>
           )}
         </div>
 
         {/* 14-day streak visual */}
-        <div className="text-[12px] text-white/40 mb-2 font-semibold">Last 14 days</div>
+        <div className="text-base text-white/40 mb-2 font-semibold">Last 14 days</div>
         <div className="flex gap-1.5 flex-wrap">
           {last14.map((d, i) => (
             <div key={i} className="flex flex-col items-center gap-0.5">
@@ -387,20 +387,20 @@ export function JourneyTab({ weighIns, startWeight, goalWeight }) {
             >
               <div className="flex items-center justify-between mb-1.5">
                 <div>
-                  <span className={`text-[15px] font-bold ${week.isCurrent ? 'text-blue-300' : 'text-white/80'}`}>
+                  <span className={`text-base font-bold ${week.isCurrent ? 'text-blue-300' : 'text-white/80'}`}>
                     {week.weekLabel}
                   </span>
                   {week.isCurrent && (
-                    <span className="ml-2 text-[11px] bg-blue-500/20 text-blue-400 rounded-full px-1.5 py-0.5">current</span>
+                    <span className="ml-2 text-base bg-blue-500/20 text-blue-400 rounded-full px-1.5 py-0.5">current</span>
                   )}
                 </div>
                 {week.weightChange !== null && (
-                  <span className={`text-sm font-bold ${week.weightChange < 0 ? 'text-green-400' : 'text-amber-400'}`}>
+                  <span className={`text-base font-bold ${week.weightChange < 0 ? 'text-green-400' : 'text-amber-400'}`}>
                     {week.weightChange > 0 ? '+' : ''}{week.weightChange.toFixed(1)} lbs
                   </span>
                 )}
               </div>
-              <div className="text-[12px] text-white/40 mb-2">{week.dateRange}</div>
+              <div className="text-base text-white/40 mb-2">{week.dateRange}</div>
               <div className="grid grid-cols-4 gap-2 text-center">
                 {[
                   { label: 'Avg Cal', value: week.avgCal > 0 ? `${week.avgCal}` : '—' },
@@ -409,8 +409,8 @@ export function JourneyTab({ weighIns, startWeight, goalWeight }) {
                   { label: 'Workouts', value: `${week.workoutsCompleted}` },
                 ].map(stat => (
                   <div key={stat.label}>
-                    <div className="text-[14px] font-bold text-white/90">{stat.value}</div>
-                    <div className="text-[11px] text-white/35">{stat.label}</div>
+                    <div className="text-base font-bold text-white/90">{stat.value}</div>
+                    <div className="text-base text-white/35">{stat.label}</div>
                   </div>
                 ))}
               </div>
@@ -432,15 +432,15 @@ export function JourneyTab({ weighIns, startWeight, goalWeight }) {
                 <div className="flex items-center gap-2">
                   <span className="text-base">{m.icon}</span>
                   <div>
-                    <span className={`text-sm font-semibold ${reached ? 'text-green-400' : 'text-white/60'}`}>
+                    <span className={`text-base font-semibold ${reached ? 'text-green-400' : 'text-white/60'}`}>
                       {m.label}
                     </span>
-                    <span className="text-sm text-white/30 ml-2">{m.weight} lbs</span>
+                    <span className="text-base text-white/30 ml-2">{m.weight} lbs</span>
                   </div>
                 </div>
                 {reached
-                  ? <span className="text-green-400 text-xs font-bold">✓ Done!</span>
-                  : <span className="text-sm text-white/30">{(currentWeight - m.weight).toFixed(1)} to go</span>
+                  ? <span className="text-green-400 text-base font-bold">✓ Done!</span>
+                  : <span className="text-base text-white/30">{(currentWeight - m.weight).toFixed(1)} to go</span>
                 }
               </div>
             );
@@ -497,13 +497,13 @@ export function JourneyTab({ weighIns, startWeight, goalWeight }) {
           <CardTitle>Goal Projection</CardTitle>
           {(() => {
             const recent = weighIns.slice(-4);
-            if (recent.length < 2) return <p className="text-xs text-white/40">Need more weigh-ins</p>;
+            if (recent.length < 2) return <p className="text-base text-white/40">Need more weigh-ins</p>;
             const first = recent[0];
             const last = recent[recent.length - 1];
             const daysBetween = (new Date(last.date) - new Date(first.date)) / 86400000;
             if (daysBetween <= 0) return null;
             const lbsPerDay = (first.weight - last.weight) / daysBetween;
-            if (lbsPerDay <= 0) return <p className="text-xs text-amber-400">No loss trend in recent weigh-ins</p>;
+            if (lbsPerDay <= 0) return <p className="text-base text-amber-400">No loss trend in recent weigh-ins</p>;
             const lbsToGo = last.weight - goalWeight;
             const daysToGoal = Math.round(lbsToGo / lbsPerDay);
             const target = new Date();
@@ -512,7 +512,7 @@ export function JourneyTab({ weighIns, startWeight, goalWeight }) {
             return (
               <div className="text-center py-1">
                 <div className="text-xl font-bold text-green-400 mb-1">{dateStr}</div>
-                <div className="text-xs text-white/40">
+                <div className="text-base text-white/40">
                   at {(lbsPerDay * 7).toFixed(1)} lbs/week · {daysToGoal} days away
                 </div>
               </div>
@@ -524,7 +524,7 @@ export function JourneyTab({ weighIns, startWeight, goalWeight }) {
       {weighIns.length === 0 && (
         <div className="text-center py-8 text-white/30">
           <div className="text-4xl mb-3">📊</div>
-          <p className="text-sm">Log your first weigh-in (Wednesday) to see your progress graph</p>
+          <p className="text-base">Log your first weigh-in (Wednesday) to see your progress graph</p>
         </div>
       )}
     </div>

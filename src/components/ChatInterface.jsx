@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { getToday } from '../data/constants';
 import { load, save } from '../data/storage';
+import { searchLocalFoods } from '../data/common-foods';
 
 // ─── Recent foods helpers ───
 const RECENT_KEY = 'recent-foods';
@@ -45,7 +46,7 @@ function FoodConfirmCard({ msg, onConfirm, onReject }) {
   if (editing) {
     return (
       <div className="bg-white/[0.06] border border-white/[0.12] rounded-2xl p-4 w-full">
-        <div className="text-sm font-semibold mb-3 text-white/80">Edit nutrition:</div>
+        <div className="text-base font-semibold mb-3 text-white/80">Edit nutrition:</div>
         <input
           type="text"
           inputMode="text"
@@ -64,7 +65,7 @@ function FoodConfirmCard({ msg, onConfirm, onReject }) {
             { k: 'carbs', label: 'Carbs (g)' },
           ].map(({ k, label }) => (
             <div key={k}>
-              <div className="text-sm text-white/40 mb-1">{label}</div>
+              <div className="text-base text-white/40 mb-1">{label}</div>
               <input
                 type="text"
                 inputMode="decimal"
@@ -80,14 +81,14 @@ function FoodConfirmCard({ msg, onConfirm, onReject }) {
         <div className="flex gap-2">
           <button
             onClick={() => { onConfirm({ ...form, meal }); }}
-            className="flex-1 bg-green-500 text-white rounded-xl py-3 text-sm font-bold
+            className="flex-1 bg-green-500 text-white rounded-xl py-3 text-base font-bold
               border-none cursor-pointer active:opacity-80"
           >
             ✅ Log it
           </button>
           <button
             onClick={() => setEditing(false)}
-            className="w-20 bg-white/[0.08] text-white/60 rounded-xl py-3 text-sm
+            className="w-20 bg-white/[0.08] text-white/60 rounded-xl py-3 text-base
               border-none cursor-pointer active:opacity-80"
           >
             Cancel
@@ -102,34 +103,34 @@ function FoodConfirmCard({ msg, onConfirm, onReject }) {
       <div className="text-[18px] font-bold mb-1 leading-snug">{food.name}</div>
       <div className="flex items-center gap-2 mb-2">
         {food.servingSize && (
-          <span className="text-sm text-white/40">{food.servingSize}</span>
+          <span className="text-base text-white/40">{food.servingSize}</span>
         )}
         {food.source && (
-          <span className="text-sm text-white/25 bg-white/[0.04] rounded-full px-2 py-0.5">{food.source}</span>
+          <span className="text-base text-white/25 bg-white/[0.04] rounded-full px-2 py-0.5">{food.source}</span>
         )}
       </div>
-      <div className="grid grid-cols-4 gap-2 mb-3">
+      <div className="grid grid-cols-4 gap-2 mb-4">
         {[
           { label: 'Cal', value: food.cal, color: 'text-amber-400' },
           { label: 'Protein', value: `${food.protein}g`, color: 'text-blue-400' },
           { label: 'Fat', value: `${food.fat || 0}g`, color: 'text-white/60' },
           { label: 'Carbs', value: `${food.carbs || 0}g`, color: 'text-white/60' },
         ].map(({ label, value, color }) => (
-          <div key={label} className="text-center bg-white/[0.04] rounded-xl py-2 px-1">
-            <div className={`text-[16px] font-bold ${color}`}>{value}</div>
-            <div className="text-sm text-white/40 mt-0.5">{label}</div>
+          <div key={label} className="text-center bg-white/[0.04] rounded-xl py-3 px-1">
+            <div className={`text-lg font-bold ${color}`}>{value}</div>
+            <div className="text-base text-white/40 mt-0.5">{label}</div>
           </div>
         ))}
       </div>
       {/* Meal selector */}
-      <div className="mb-3">
-        <div className="text-sm text-white/40 mb-1.5">Logging as:</div>
-        <div className="flex gap-1.5">
+      <div className="mb-4">
+        <div className="text-base text-white/40 mb-2">Logging as:</div>
+        <div className="flex gap-2">
           {MEAL_OPTIONS.map(opt => (
             <button
               key={opt.key}
               onClick={() => setMeal(opt.key)}
-              className={`flex-1 rounded-xl py-2 text-sm font-semibold border-none cursor-pointer
+              className={`flex-1 rounded-xl h-12 text-base font-semibold border-none cursor-pointer
                 active:scale-95 transition-all
                 ${meal === opt.key ? 'bg-blue-500 text-white' : 'bg-white/[0.06] text-white/50'}`}
             >
@@ -137,13 +138,13 @@ function FoodConfirmCard({ msg, onConfirm, onReject }) {
             </button>
           ))}
         </div>
-        <div className="text-sm text-white/40 text-center mt-1">
+        <div className="text-base text-white/40 text-center mt-1">
           {MEAL_OPTIONS.find(o => o.key === meal)?.label}
         </div>
       </div>
       <button
         onClick={() => onConfirm({ ...food, meal })}
-        className="w-full bg-green-500 text-white rounded-xl py-3.5 text-[16px] font-bold
+        className="w-full bg-green-500 text-white rounded-xl h-14 text-lg font-bold
           border-none cursor-pointer active:opacity-80 mb-2"
       >
         ✅ Yes, log it
@@ -151,14 +152,14 @@ function FoodConfirmCard({ msg, onConfirm, onReject }) {
       <div className="flex gap-2">
         <button
           onClick={() => setEditing(true)}
-          className="flex-1 bg-white/[0.08] text-white/70 rounded-xl py-3 text-sm font-semibold
+          className="flex-1 bg-white/[0.08] text-white/70 rounded-xl h-12 text-base font-semibold
             border-none cursor-pointer active:opacity-70"
         >
           ✏️ Edit
         </button>
         <button
           onClick={onReject}
-          className="flex-1 bg-red-500/15 text-red-400 rounded-xl py-3 text-sm font-semibold
+          className="flex-1 bg-red-500/15 text-red-400 rounded-xl h-12 text-base font-semibold
             border-none cursor-pointer active:opacity-70"
         >
           ❌ Not right
@@ -172,24 +173,24 @@ function FoodConfirmCard({ msg, onConfirm, onReject }) {
 function RecentFoodCard({ food, onYes, onSearchAgain }) {
   return (
     <div className="bg-blue-500/10 border border-blue-500/25 rounded-2xl p-4 w-full">
-      <div className="text-sm text-blue-300 mb-2">
+      <div className="text-base text-blue-300 mb-2">
         Last time you logged this as:
       </div>
-      <div className="text-[17px] font-semibold mb-1">{food.name}</div>
-      <div className="text-[15px] text-white/60 mb-3">
+      <div className="text-xl font-semibold mb-1">{food.name}</div>
+      <div className="text-base text-white/60 mb-3">
         {food.cal} cal · {food.protein}g protein
       </div>
       <div className="flex gap-2">
         <button
           onClick={onYes}
-          className="flex-1 bg-blue-500 text-white rounded-xl py-3 text-sm font-bold
+          className="flex-1 bg-blue-500 text-white rounded-xl h-14 text-base font-bold
             border-none cursor-pointer active:opacity-80"
         >
           ✅ Use same
         </button>
         <button
           onClick={onSearchAgain}
-          className="flex-1 bg-white/[0.08] text-white/70 rounded-xl py-3 text-sm
+          className="flex-1 bg-white/[0.08] text-white/70 rounded-xl h-14 text-base
             border-none cursor-pointer active:opacity-70"
         >
           🔍 Search again
@@ -380,7 +381,7 @@ export function ChatInterface({
   }, []);
 
   const searchAndConfirm = useCallback(async (foodQuery, skipRecent = false) => {
-    // Check recent foods first
+    // 1. Check recent foods first
     if (!skipRecent) {
       const recent = findRecentFood(foodQuery);
       if (recent) {
@@ -395,11 +396,39 @@ export function ChatInterface({
       }
     }
 
+    // 2. Search local database first (instant, no API)
+    const localResults = searchLocalFoods(foodQuery);
+    if (localResults.length > 0) {
+      const best = localResults[0];
+      const food = {
+        name: best.brand ? `${best.brand} ${best.name}` : best.name,
+        cal: best.cal,
+        protein: best.protein,
+        fat: best.fat || 0,
+        carbs: best.carbs || 0,
+        fiber: best.fiber || 0,
+        servingSize: best.servingSize || null,
+        source: 'Local Database',
+      };
+      setMessages(prev => {
+        const newIdx = prev.length;
+        setPendingFood({ msgIndex: newIdx, food });
+        return [...prev, {
+          role: 'assistant',
+          type: 'food-confirm',
+          food,
+          query: foodQuery,
+          time: new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }),
+        }];
+      });
+      return;
+    }
+
     setIsSearching(true);
     try {
       let food = null;
 
-      // Try Open Food Facts first — no key required, good global coverage
+      // 3. Try Open Food Facts
       try {
         const res = await fetch(
           `https://world.openfoodfacts.org/cgi/search.pl?search_terms=${encodeURIComponent(foodQuery)}&search_simple=1&action=process&json=1&page_size=5`,
@@ -414,7 +443,6 @@ export function ChatInterface({
             const n = item.nutriments;
             const calPer100 = n['energy-kcal_100g'] || n['energy-kcal'] || 0;
             if (calPer100 > 0) {
-              // Use serving_quantity when available for per-serving values; otherwise per 100g
               const servingQty = parseFloat(item.serving_quantity);
               const mult = servingQty > 0 && servingQty <= 2000 ? servingQty / 100 : 1;
               const servingLabel = servingQty > 0 && servingQty <= 2000
@@ -436,7 +464,7 @@ export function ChatInterface({
         }
       } catch { /* fall through to USDA */ }
 
-      // Fall back to USDA FDC
+      // 4. Fall back to USDA FDC
       if (!food) {
         try {
           const url = `https://api.nal.usda.gov/fdc/v1/foods/search?query=${encodeURIComponent(foodQuery)}&api_key=DEMO_KEY&pageSize=5&dataType=Survey%20(FNDDS),Branded,Foundation`;
@@ -451,7 +479,6 @@ export function ChatInterface({
                 const n = nutrients.find(n => n.nutrientNumber === String(num) || n.nutrientNumber === num);
                 return n ? (n.value || 0) : 0;
               };
-              // All USDA types return per-100g; apply serving size if available
               const calPer100 = getN(1008);
               if (calPer100 > 0) {
                 const servingGrams = item.servingSize && item.servingSizeUnit?.toLowerCase() === 'g'
@@ -489,10 +516,10 @@ export function ChatInterface({
           }];
         });
       } else {
-        addMsg('assistant', `Couldn't find "${foodQuery}". Try a simpler name, or type calories manually (e.g. "apple 95 cal 0g protein").`, 'error');
+        addMsg('assistant', `Can't find "${foodQuery}" — enter nutrition manually?`, 'error');
       }
     } catch {
-      addMsg('assistant', 'Search unavailable. Log food manually.', 'error');
+      addMsg('assistant', 'Search unavailable. You can enter nutrition manually below.', 'error');
     } finally {
       setIsSearching(false);
     }
@@ -622,7 +649,7 @@ export function ChatInterface({
         <div className="flex items-center justify-between px-4 py-3 border-b border-white/[0.08] shrink-0">
           <div>
             <h2 className="text-base font-bold">Quick Log</h2>
-            <p className="text-[13px] text-white/40">Natural language logger</p>
+            <p className="text-base text-white/40">Natural language logger</p>
           </div>
           <button onClick={onClose}
             className="w-10 h-10 rounded-xl bg-white/[0.06] text-white/60 border-none
@@ -635,8 +662,8 @@ export function ChatInterface({
       {embedded && !hideHeader && (
         <div className="px-4 py-3 border-b border-white/[0.08] shrink-0"
           style={{ paddingTop: 'max(env(safe-area-inset-top), 12px)' }}>
-          <h2 className="text-[20px] font-bold">Log</h2>
-          <p className="text-sm text-white/40">Type anything — food, run, water, weight</p>
+          <h2 className="text-2xl font-bold">Log</h2>
+          <p className="text-base text-white/40">Type anything — food, run, water, weight</p>
         </div>
       )}
 
@@ -645,8 +672,8 @@ export function ChatInterface({
         {messages.length === 0 && (
           <div className="text-center py-6">
             <div className="text-5xl mb-3">💬</div>
-            <p className="text-[17px] text-white/60 mb-1">Tell me what you did.</p>
-            <p className="text-[15px] text-white/35 mb-5">I'll log it for you.</p>
+            <p className="text-xl text-white/60 mb-1">Tell me what you did.</p>
+            <p className="text-base text-white/35 mb-5">I'll log it for you.</p>
             <div className="grid grid-cols-2 gap-2">
               {[
                 'I ran 2 miles',
@@ -659,8 +686,8 @@ export function ChatInterface({
                 <button
                   key={i}
                   onClick={() => { setInput(s); inputRef.current?.focus(); }}
-                  className="text-left text-[15px] text-white/50 bg-white/[0.04] rounded-xl
-                    px-3 py-3 border border-white/[0.06] cursor-pointer active:opacity-70 active:scale-95"
+                  className="text-left text-base text-white/50 bg-white/[0.04] rounded-xl
+                    px-3 py-4 border border-white/[0.06] cursor-pointer active:opacity-70 active:scale-95 min-h-[52px]"
                 >
                   {s}
                 </button>
@@ -675,9 +702,9 @@ export function ChatInterface({
               return (
                 <div key={i} className="flex justify-start">
                   <div className="bg-green-500/15 border border-green-500/30 text-green-300
-                    rounded-2xl rounded-bl-sm px-3.5 py-2.5 text-sm max-w-[85%]">
+                    rounded-2xl rounded-bl-sm px-4 py-3 text-base max-w-[90%]">
                     ✓ Logged: {msg.food.name} — {msg.food.cal} cal, {msg.food.protein}g protein
-                    <p className="text-sm opacity-50 mt-1">{msg.time}</p>
+                    <p className="text-base opacity-50 mt-1">{msg.time}</p>
                   </div>
                 </div>
               );
@@ -686,7 +713,7 @@ export function ChatInterface({
               return (
                 <div key={i} className="flex justify-start">
                   <div className="bg-white/[0.04] border border-white/[0.08] text-white/40
-                    rounded-2xl rounded-bl-sm px-3.5 py-2.5 text-sm max-w-[85%]">
+                    rounded-2xl rounded-bl-sm px-4 py-3 text-base max-w-[90%]">
                     ✗ {msg.food.name} (not logged)
                   </div>
                 </div>
@@ -727,7 +754,7 @@ export function ChatInterface({
 
           return (
             <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-              <div className={`max-w-[85%] rounded-2xl px-3.5 py-2.5 text-[15px]
+              <div className={`max-w-[90%] rounded-2xl px-4 py-3 text-base
                 ${msg.role === 'user'
                   ? 'bg-blue-500 text-white rounded-br-sm'
                   : msg.type === 'success'
@@ -738,7 +765,7 @@ export function ChatInterface({
                 }`}
               >
                 <p className="leading-relaxed">{msg.text}</p>
-                <p className="text-sm opacity-50 mt-1">{msg.time}</p>
+                <p className="text-base opacity-50 mt-1">{msg.time}</p>
               </div>
             </div>
           );
@@ -774,8 +801,8 @@ export function ChatInterface({
             }}
             className={`shrink-0 border rounded-full cursor-pointer active:scale-95 whitespace-nowrap
               ${chip.large
-                ? 'bg-blue-500/15 border-blue-500/40 text-blue-300 px-4 py-2.5 text-[15px] font-semibold'
-                : 'bg-white/[0.08] border-white/[0.1] text-white/70 px-3.5 py-2 text-sm'}`}
+                ? 'bg-blue-500/15 border-blue-500/40 text-blue-300 px-4 py-3 text-base font-semibold'
+                : 'bg-white/[0.08] border-white/[0.1] text-white/70 px-4 py-2.5 text-base'}`}
           >
             {chip.label}
           </button>

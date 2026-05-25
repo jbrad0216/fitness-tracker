@@ -63,7 +63,7 @@ function MyFoodsPanel({ addFood, notify }) {
     return (
       <button
         onClick={() => handleLog(food)}
-        className={`w-full flex items-center gap-3 px-4 py-3.5 rounded-2xl
+        className={`w-full flex items-center gap-3 px-4 py-4 rounded-2xl min-h-[56px]
           cursor-pointer active:opacity-70 transition-all text-left border
           ${wasLogged
             ? 'bg-green-500/10 border-green-500/20'
@@ -71,10 +71,10 @@ function MyFoodsPanel({ addFood, notify }) {
       >
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-1.5">
-            {isSaved && <span className="text-amber-400 text-[13px]">★</span>}
-            <span className="text-[16px] font-semibold truncate">{food.name}</span>
+            {isSaved && <span className="text-amber-400 text-base">★</span>}
+            <span className="text-base font-semibold truncate">{food.name}</span>
           </div>
-          <div className="text-sm text-white/45 mt-0.5">
+          <div className="text-base text-white/45 mt-0.5">
             {food.cal} cal · {food.protein}g protein
             {food.fat ? ` · ${food.fat}g fat` : ''}
           </div>
@@ -91,7 +91,7 @@ function MyFoodsPanel({ addFood, notify }) {
     <div className="flex-1 overflow-y-auto px-4 py-3">
       {customFoods.length > 0 && (
         <div className="mb-5">
-          <div className="text-[13px] font-bold text-amber-400 uppercase tracking-wider mb-2">
+          <div className="text-base font-bold text-amber-400 uppercase tracking-wider mb-2">
             ★ Saved Presets
           </div>
           <div className="space-y-2">
@@ -101,7 +101,7 @@ function MyFoodsPanel({ addFood, notify }) {
                 <button
                   onClick={() => handleDeleteCustom(f.id)}
                   className="absolute top-2 right-10 w-7 h-7 rounded-lg bg-red-500/15 text-red-400
-                    border-none cursor-pointer text-sm flex items-center justify-center"
+                    border-none cursor-pointer text-base flex items-center justify-center"
                 >×</button>
               </div>
             ))}
@@ -111,7 +111,7 @@ function MyFoodsPanel({ addFood, notify }) {
 
       {frequent.length > 0 && (
         <div className="mb-5">
-          <div className="text-[13px] font-bold text-white/40 uppercase tracking-wider mb-2">
+          <div className="text-base font-bold text-white/40 uppercase tracking-wider mb-2">
             Your Usuals
           </div>
           <div className="space-y-2">
@@ -122,7 +122,7 @@ function MyFoodsPanel({ addFood, notify }) {
 
       {recentUnique.length > 0 && (
         <div className="mb-5">
-          <div className="text-[13px] font-bold text-white/40 uppercase tracking-wider mb-2">
+          <div className="text-base font-bold text-white/40 uppercase tracking-wider mb-2">
             Recent
           </div>
           <div className="space-y-2">
@@ -135,7 +135,7 @@ function MyFoodsPanel({ addFood, notify }) {
         <div className="text-center py-12 text-white/30">
           <div className="text-4xl mb-3">🍽️</div>
           <p className="text-base">No food history yet.</p>
-          <p className="text-sm mt-1">Log food via Search or Custom — it'll appear here.</p>
+          <p className="text-base mt-1">Log food via Search or Custom — it'll appear here.</p>
         </div>
       )}
     </div>
@@ -199,7 +199,7 @@ function CustomFoodForm({ addFood, notify }) {
     { key: 'dinner', icon: '🌙', label: 'Dinner' },
   ];
 
-  const inputClass = "w-full bg-white/[0.08] border border-white/[0.1] rounded-xl px-3 py-3 text-[17px] text-white outline-none placeholder:text-white/25 min-h-[52px]";
+  const inputClass = "w-full bg-white/[0.08] border border-white/[0.1] rounded-xl px-3 py-3 text-lg text-white outline-none placeholder:text-white/25 h-14";
 
   return (
     <div className="flex-1 overflow-y-auto px-4 py-3">
@@ -211,7 +211,7 @@ function CustomFoodForm({ addFood, notify }) {
 
       <div className="space-y-3">
         <div>
-          <div className="text-sm text-white/40 mb-1.5">Food Name</div>
+          <div className="text-base text-white/40 mb-1.5">Food Name</div>
           <input
             type="text"
             inputMode="text"
@@ -224,11 +224,11 @@ function CustomFoodForm({ addFood, notify }) {
 
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <div className="text-sm text-white/40 mb-1.5">Calories <span className="text-red-400">*</span></div>
+            <div className="text-base text-white/40 mb-1.5">Calories <span className="text-red-400">*</span></div>
             <input type="text" inputMode="numeric" autoComplete="off" enterKeyHint="next" {...f('cal')} placeholder="320" className={inputClass} />
           </div>
           <div>
-            <div className="text-sm text-white/40 mb-1.5">Protein (g)</div>
+            <div className="text-base text-white/40 mb-1.5">Protein (g)</div>
             <input type="text" inputMode="numeric" autoComplete="off" enterKeyHint="next" {...f('protein')} placeholder="30" className={inputClass} />
           </div>
         </div>
@@ -240,21 +240,21 @@ function CustomFoodForm({ addFood, notify }) {
             { k: 'fiber', label: 'Fiber (g)' },
           ].map(({ k, label }) => (
             <div key={k}>
-              <div className="text-sm text-white/40 mb-1.5">{label}</div>
+              <div className="text-base text-white/40 mb-1.5">{label}</div>
               <input type="text" inputMode="numeric" autoComplete="off" enterKeyHint="next" {...f(k)} placeholder="0"
-                className="w-full bg-white/[0.08] border border-white/[0.1] rounded-xl px-3 py-3 text-[16px] text-white outline-none placeholder:text-white/25 min-h-[52px]" />
+                className="w-full bg-white/[0.08] border border-white/[0.1] rounded-xl px-3 py-3 text-base text-white outline-none placeholder:text-white/25 h-14" />
             </div>
           ))}
         </div>
 
         <div>
-          <div className="text-sm text-white/40 mb-1.5">Meal</div>
+          <div className="text-base text-white/40 mb-1.5">Meal</div>
           <div className="flex gap-2">
             {MEALS.map(m => (
               <button
                 key={m.key}
                 onClick={() => setMeal(m.key)}
-                className={`flex-1 rounded-xl py-3 text-sm font-semibold border-none cursor-pointer
+                className={`flex-1 rounded-xl h-12 text-base font-semibold border-none cursor-pointer
                   active:scale-95 transition-all
                   ${meal === m.key ? 'bg-blue-500 text-white' : 'bg-white/[0.06] text-white/50'}`}
               >
@@ -262,7 +262,7 @@ function CustomFoodForm({ addFood, notify }) {
               </button>
             ))}
           </div>
-          <div className="text-sm text-white/40 text-center mt-1">
+          <div className="text-base text-white/40 text-center mt-1">
             {MEALS.find(m => m.key === meal)?.label}
           </div>
         </div>
@@ -273,7 +273,7 @@ function CustomFoodForm({ addFood, notify }) {
             className={`w-6 h-6 rounded-md border-2 flex items-center justify-center cursor-pointer
               ${savePreset ? 'bg-blue-500 border-blue-500' : 'border-white/30'}`}
           >
-            {savePreset && <span className="text-white text-sm font-bold">✓</span>}
+            {savePreset && <span className="text-white text-base font-bold">✓</span>}
           </div>
           <span className="text-[16px] text-white/70">Save as preset (appears in My Foods)</span>
         </label>
@@ -281,7 +281,7 @@ function CustomFoodForm({ addFood, notify }) {
         <button
           onClick={handleLog}
           className="w-full bg-green-500 text-white rounded-2xl py-4 text-[17px] font-bold
-            border-none cursor-pointer active:opacity-80 min-h-[52px]"
+            border-none cursor-pointer active:opacity-80 h-14"
         >
           ✅ Log Food
         </button>
@@ -308,14 +308,14 @@ export function LogTab({
       {/* Header */}
       <div className="px-4 pt-4 pb-0 border-b border-white/[0.08] shrink-0"
         style={{ paddingTop: 'max(env(safe-area-inset-top), 16px)' }}>
-        <h2 className="text-[20px] font-bold mb-3">Log</h2>
+        <h2 className="text-2xl font-bold mb-3">Log</h2>
         {/* Tab bar */}
         <div className="flex gap-1 mb-0">
           {TABS.map(tab => (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 text-[15px] font-semibold
+              className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 text-base font-semibold
                 rounded-t-xl border-none cursor-pointer transition-all
                 ${activeTab === tab.id
                   ? 'bg-white/[0.08] text-white border-b-2 border-blue-500'

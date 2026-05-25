@@ -188,7 +188,7 @@ export function OnboardingFlow({ onComplete }) {
                   <span className="text-xl">{item.icon}</span>
                   <div>
                     <div className="text-[16px] font-semibold">{item.title}</div>
-                    <div className="text-sm text-white/40">{item.desc}</div>
+                    <div className="text-base text-white/40">{item.desc}</div>
                   </div>
                 </div>
               ))}
@@ -213,9 +213,9 @@ export function OnboardingFlow({ onComplete }) {
                   <span className="text-[17px] font-bold">{g.label}</span>
                   {form.goal === g.id && <span className="ml-auto text-blue-400 text-lg">✓</span>}
                 </div>
-                <div className="text-sm text-white/60 pl-9">{g.desc}</div>
+                <div className="text-base text-white/60 pl-9">{g.desc}</div>
                 {form.goal === g.id && (
-                  <div className="mt-1.5 pl-9 text-xs text-blue-400/80">{g.detail}</div>
+                  <div className="mt-1.5 pl-9 text-base text-blue-400/80">{g.detail}</div>
                 )}
               </button>
             ))}
@@ -251,15 +251,15 @@ export function OnboardingFlow({ onComplete }) {
                   <span className="text-2xl">{p.icon}</span>
                   <div className="flex-1">
                     <span className="text-[17px] font-bold">{p.label}</span>
-                    <span className="ml-2 text-sm text-white/40">{p.range}</span>
+                    <span className="ml-2 text-base text-white/40">{p.range}</span>
                     {p.recommended && (
-                      <span className="ml-2 text-xs bg-green-500/20 text-green-400
+                      <span className="ml-2 text-base bg-green-500/20 text-green-400
                         rounded-full px-2 py-0.5 font-semibold">Recommended</span>
                     )}
                   </div>
                   {form.pace === p.id && <span className="text-blue-400 text-lg">✓</span>}
                 </div>
-                <div className="text-sm text-white/50 pl-9">{p.desc}</div>
+                <div className="text-base text-white/50 pl-9">{p.desc}</div>
               </button>
             ))}
           </div>
@@ -287,7 +287,7 @@ export function OnboardingFlow({ onComplete }) {
                       placeholder="6"
                       className="text-center"
                     />
-                    <div className="text-sm text-white/40 text-center mt-1">ft</div>
+                    <div className="text-base text-white/40 text-center mt-1">ft</div>
                   </div>
                   <div className="flex-1">
                     <Input
@@ -300,7 +300,7 @@ export function OnboardingFlow({ onComplete }) {
                       placeholder="1"
                       className="text-center"
                     />
-                    <div className="text-sm text-white/40 text-center mt-1">in</div>
+                    <div className="text-base text-white/40 text-center mt-1">in</div>
                   </div>
                 </div>
               </div>
@@ -313,13 +313,13 @@ export function OnboardingFlow({ onComplete }) {
             <div>
               <Label>Current weight (lbs)</Label>
               <Input {...f('startWeight')} type="text" inputMode="decimal" autoComplete="off" enterKeyHint="done" placeholder="e.g. 221" className="text-lg py-3" />
-              <p className="text-sm text-white/30 mt-1">This becomes your starting weight baseline</p>
+              <p className="text-base text-white/30 mt-1">This becomes your starting weight baseline</p>
             </div>
             <div>
               <Label>Goal weight (lbs)</Label>
               <Input {...f('goalWeight')} type="text" inputMode="decimal" autoComplete="off" enterKeyHint="done" placeholder="e.g. 200" />
               {form.startWeight && form.goalWeight && (
-                <p className="text-xs text-green-400/70 mt-1">
+                <p className="text-base text-green-400/70 mt-1">
                   Goal: lose {(parseFloat(form.startWeight) - parseFloat(form.goalWeight)).toFixed(1)} lbs
                 </p>
               )}
@@ -337,7 +337,7 @@ export function OnboardingFlow({ onComplete }) {
               <div className="flex-1">
                 <Label>Water bottles</Label>
                 <Input {...f('waterBottles')} type="text" inputMode="numeric" autoComplete="off" enterKeyHint="done" placeholder="3" />
-                <p className="text-sm text-white/30 mt-0.5">32oz each</p>
+                <p className="text-base text-white/30 mt-0.5">32oz each</p>
               </div>
               <div className="flex-1"><Label>Sodium limit (mg)</Label><Input {...f('sodiumMg')} type="text" inputMode="numeric" autoComplete="off" enterKeyHint="done" placeholder="2000" /></div>
             </div>
@@ -356,13 +356,13 @@ export function OnboardingFlow({ onComplete }) {
                 { day: 'Saturday', type: 'Long Run', color: 'text-green-400' },
                 { day: 'Sunday', type: 'Rest', color: 'text-purple-400' },
               ].map(({ day, type, color }) => (
-                <div key={day} className="flex justify-between text-sm">
+                <div key={day} className="flex justify-between text-base">
                   <span className="text-white/60">{day}</span>
                   <span className={`font-semibold ${color}`}>{type}</span>
                 </div>
               ))}
             </div>
-            <p className="text-xs text-white/30 text-center">Workout A/B alternates weekly. Customize in Settings.</p>
+            <p className="text-base text-white/30 text-center">Workout A/B alternates weekly. Customize in Settings.</p>
           </div>
         )}
 
@@ -373,7 +373,7 @@ export function OnboardingFlow({ onComplete }) {
               <p className="text-base text-white/80 text-center leading-relaxed">
                 Your fitness data is stored on this device.
               </p>
-              <p className="text-sm text-white/50 text-center mt-2">
+              <p className="text-base text-white/50 text-center mt-2">
                 To keep a backup, export your data anytime from the Settings menu (More → Settings).
               </p>
             </div>
@@ -409,7 +409,7 @@ export function OnboardingFlow({ onComplete }) {
 
         {step > 0 && (
           <button onClick={finish}
-            className="w-full mt-3 text-xs text-white/25 bg-transparent border-none cursor-pointer py-2">
+            className="w-full mt-3 text-base text-white/25 bg-transparent border-none cursor-pointer py-2">
             Skip setup
           </button>
         )}

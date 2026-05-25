@@ -89,8 +89,8 @@ function Section({ title, icon, children, editLabel, onEdit }) {
         {onEdit && (
           <button
             onClick={onEdit}
-            className="text-sm text-blue-400 bg-blue-500/10 border border-blue-500/20
-              rounded-xl px-3 py-2.5 cursor-pointer active:opacity-70 min-h-[44px]"
+            className="text-base text-blue-400 bg-blue-500/10 border border-blue-500/20
+              rounded-xl px-3 py-2.5 cursor-pointer active:opacity-70 min-h-[48px]"
           >
             {editLabel || 'Adjust ✏️'}
           </button>
@@ -109,7 +109,7 @@ function SourceLink({ label, url }) {
       href={url}
       target="_blank"
       rel="noopener noreferrer"
-      className="inline-flex items-center gap-1 text-blue-400 text-sm underline"
+      className="inline-flex items-center gap-1 text-blue-400 text-base underline"
     >
       {label} ↗
     </a>
@@ -179,8 +179,8 @@ export function PlanExplanation({ settings, updateSettings, notify }) {
       {/* Profile summary */}
       <div className="bg-gradient-to-br from-blue-500/10 to-purple-500/10 border border-blue-500/20
         rounded-2xl px-4 py-4 mb-6">
-        <div className="text-[13px] text-blue-300/80 font-semibold uppercase tracking-wider mb-2">Your Profile</div>
-        <div className="grid grid-cols-2 gap-y-1 text-[15px] text-white/70">
+        <div className="text-base text-blue-300/80 font-semibold uppercase tracking-wider mb-2">Your Profile</div>
+        <div className="grid grid-cols-2 gap-y-1 text-base text-white/70">
           <span>Age: <strong className="text-white">{s.age || 48}</strong></span>
           <span>Height: <strong className="text-white">{s.height || "6'1\""}</strong></span>
           <span>Current: <strong className="text-white">{s.startWeight || 221} lbs</strong></span>
@@ -190,7 +190,7 @@ export function PlanExplanation({ settings, updateSettings, notify }) {
         </div>
       </div>
 
-      <div className="text-[12px] font-bold text-white/30 uppercase tracking-widest mb-4">
+      <div className="text-base font-bold text-white/30 uppercase tracking-widest mb-4">
         How we get you there
       </div>
 
@@ -216,7 +216,7 @@ export function PlanExplanation({ settings, updateSettings, notify }) {
             loss per week. A pound of fat ≈ 3,500 calories, so {deficit} cal/day × 7 = {(deficit * 7).toLocaleString()} cal/week ≈ {lbsPerWeek} lb/week.
           </p>
         )}
-        <p className="text-sm text-white/50">
+        <p className="text-base text-white/50">
           Recommended based on your profile: <strong className="text-white">{recCal.toLocaleString()} cal</strong>.
           Your current setting: <strong className="text-white">{s.calories.toLocaleString()} cal</strong>.
         </p>
@@ -245,7 +245,7 @@ export function PlanExplanation({ settings, updateSettings, notify }) {
           Higher protein also increases satiety and the thermic effect of food — your body burns
           more calories just digesting it.
         </p>
-        <p className="text-sm text-white/50">
+        <p className="text-base text-white/50">
           Recommended: <strong className="text-white">{recProtein}g</strong>. Current: <strong className="text-white">{s.protein}g</strong>.
         </p>
         {editingSection === 'protein' && (
@@ -299,7 +299,7 @@ export function PlanExplanation({ settings, updateSettings, notify }) {
         </p>
         <p>
           Saturday long runs build aerobic base progressively:
-          <br /><span className="text-white/50 text-sm">Weeks 1–2: 2.5 mi → Weeks 3–4: 3 mi → Weeks 5–6: 3.5 mi → Weeks 7+: 4 mi</span>
+          <br /><span className="text-white/50 text-base">Weeks 1–2: 2.5 mi → Weeks 3–4: 3 mi → Weeks 5–6: 3.5 mi → Weeks 7+: 4 mi</span>
         </p>
         <div className="flex flex-wrap gap-3 mt-1">
           <SourceLink label="Exercise and Hypertension (PubMed)" url="https://pubmed.ncbi.nlm.nih.gov/15076798/" />
@@ -315,22 +315,22 @@ export function PlanExplanation({ settings, updateSettings, notify }) {
           push, pull, squat, and hinge.
         </p>
         <div className="bg-white/[0.04] border border-white/[0.07] rounded-xl p-3 space-y-1.5">
-          <div className="text-[14px] font-bold text-blue-400 mb-1">Workout A — Push & Squat</div>
+          <div className="text-base font-bold text-blue-400 mb-1">Workout A — Push & Squat</div>
           {[
             'Goblet Squat — quads, glutes, core. Joint-friendly squat pattern.',
             'DB Bench Press — chest, front delts, triceps. Foundational push.',
             'Lat Pulldown — back, biceps. Balances pushing movements.',
             'DB Row — back, rear delts. Unilateral work corrects imbalances.',
-          ].map((t, i) => <div key={i} className="text-[14px] text-white/60">▸ {t}</div>)}
+          ].map((t, i) => <div key={i} className="text-base text-white/60">▸ {t}</div>)}
         </div>
         <div className="bg-white/[0.04] border border-white/[0.07] rounded-xl p-3 space-y-1.5">
-          <div className="text-[14px] font-bold text-purple-400 mb-1">Workout B — Hinge & Press</div>
+          <div className="text-base font-bold text-purple-400 mb-1">Workout B — Hinge & Press</div>
           {[
             'DB Romanian Deadlift — hamstrings, glutes, lower back. Essential hinge.',
             'Overhead Press — shoulders, triceps, core. Functional pressing strength.',
             'Lat Pulldown — back volume. The back benefits from higher frequency.',
             'DB Reverse Lunge — quads, glutes. Builds single-leg stability.',
-          ].map((t, i) => <div key={i} className="text-[14px] text-white/60">▸ {t}</div>)}
+          ].map((t, i) => <div key={i} className="text-base text-white/60">▸ {t}</div>)}
         </div>
         <p>
           {isMuscleBuild
@@ -358,18 +358,18 @@ export function PlanExplanation({ settings, updateSettings, notify }) {
               d.setDate(d.getDate() + w * 7);
               const label = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
               return (
-                <div key={pct} className="flex justify-between text-[15px]">
+                <div key={pct} className="flex justify-between text-base">
                   <span className="text-white/60">Week {w}: -{lbs} lbs → {(s.startWeight || 221) - lbs} lbs</span>
-                  <span className="text-white/40 text-sm">{label}</span>
+                  <span className="text-white/40 text-base">{label}</span>
                 </div>
               );
             })}
-            <div className="flex justify-between text-[16px] font-bold border-t border-white/[0.08] pt-2 mt-1">
+            <div className="flex justify-between text-lg font-bold border-t border-white/[0.08] pt-2 mt-1">
               <span className="text-green-400">GOAL: {s.goalWeight || 200} lbs</span>
               <span className="text-green-400">{estDate}</span>
             </div>
           </div>
-          <p className="text-sm text-white/50">
+          <p className="text-base text-white/50">
             Want faster results? <span className="text-white">Aggressive pace</span> (750 cal deficit) reaches the goal in ~{Math.ceil(totalLbs / ((750 * 7) / 3500))} weeks.
             <br />
             Prefer slower? <span className="text-white">Gradual pace</span> (250 cal deficit) in ~{Math.ceil(totalLbs / ((250 * 7) / 3500))} weeks.
@@ -377,7 +377,7 @@ export function PlanExplanation({ settings, updateSettings, notify }) {
         </Section>
       )}
 
-      <p className="text-[12px] text-white/25 text-center mt-2 leading-relaxed">
+      <p className="text-base text-white/25 text-center mt-2 leading-relaxed">
         These calculations are estimates based on population averages. Individual results vary.
         Track your actual progress and adjust targets in Settings if needed.
       </p>

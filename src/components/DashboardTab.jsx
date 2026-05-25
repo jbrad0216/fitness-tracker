@@ -1,9 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { isWednesday, getToday, getTodaysWorkoutType, getDaySchedule, WORKOUT_A, WORKOUT_B } from '../data/constants';
 import { load, save } from '../data/storage';
-import { MUSCLE_COLORS } from '../data/exercises';
 
-// ─── 32 Daily Quotes ───
+// ─── Daily Quotes ───
 const DAILY_QUOTES = [
   "The only bad workout is the one that didn't happen.",
   "You don't have to be extreme, just consistent.",
@@ -44,13 +43,6 @@ function getDailyQuote() {
   const start = new Date(now.getFullYear(), 0, 0);
   const dayOfYear = Math.floor((now - start) / 86400000);
   return DAILY_QUOTES[dayOfYear % DAILY_QUOTES.length];
-}
-
-function getGreeting() {
-  const h = new Date().getHours();
-  if (h < 12) return 'Good morning';
-  if (h < 17) return 'Good afternoon';
-  return 'Good evening';
 }
 
 function parseHeightToCm(heightStr) {
@@ -94,228 +86,109 @@ function getCurrentWeekDates() {
   });
 }
 
-function getDayStatus(dayData, targets, dateStr) {
+function getDayStatus(dayData, targets) {
   if (!dayData) return 'empty';
   const hasFood = dayData.food.length > 0;
-  const totalProt = dayData.food.reduce((s, f) => s + (f.protein || 0), 0);
-  const hasProtein = totalProt >= targets.protein;
   const hasWater = dayData.water >= targets.waterBottles;
-  const dow = new Date(dateStr + 'T12:00:00').getDay();
-  const isStrength = [1, 3, 5].includes(dow);
-  const isRest = dow === 0;
-  const hasWorkout = isRest || (isStrength ? dayData.exercises.length > 0 : dayData.ranMiles > 0);
   if (!hasFood && dayData.water === 0 && dayData.exercises.length === 0 && dayData.ranMiles === 0) return 'empty';
-  if (hasFood && hasProtein && hasWater && hasWorkout) return 'complete';
+  if (hasFood && hasWater) return 'complete';
   return 'partial';
 }
 
-const DISMISSED_KEY = () => `dismissed-reminders-${getToday()}`;
-
-// ─── Reminder Banner ───
-function getActiveReminder(daily, targets, weighIns, totalCal, totalProtein) {
-  const hour = new Date().getHours();
-  const today = getToday();
-  const dismissed = load(DISMISSED_KEY(), []);
-  const check = (id, cond, r) => (!cond || dismissed.includes(id)) ? null : { id, ...r };
+// ─── Simple Progress Bar ───
+function ProgressBar({ value, max, color }) {
+  const pct = Math.min(Math.max(value / (max || 1), 0), 1);
   return (
-    check('weigh-in', new Date().getDay() === 3 && !weighIns.some(w => w.date === today) && hour >= 7,
-      { icon: '⚖️', text: "Wednesday weigh-in! Log your weight.", color: 'amber', action: 'log', prefill: 'weight is ' }) ||
-    check('breakfast', hour >= 8 && hour < 11 && daily.food.length === 0,
-      { icon: '🥣', text: "Don't forget to log breakfast.", color: 'blue', action: 'log', prefill: 'I ate ' }) ||
-    check('water-noon', hour >= 12 && daily.water === 0,
-      { icon: '💧', text: "No water yet today! Stay hydrated.", color: 'blue', action: 'water' }) ||
-    check('lunch', hour >= 12 && hour < 14 && daily.food.length <= 1,
-      { icon: '🥗', text: "Time to log lunch.", color: 'green', action: 'log', prefill: 'I ate ' }) ||
-    check('protein', hour >= 14 && hour < 17 && totalProtein < targets.protein * 0.5,
-      { icon: '💪', text: `Protein snack time! Only ${totalProtein}g of ${targets.protein}g.`, color: 'amber', action: 'log', prefill: 'I ate ' }) ||
-    check('dinner', hour >= 17 && totalCal < targets.calories * 0.7,
-      { icon: '🍽️', text: "Log dinner when you eat.", color: 'blue', action: 'log', prefill: 'I ate ' }) ||
-    check('workout', hour >= 18 && daily.exercises.length === 0 && [1, 3, 5].includes(new Date().getDay()),
-      { icon: '🏋️', text: "Did you get your workout in today?", color: 'amber', action: 'gym' }) ||
-    null
-  );
-}
-
-function ReminderBanner({ daily, targets, weighIns, totalCal, totalProtein, onNavigate, onOpenLog }) {
-  const [dismissed, setDismissed] = useState(() => load(DISMISSED_KEY(), []));
-  const reminder = getActiveReminder(daily, targets, weighIns, totalCal, totalProtein);
-  if (!reminder || dismissed.includes(reminder.id)) return null;
-  const dismiss = () => { const next = [...dismissed, reminder.id]; setDismissed(next); save(DISMISSED_KEY(), next); };
-  const c = {
-    blue: { bg: 'bg-blue-500/10 border-blue-500/25', text: 'text-blue-300', btn: 'bg-blue-500' },
-    amber: { bg: 'bg-amber-500/10 border-amber-500/25', text: 'text-amber-300', btn: 'bg-amber-500' },
-    green: { bg: 'bg-green-500/10 border-green-500/25', text: 'text-green-300', btn: 'bg-green-500' },
-  }[reminder.color] || { bg: 'bg-blue-500/10 border-blue-500/25', text: 'text-blue-300', btn: 'bg-blue-500' };
-  return (
-    <div className={`flex items-center gap-3 rounded-2xl px-4 py-3 mb-3 border ${c.bg}`}>
-      <span className="text-xl shrink-0">{reminder.icon}</span>
-      <span className={`flex-1 text-sm font-medium ${c.text}`}>{reminder.text}</span>
-      {reminder.action === 'log' && (
-        <button onClick={() => { onOpenLog?.(reminder.prefill); dismiss(); }}
-          className={`${c.btn} text-white text-sm font-bold rounded-xl px-3 py-2.5 border-none cursor-pointer shrink-0 active:scale-95`}>Log</button>
-      )}
-      {reminder.action === 'water' && (
-        <button onClick={() => { onOpenLog?.('drank water'); dismiss(); }}
-          className={`${c.btn} text-white text-sm font-bold rounded-xl px-3 py-2.5 border-none cursor-pointer shrink-0 active:scale-95`}>+Water</button>
-      )}
-      {reminder.action === 'gym' && (
-        <button onClick={() => { onNavigate?.('gym'); dismiss(); }}
-          className={`${c.btn} text-white text-sm font-bold rounded-xl px-3 py-2.5 border-none cursor-pointer shrink-0 active:scale-95`}>Open Gym</button>
-      )}
-      <button onClick={dismiss} className="bg-transparent border-none cursor-pointer text-white/30 text-lg shrink-0 pl-1">✕</button>
-    </div>
-  );
-}
-
-// ─── Scheduled Meals Banner ───
-function ScheduledMealsBanner({ daily, addFood, notify }) {
-  const [dismissed, setDismissed] = useState([]);
-  const dow = new Date().getDay();
-  const meals = (() => { try { return JSON.parse(localStorage.getItem('ft_scheduled-meals') || '[]'); } catch { return []; } })();
-  const todayMeals = meals.filter(m =>
-    m.days.includes(dow) && !dismissed.includes(m.id) &&
-    !daily.food.some(f => f.name.toLowerCase() === m.name.toLowerCase())
-  );
-  if (todayMeals.length === 0) return null;
-  return (
-    <div className="mb-3">
-      {todayMeals.map(m => (
-        <div key={m.id} className="bg-blue-500/10 border border-blue-500/20 rounded-2xl px-4 py-3 mb-2 flex items-center gap-3">
-          <div className="flex-1 min-w-0">
-            <div className="text-[16px] font-semibold">{m.name}</div>
-            <div className="text-sm text-white/40">{m.cal} cal · {m.protein}g protein · {m.meal}</div>
-          </div>
-          <button onClick={() => { addFood({ name: m.name, cal: m.cal, protein: m.protein || 0, fat: 0, carbs: 0, meal: m.meal }); setDismissed(d => [...d, m.id]); notify(`${m.name} logged`); }}
-            className="bg-blue-500 text-white text-sm font-bold rounded-xl px-3 py-2 border-none cursor-pointer shrink-0 active:opacity-80">✓ Log</button>
-          <button onClick={() => setDismissed(d => [...d, m.id])}
-            className="text-white/30 text-lg bg-transparent border-none cursor-pointer shrink-0">✕</button>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-// ─── Mini Weight Sparkline ───
-function MiniSparkline({ weighIns }) {
-  const pts = [...(weighIns || [])].sort((a, b) => a.date.localeCompare(b.date)).slice(-6);
-  if (pts.length < 2) return null;
-
-  const W = 200;
-  const H = 32;
-  const PAD = 4;
-  const weights = pts.map(p => p.weight);
-  const minW = Math.min(...weights) - 0.5;
-  const maxW = Math.max(...weights) + 0.5;
-  const range = maxW - minW || 1;
-
-  const x = (i) => PAD + (i / (pts.length - 1)) * (W - PAD * 2);
-  const y = (w) => PAD + ((maxW - w) / range) * (H - PAD * 2);
-
-  const path = pts.map((p, i) => `${i === 0 ? 'M' : 'L'} ${x(i)} ${y(p.weight)}`).join(' ');
-  const first = pts[0].weight;
-  const last = pts[pts.length - 1].weight;
-  const isDown = last <= first;
-  const color = isDown ? '#22c55e' : '#f59e0b';
-  const diff = (first - last).toFixed(1);
-  const sign = isDown ? '-' : '+';
-
-  return (
-    <div className="flex items-center gap-2 mb-3 px-1">
-      <svg width={W} height={H} viewBox={`0 0 ${W} ${H}`} className="flex-1">
-        <path d={path} fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-        {pts.map((p, i) => (
-          <circle key={i} cx={x(i)} cy={y(p.weight)} r="2.5" fill={color} />
-        ))}
-      </svg>
-      <div className="text-right shrink-0">
-        <div className={`text-[15px] font-bold ${isDown ? 'text-green-400' : 'text-amber-400'}`}>
-          {sign}{Math.abs(diff)} lbs
-        </div>
-        <div className="text-[11px] text-white/30">last {pts.length} weigh-ins</div>
-      </div>
+    <div className="h-2 bg-white/[0.1] rounded-full overflow-hidden mt-2">
+      <div className="h-full rounded-full transition-all duration-500"
+        style={{ width: `${pct * 100}%`, background: color }} />
     </div>
   );
 }
 
 // ─── Goal Banner ───
-function GoalBanner({ startWeight, goalWeight, weighIns, onEdit }) {
+function GoalBanner({ startWeight, goalWeight, weighIns, currentWeight, onEdit }) {
   if (!startWeight || !goalWeight || startWeight <= goalWeight) return null;
-  const sorted = [...(weighIns || [])].sort((a, b) => a.date.localeCompare(b.date));
-  const currentWeight = sorted.length > 0 ? sorted[sorted.length - 1].weight : startWeight;
+  const curWt = currentWeight || startWeight;
   const totalToLose = startWeight - goalWeight;
-  const lostSoFar = startWeight - currentWeight;
+  const lostSoFar = Math.max(0, startWeight - curWt);
   const pct = Math.min(Math.max(lostSoFar / totalToLose, 0), 1);
-  const lbsLeft = Math.max(currentWeight - goalWeight, 0);
+  const lbsLeft = Math.max(curWt - goalWeight, 0);
 
-  let weeklyRate = 0, weeksLeft = null, paceLabel = null, paceColor = 'text-white/50';
+  const sorted = [...(weighIns || [])].sort((a, b) => a.date.localeCompare(b.date));
+  let weeksLeft = Math.ceil(lbsLeft / 1.0);
   if (sorted.length >= 2) {
     const first = sorted[0], last = sorted[sorted.length - 1];
-    const weeksElapsed = (new Date(last.date) - new Date(first.date)) / (7 * 86400000) || 1;
-    weeklyRate = (first.weight - last.weight) / weeksElapsed;
+    const weeksElapsed = Math.max((new Date(last.date) - new Date(first.date)) / (7 * 86400000), 1);
+    const weeklyRate = (first.weight - last.weight) / weeksElapsed;
     if (weeklyRate > 0 && lbsLeft > 0) weeksLeft = Math.ceil(lbsLeft / weeklyRate);
-    const diff = weeklyRate - 1.1;
-    if (diff >= 0.15) { paceLabel = '🚀 Ahead'; paceColor = 'text-green-400'; }
-    else if (diff > -0.3) { paceLabel = '✓ On track'; paceColor = 'text-green-400'; }
-    else if (diff > -0.5) { paceLabel = 'Slightly behind'; paceColor = 'text-amber-400'; }
-    else { paceLabel = 'Behind pace'; paceColor = 'text-red-400'; }
-  } else if (lbsLeft > 0) {
-    weeksLeft = Math.ceil(lbsLeft / 1.1);
-    paceLabel = 'Tracking…';
   }
-  const barColor = paceLabel?.includes('🚀') || paceLabel?.includes('On track') ? '#22c55e'
-    : paceLabel?.includes('Slightly') ? '#f59e0b' : paceLabel?.includes('Behind') ? '#ef4444' : '#3b82f6';
+
+  let goalDate = null;
+  if (weeksLeft > 0) {
+    const d = new Date();
+    d.setDate(d.getDate() + weeksLeft * 7);
+    goalDate = d.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+  }
+
+  const paceColor = pct >= 0.5 ? '#22c55e' : '#3b82f6';
 
   return (
-    <div className="bg-white/[0.05] border border-white/[0.08] rounded-2xl px-4 py-3 mb-4">
-      <div className="flex items-center justify-between mb-1.5">
-        <span className="text-[15px] font-bold">🎯 Lose {totalToLose} lbs</span>
-        <div className="flex items-center gap-2">
-          {paceLabel && <span className={`text-sm font-semibold ${paceColor}`}>{paceLabel}</span>}
-          {weeksLeft && <span className="text-sm text-white/30">~{weeksLeft}w</span>}
-          <button onClick={onEdit}
-            className="text-blue-400 text-sm font-semibold bg-transparent border-none cursor-pointer active:opacity-60 px-1 py-1">
-            Edit
-          </button>
-        </div>
+    <div className="bg-white/[0.05] border border-white/[0.08] rounded-2xl px-5 py-4 mb-4">
+      <div className="flex items-center justify-between mb-2">
+        <span className="text-lg font-bold text-white/70">MY GOAL</span>
+        <button onClick={onEdit}
+          className="bg-blue-500/20 border border-blue-500/40 text-blue-400 font-bold
+            rounded-xl px-4 h-11 text-base cursor-pointer active:opacity-70 border-solid">
+          Edit Goal
+        </button>
       </div>
-      <div className="h-2 bg-white/[0.08] rounded-full overflow-hidden mb-1.5">
-        <div className="h-full rounded-full transition-all duration-700" style={{ width: `${pct * 100}%`, background: barColor }} />
+      <div className="text-xl font-bold mb-3">
+        Lose {totalToLose} lbs to reach {goalWeight} lbs
       </div>
-      <div className="flex justify-between items-center">
-        <span className="text-sm text-white/40">{startWeight} → {goalWeight} lbs</span>
-        <span className="text-sm text-white/40">{Math.round(pct * 100)}% there</span>
+      <div className="h-3 bg-white/[0.08] rounded-full overflow-hidden mb-2">
+        <div className="h-full rounded-full transition-all duration-700"
+          style={{ width: `${pct * 100}%`, background: paceColor }} />
+      </div>
+      <div className="flex justify-between items-center text-base text-white/50">
+        <span>{Math.round(pct * 100)}% · {lbsLeft.toFixed(1)} lbs to go</span>
+        {weeksLeft > 0 && goalDate && <span>~{weeksLeft}w · {goalDate}</span>}
       </div>
     </div>
   );
 }
 
-// ─── Goal Editor Modal (Task 4) ───
-function GoalEditorModal({ settings, updateSettings, notify, onClose }) {
+// ─── Goal Editor — Full Screen (Task 2) ───
+function GoalEditorPage({ settings, updateSettings, notify, onClose }) {
+  const heightCmInit = parseHeightToCm(settings.height || "6'1\"");
+  const totalInInit = Math.round(heightCmInit / 2.54);
   const [form, setForm] = useState({
     currentWeight: String(settings.startWeight || 221),
     goalWeight: String(settings.goalWeight || 200),
-    goalType: 'lose',
-    activityLevel: 'moderate',
-    timeline: 'moderate',
+    heightFt: String(Math.floor(totalInInit / 12)),
+    heightIn: String(totalInInit % 12),
+    age: String(settings.age || 48),
+    goalType: settings.goal === 'muscle' ? 'muscle' : settings.goal === 'lifestyle' ? 'lifestyle' : 'lose',
+    pace: settings.pace || 'moderate',
   });
 
-  const heightCm = parseHeightToCm(settings.height || "6'1\"");
-  const age = settings.age || 48;
   const currentWt = parseFloat(form.currentWeight) || 221;
   const goalWt = parseFloat(form.goalWeight) || 200;
+  const heightCm = ((parseInt(form.heightFt) || 6) * 12 + (parseInt(form.heightIn) || 1)) * 2.54;
+  const age = parseInt(form.age) || 48;
   const bmr = (10 * currentWt * 0.453592) + (6.25 * heightCm) - (5 * age) - 5;
-  const activityMult = { sedentary: 1.2, light: 1.375, moderate: 1.55, very_active: 1.725 }[form.activityLevel];
-  const tdee = bmr * activityMult;
+  const tdee = Math.round(bmr * 1.55);
 
-  let calories, protein, weeksToGoal;
+  const deficits = { fast: 750, moderate: 500, slow: 250 };
+  const rates = { fast: 1.5, moderate: 1.0, slow: 0.5 };
+
+  let calories, protein, water, weeksToGoal;
   if (form.goalType === 'lose') {
-    const deficit = { slow: 250, moderate: 500, aggressive: 750 }[form.timeline];
-    calories = Math.round(Math.max(1200, tdee - deficit));
-    protein = Math.round(currentWt * 0.8);
-    const rate = { slow: 0.5, moderate: 1.0, aggressive: 1.5 }[form.timeline];
+    calories = Math.max(1200, Math.round(tdee - deficits[form.pace]));
+    protein = Math.round(currentWt * 0.72);
     const lbsToLose = Math.max(0, currentWt - goalWt);
-    weeksToGoal = lbsToLose > 0 ? Math.ceil(lbsToLose / rate) : null;
-  } else if (form.goalType === 'gain') {
+    weeksToGoal = lbsToLose > 0 ? Math.ceil(lbsToLose / rates[form.pace]) : null;
+  } else if (form.goalType === 'muscle') {
     calories = Math.round(Math.min(4000, tdee + 300));
     protein = Math.round(currentWt * 1.0);
     weeksToGoal = null;
@@ -324,7 +197,7 @@ function GoalEditorModal({ settings, updateSettings, notify, onClose }) {
     protein = Math.round(currentWt * 0.7);
     weeksToGoal = null;
   }
-  const water = Math.max(2, Math.min(6, Math.round(currentWt / 2 / 32)));
+  water = Math.max(2, Math.min(6, Math.round(currentWt / 2 / 32)));
 
   let goalDate = null;
   if (weeksToGoal) {
@@ -334,19 +207,32 @@ function GoalEditorModal({ settings, updateSettings, notify, onClose }) {
   }
 
   const handleSave = () => {
-    updateSettings({ startWeight: currentWt, goalWeight: goalWt, calories, protein, waterBottles: water });
-    notify('Goals updated! All targets recalculated. ✓');
+    const heightStr = `${form.heightFt}'${form.heightIn}"`;
+    updateSettings({
+      startWeight: currentWt,
+      goalWeight: goalWt,
+      height: heightStr,
+      age,
+      calories,
+      protein,
+      waterBottles: water,
+      goal: form.goalType === 'lose' ? 'fat-loss' : form.goalType,
+      pace: form.pace,
+    });
+    notify('Plan updated!');
     onClose();
   };
 
-  const PillGroup = ({ label, value, options, onChange }) => (
-    <div className="mb-4">
-      <div className="text-sm text-white/50 mb-2">{label}</div>
+  const PillRow = ({ label, value, options, onChange }) => (
+    <div className="mb-5">
+      <div className="text-base font-semibold text-white/60 mb-2">{label}</div>
       <div className="flex gap-2 flex-wrap">
         {options.map(opt => (
           <button key={opt.value} onClick={() => onChange(opt.value)}
-            className={`px-4 py-2.5 rounded-xl text-sm font-semibold border-none cursor-pointer active:scale-95 transition-all
-              ${value === opt.value ? 'bg-blue-500 text-white' : 'bg-white/[0.08] text-white/60'}`}>
+            className={`px-5 h-14 rounded-2xl text-base font-bold cursor-pointer active:scale-95 transition-all border-solid
+              ${value === opt.value
+                ? 'bg-blue-500 text-white border border-blue-400'
+                : 'bg-white/[0.08] text-white/60 border border-white/[0.12]'}`}>
             {opt.label}
           </button>
         ))}
@@ -354,189 +240,401 @@ function GoalEditorModal({ settings, updateSettings, notify, onClose }) {
     </div>
   );
 
+  const inputClass = "w-full bg-white/[0.08] border border-white/[0.12] rounded-2xl px-5 h-14 text-xl text-white outline-none focus:border-blue-500/60";
+
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60" onClick={e => e.target === e.currentTarget && onClose()}>
-      <div className="bg-[#1a1d2e] border border-white/[0.1] rounded-t-3xl w-full max-w-lg max-h-[90vh] overflow-y-auto"
-        style={{ paddingBottom: 'max(env(safe-area-inset-bottom), 24px)' }}>
-        <div className="flex items-center justify-between px-6 py-4 border-b border-white/[0.08]">
-          <h2 className="text-[20px] font-bold">Edit Goal</h2>
-          <button onClick={onClose} className="w-10 h-10 rounded-xl bg-white/[0.06] border-none cursor-pointer text-white/60 text-lg">✕</button>
+    <div className="fixed inset-0 z-50 bg-[#0f1117] overflow-y-auto"
+      style={{ paddingTop: 'max(env(safe-area-inset-top), 16px)', paddingBottom: 'max(env(safe-area-inset-bottom), 32px)' }}>
+      <div className="flex items-center gap-3 px-4 mb-6">
+        <button onClick={onClose}
+          className="w-12 h-12 rounded-xl bg-white/[0.08] text-white text-2xl border-none cursor-pointer flex items-center justify-center active:opacity-70">
+          ‹
+        </button>
+        <h1 className="text-2xl font-bold">EDIT MY GOAL</h1>
+      </div>
+
+      <div className="px-4">
+        <div className="mb-5">
+          <div className="text-base font-semibold text-white/60 mb-2">Current Weight</div>
+          <input type="text" inputMode="decimal" autoComplete="off"
+            value={form.currentWeight}
+            onChange={e => setForm(f => ({ ...f, currentWeight: e.target.value }))}
+            className={inputClass} placeholder="221" />
+          <div className="text-base text-white/40 mt-1">lbs</div>
         </div>
-        <div className="px-6 py-4">
-          <div className="grid grid-cols-2 gap-3 mb-4">
-            <div>
-              <div className="text-sm text-white/50 mb-2">Current weight (lbs)</div>
-              <input type="text" inputMode="decimal" autoComplete="off" value={form.currentWeight}
-                onChange={e => setForm(f => ({ ...f, currentWeight: e.target.value }))}
-                className="w-full bg-white/[0.08] border border-white/[0.1] rounded-xl px-4 py-3 text-[17px] text-white outline-none focus:border-blue-500/50" />
-            </div>
-            <div>
-              <div className="text-sm text-white/50 mb-2">Goal weight (lbs)</div>
-              <input type="text" inputMode="decimal" autoComplete="off" value={form.goalWeight}
-                onChange={e => setForm(f => ({ ...f, goalWeight: e.target.value }))}
-                className="w-full bg-white/[0.08] border border-white/[0.1] rounded-xl px-4 py-3 text-[17px] text-white outline-none focus:border-blue-500/50" />
-            </div>
-          </div>
-          <PillGroup label="Goal" value={form.goalType}
-            options={[{ value: 'lose', label: 'Lose weight' }, { value: 'maintain', label: 'Maintain' }, { value: 'gain', label: 'Gain muscle' }]}
-            onChange={v => setForm(f => ({ ...f, goalType: v }))} />
-          <PillGroup label="Activity level" value={form.activityLevel}
-            options={[{ value: 'sedentary', label: 'Sedentary' }, { value: 'light', label: 'Light' }, { value: 'moderate', label: 'Moderate' }, { value: 'very_active', label: 'Very Active' }]}
-            onChange={v => setForm(f => ({ ...f, activityLevel: v }))} />
-          {form.goalType === 'lose' && (
-            <PillGroup label="Pace" value={form.timeline}
-              options={[{ value: 'slow', label: 'Slow (−0.5/wk)' }, { value: 'moderate', label: 'Moderate (−1/wk)' }, { value: 'aggressive', label: 'Aggressive (−1.5/wk)' }]}
-              onChange={v => setForm(f => ({ ...f, timeline: v }))} />
-          )}
-          <div className="bg-white/[0.04] border border-white/[0.08] rounded-2xl px-4 py-4 mb-4">
-            <div className="text-sm font-semibold text-white/60 mb-3">Calculated targets:</div>
-            <div className="space-y-2">
-              <div className="flex justify-between"><span className="text-[16px] text-white/70">Daily calories</span><span className="text-[16px] font-bold text-amber-400">{calories.toLocaleString()} cal</span></div>
-              <div className="flex justify-between"><span className="text-[16px] text-white/70">Daily protein</span><span className="text-[16px] font-bold text-blue-400">{protein}g</span></div>
-              <div className="flex justify-between"><span className="text-[16px] text-white/70">Water target</span><span className="text-[16px] font-bold text-cyan-400">{water} bottles ({water * 32} oz)</span></div>
-              {weeksToGoal && <>
-                <div className="flex justify-between pt-2 border-t border-white/[0.06]"><span className="text-[16px] text-white/70">Timeline</span><span className="text-[16px] font-bold text-green-400">~{weeksToGoal} weeks</span></div>
-                {goalDate && <div className="flex justify-between"><span className="text-[16px] text-white/70">Goal date</span><span className="text-[16px] font-bold text-white/60">{goalDate}</span></div>}
-              </>}
-            </div>
-          </div>
+
+        <div className="mb-5">
+          <div className="text-base font-semibold text-white/60 mb-2">Goal Weight</div>
+          <input type="text" inputMode="decimal" autoComplete="off"
+            value={form.goalWeight}
+            onChange={e => setForm(f => ({ ...f, goalWeight: e.target.value }))}
+            className={inputClass} placeholder="200" />
+          <div className="text-base text-white/40 mt-1">lbs</div>
+        </div>
+
+        <div className="mb-5">
+          <div className="text-base font-semibold text-white/60 mb-2">Height</div>
           <div className="flex gap-3">
-            <button onClick={handleSave}
-              className="flex-1 bg-green-500 text-white rounded-2xl py-4 text-[17px] font-bold border-none cursor-pointer active:opacity-80">
-              Save Goals
-            </button>
-            <button onClick={onClose}
-              className="w-24 bg-white/[0.08] text-white/60 rounded-2xl py-4 text-[17px] border-none cursor-pointer active:opacity-70">
-              Cancel
-            </button>
+            <div className="flex-1">
+              <input type="text" inputMode="numeric" autoComplete="off"
+                value={form.heightFt}
+                onChange={e => setForm(f => ({ ...f, heightFt: e.target.value }))}
+                className={inputClass} placeholder="6" />
+              <div className="text-base text-white/40 mt-1">ft</div>
+            </div>
+            <div className="flex-1">
+              <input type="text" inputMode="numeric" autoComplete="off"
+                value={form.heightIn}
+                onChange={e => setForm(f => ({ ...f, heightIn: e.target.value }))}
+                className={inputClass} placeholder="1" />
+              <div className="text-base text-white/40 mt-1">in</div>
+            </div>
           </div>
         </div>
+
+        <div className="mb-5">
+          <div className="text-base font-semibold text-white/60 mb-2">Age</div>
+          <input type="text" inputMode="numeric" autoComplete="off"
+            value={form.age}
+            onChange={e => setForm(f => ({ ...f, age: e.target.value }))}
+            className={inputClass} placeholder="48" />
+        </div>
+
+        <PillRow label="My Goal Is"
+          value={form.goalType}
+          options={[
+            { value: 'lose', label: 'Lose Fat' },
+            { value: 'muscle', label: 'Build Muscle' },
+            { value: 'lifestyle', label: 'Lifestyle' },
+          ]}
+          onChange={v => setForm(f => ({ ...f, goalType: v }))} />
+
+        {form.goalType === 'lose' && (
+          <PillRow label="My Pace"
+            value={form.pace}
+            options={[
+              { value: 'fast', label: 'Fast (4-8 wk)' },
+              { value: 'moderate', label: 'Moderate (12 wk)' },
+              { value: 'slow', label: 'Slow (20 wk)' },
+            ]}
+            onChange={v => setForm(f => ({ ...f, pace: v }))} />
+        )}
+
+        <div className="bg-white/[0.04] border border-white/[0.08] rounded-2xl px-5 py-5 mb-5">
+          <div className="text-base font-bold text-white/50 mb-4 uppercase tracking-wide">Based on Your Numbers:</div>
+          <div className="space-y-3">
+            <div className="flex justify-between items-center">
+              <span className="text-lg text-white/70">Daily Calories</span>
+              <span className="text-2xl font-bold text-amber-400">{calories.toLocaleString()}</span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-lg text-white/70">Daily Protein</span>
+              <span className="text-2xl font-bold text-blue-400">{protein}g</span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-lg text-white/70">Daily Water</span>
+              <span className="text-2xl font-bold text-cyan-400">{water * 32} oz</span>
+            </div>
+            {weeksToGoal && (
+              <>
+                <div className="flex justify-between items-center border-t border-white/[0.06] pt-3">
+                  <span className="text-lg text-white/70">Weeks to Goal</span>
+                  <span className="text-2xl font-bold text-green-400">{weeksToGoal} wk</span>
+                </div>
+                {goalDate && (
+                  <div className="flex justify-between items-center">
+                    <span className="text-lg text-white/70">Goal Date</span>
+                    <span className="text-lg font-semibold text-white/60">{goalDate}</span>
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+        </div>
+
+        <div className="bg-white/[0.04] border border-white/[0.08] rounded-2xl px-5 py-5 mb-6">
+          <div className="text-base font-bold text-white/50 mb-3 uppercase tracking-wide">Why These Numbers:</div>
+          <div className="space-y-3 text-base text-white/60 leading-relaxed">
+            <p><span className="text-white/80 font-semibold">Calories:</span> Your body burns ~{tdee.toLocaleString()} cal/day.{form.goalType === 'lose' ? ` Minus ${deficits[form.pace]} = ${calories.toLocaleString()} for ~${rates[form.pace]} lb/week loss.` : ' Eating at maintenance.'}</p>
+            <p><span className="text-white/80 font-semibold">Protein:</span> At {Math.round(currentWt)} lbs, {form.goalType === 'lose' ? '0.72' : form.goalType === 'muscle' ? '1.0' : '0.7'}g per lb = {protein}g to {form.goalType === 'lose' ? 'preserve muscle while losing fat' : 'support your goals'}.</p>
+            <p><span className="text-white/80 font-semibold">Water:</span> Half your body weight in oz = ~{Math.round(currentWt / 2)} oz, rounded to {water * 32} oz ({water} bottles).</p>
+          </div>
+        </div>
+
+        <button onClick={handleSave}
+          className="w-full bg-green-500 text-white rounded-2xl h-14 text-xl font-bold border-none cursor-pointer active:opacity-80">
+          SAVE CHANGES
+        </button>
+        <button onClick={onClose}
+          className="w-full bg-transparent text-white/40 h-12 text-base border-none cursor-pointer mt-2">
+          Cancel
+        </button>
       </div>
     </div>
   );
 }
 
-// ─── Weekly Status Bar (Task 3) ───
-function WeeklyStatusBar({ daily, targets }) {
-  const weekDates = getCurrentWeekDates();
-  const todayStr = getToday();
-  const weekData = weekDates.map(({ dateStr, isToday }) => ({
-    dateStr,
-    data: isToday ? daily : loadDayData(dateStr),
-  }));
+// ─── Muscle Selector (Task 3) ───
+const MUSCLE_GROUPS = [
+  { id: 'chest', label: 'Chest', group: 'UPPER BODY' },
+  { id: 'shoulders', label: 'Shoulders', group: 'UPPER BODY' },
+  { id: 'arms', label: 'Arms', group: 'UPPER BODY' },
+  { id: 'back', label: 'Back', group: 'UPPER BODY' },
+  { id: 'core', label: 'Core', group: 'UPPER BODY' },
+  { id: 'quads', label: 'Quads', group: 'LOWER BODY' },
+  { id: 'hamstrings', label: 'Hamstrings', group: 'LOWER BODY' },
+  { id: 'glutes', label: 'Glutes', group: 'LOWER BODY' },
+  { id: 'calves', label: 'Calves', group: 'LOWER BODY' },
+];
 
-  const loggedDays = weekData.filter(({ data, dateStr }) =>
-    data && dateStr <= todayStr && (data.food.length > 0 || data.water > 0 || data.exercises.length > 0 || data.ranMiles > 0)
-  ).length;
+const PRESET_WORKOUTS = [
+  { id: 'total-body', label: 'Total Body', muscles: ['chest', 'back', 'quads', 'core'] },
+  { id: 'quick-15', label: 'Quick 15-Min Full Body', muscles: ['chest', 'back', 'quads'] },
+  { id: 'bodyweight', label: 'Bodyweight Only', muscles: ['chest', 'core', 'glutes'] },
+  { id: 'apple-fitness', label: 'Apple Fitness+ Total Body', muscles: ['chest', 'back', 'quads', 'core', 'shoulders'] },
+];
 
-  const pastWithFood = weekData.filter(({ data, dateStr }) => data && data.food.length > 0 && dateStr <= todayStr);
-  const avgCal = pastWithFood.length > 0
-    ? Math.round(pastWithFood.reduce((s, { data }) => s + data.food.reduce((t, f) => t + (f.cal || 0), 0), 0) / pastWithFood.length)
-    : 0;
-  const avgProtein = pastWithFood.length > 0
-    ? Math.round(pastWithFood.reduce((s, { data }) => s + data.food.reduce((t, f) => t + (f.protein || 0), 0), 0) / pastWithFood.length)
-    : 0;
+const MUSCLE_EXERCISE_MAP = {
+  chest: [
+    { name: 'DB Bench Press', sets: 3, reps: 12, defaultWeight: 30 },
+    { name: 'Push-up', sets: 3, reps: 15, defaultWeight: 0 },
+  ],
+  back: [
+    { name: 'Lat Pulldown', sets: 3, reps: 12, defaultWeight: 85 },
+    { name: 'DB Row (each arm)', sets: 3, reps: 12, defaultWeight: 25 },
+  ],
+  shoulders: [
+    { name: 'Overhead Press', sets: 3, reps: 12, defaultWeight: 27.5 },
+    { name: 'Lateral Raise', sets: 3, reps: 15, defaultWeight: 12 },
+  ],
+  arms: [
+    { name: 'DB Curl', sets: 3, reps: 12, defaultWeight: 20 },
+    { name: 'Tricep Dip', sets: 3, reps: 12, defaultWeight: 0 },
+  ],
+  quads: [
+    { name: 'Goblet Squat', sets: 3, reps: 12, defaultWeight: 30 },
+    { name: 'Bulgarian Split Squat', sets: 3, reps: 10, defaultWeight: 20 },
+  ],
+  hamstrings: [
+    { name: 'DB Romanian Deadlift', sets: 3, reps: 12, defaultWeight: 25 },
+    { name: 'Leg Curl', sets: 3, reps: 12, defaultWeight: 60 },
+  ],
+  glutes: [
+    { name: 'DB Reverse Lunge (each)', sets: 3, reps: 10, defaultWeight: 20 },
+    { name: 'Hip Thrust', sets: 3, reps: 12, defaultWeight: 25 },
+  ],
+  calves: [
+    { name: 'Calf Raise', sets: 3, reps: 20, defaultWeight: 0 },
+  ],
+  core: [
+    { name: 'Plank', sets: 3, reps: 45, defaultWeight: 0 },
+    { name: 'Dead Bug', sets: 3, reps: 10, defaultWeight: 0 },
+  ],
+};
 
-  // Weekly motivation summary: show on Monday morning if last week had data
-  const now = new Date();
-  const isMonday = now.getDay() === 1 && now.getHours() < 14;
-  let weeklySummary = null;
-  if (isMonday) {
-    const lastWeekDates = Array.from({ length: 7 }, (_, i) => {
-      const d = new Date(now);
-      d.setDate(d.getDate() - 7 - now.getDay() + 1 + i);
-      return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+function MuscleSelectorPage({ onClose, onApply }) {
+  const [selected, setSelected] = useState([]);
+  const [generated, setGenerated] = useState(null);
+
+  const toggle = (id) =>
+    setSelected(prev =>
+      prev.includes(id) ? prev.filter(x => x !== id) : prev.length < 3 ? [...prev, id] : prev
+    );
+
+  const applyPreset = (preset) => setSelected(preset.muscles.slice(0, 3));
+
+  const generate = () => {
+    const exercises = [];
+    const usedNames = new Set();
+    selected.forEach(area => {
+      (MUSCLE_EXERCISE_MAP[area] || []).forEach(ex => {
+        if (!usedNames.has(ex.name) && exercises.length < 5) {
+          exercises.push(ex);
+          usedNames.add(ex.name);
+        }
+      });
     });
-    const lastWeekData = lastWeekDates.map(loadDayData).filter(Boolean);
-    if (lastWeekData.length > 0) {
-      const lwLogged = lastWeekData.filter(d => d.food.length > 0 || d.water > 0).length;
-      const lwAvgCal = lastWeekData.filter(d => d.food.length > 0).reduce((s, d) => s + d.food.reduce((t, f) => t + (f.cal || 0), 0), 0) / Math.max(1, lastWeekData.filter(d => d.food.length > 0).length);
-      weeklySummary = { logged: lwLogged, avgCal: Math.round(lwAvgCal) };
-    }
+    setGenerated(exercises);
+  };
+
+  if (generated) {
+    return (
+      <div className="fixed inset-0 z-50 bg-[#0f1117] overflow-y-auto"
+        style={{ paddingTop: 'max(env(safe-area-inset-top), 16px)', paddingBottom: 'max(env(safe-area-inset-bottom), 32px)' }}>
+        <div className="flex items-center gap-3 px-4 mb-5">
+          <button onClick={() => setGenerated(null)}
+            className="w-12 h-12 rounded-xl bg-white/[0.08] text-white text-2xl border-none cursor-pointer flex items-center justify-center active:opacity-70">
+            ‹
+          </button>
+          <h1 className="text-2xl font-bold">YOUR WORKOUT</h1>
+        </div>
+        <div className="px-4">
+          <div className="text-base text-white/50 mb-4">
+            {selected.map(s => s.charAt(0).toUpperCase() + s.slice(1)).join(', ')} · {generated.length} exercises
+          </div>
+          {generated.map((ex, i) => (
+            <div key={i} className="bg-white/[0.05] border border-white/[0.08] rounded-2xl px-5 py-4 mb-3">
+              <div className="text-xl font-bold">{ex.name}</div>
+              <div className="text-base text-white/50">{ex.sets}×{ex.reps} @ {ex.defaultWeight} lbs</div>
+            </div>
+          ))}
+          <button onClick={() => onApply(generated)}
+            className="w-full bg-blue-500 text-white rounded-2xl h-14 text-xl font-bold border-none cursor-pointer active:opacity-80 mt-2">
+            BUILD MY WORKOUT →
+          </button>
+        </div>
+      </div>
+    );
   }
 
+  const groups = ['UPPER BODY', 'LOWER BODY'];
+
   return (
-    <div className="bg-white/[0.05] border border-white/[0.08] rounded-2xl px-4 py-3.5 mb-4">
-      <div className="text-[15px] font-semibold mb-3">This Week</div>
-      <div className="flex justify-between mb-3 px-1">
-        {weekDates.map(({ dateStr, dayName, isToday, isFuture }, i) => {
-          const dayData = weekData[i].data;
-          const status = isFuture ? 'future' : getDayStatus(dayData, targets, dateStr);
-          const dotBg = { complete: 'bg-green-500', partial: 'bg-amber-400', empty: 'bg-white/[0.1]', future: 'bg-white/[0.04]' }[status];
-          return (
-            <div key={dateStr} className="flex flex-col items-center gap-1.5">
-              <span className={`text-[12px] font-medium ${isToday ? 'text-white/80' : 'text-white/35'}`}>{dayName}</span>
-              <div className={`w-9 h-9 rounded-full flex items-center justify-center transition-all ${dotBg}
-                ${isToday ? 'ring-2 ring-white/60 ring-offset-1 ring-offset-[#0f1117]' : ''}
-                ${isFuture ? 'opacity-25' : ''}`}>
-                {status === 'complete' && <span className="text-white text-xs font-bold">✓</span>}
-                {status === 'partial' && <span className="text-white/80 text-base leading-none">·</span>}
-              </div>
-            </div>
-          );
-        })}
+    <div className="fixed inset-0 z-50 bg-[#0f1117] overflow-y-auto"
+      style={{ paddingTop: 'max(env(safe-area-inset-top), 16px)', paddingBottom: 'max(env(safe-area-inset-bottom), 32px)' }}>
+      <div className="flex items-center gap-3 px-4 mb-5">
+        <button onClick={onClose}
+          className="w-12 h-12 rounded-xl bg-white/[0.08] text-white text-2xl border-none cursor-pointer flex items-center justify-center active:opacity-70">
+          ‹
+        </button>
+        <h1 className="text-2xl font-bold">PICK YOUR WORKOUT</h1>
       </div>
-      <div className="flex justify-between items-center text-sm">
-        <span className="text-white/40">{loggedDays} of 7 days logged</span>
-        {avgCal > 0 && <span className="text-white/40">Avg: {avgCal} cal · {avgProtein}g</span>}
-      </div>
-      {weeklySummary && (
-        <div className="mt-3 pt-3 border-t border-white/[0.06]">
-          <p className="text-sm text-white/50">
-            Last week: {weeklySummary.logged}/7 days · {weeklySummary.avgCal} cal avg
-            {weeklySummary.logged >= 5
-              ? ' — Great consistency! Keep it up. 💪'
-              : weeklySummary.logged >= 3
-                ? ' — Every day is a fresh start. Focus on today.'
-                : ' — New week, new start. You got this.'}
-          </p>
+
+      <div className="px-4">
+        <div className="text-base text-white/60 mb-5 leading-relaxed">
+          What do you want to work on today?<br />
+          <span className="text-white/40">Select 1–3 muscle groups:</span>
         </div>
-      )}
+
+        {groups.map(grp => (
+          <div key={grp} className="mb-5">
+            <div className="text-base font-bold text-white/40 mb-3">{grp}</div>
+            <div className="flex flex-wrap gap-2">
+              {MUSCLE_GROUPS.filter(m => m.group === grp).map(m => (
+                <button key={m.id} onClick={() => toggle(m.id)}
+                  className={`h-14 px-5 rounded-2xl text-base font-bold cursor-pointer active:scale-95 transition-all border-solid
+                    ${selected.includes(m.id)
+                      ? 'bg-blue-500 text-white border border-blue-400'
+                      : 'bg-white/[0.06] text-white/70 border border-white/[0.1]'}`}>
+                  {m.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        ))}
+
+        <div className="mb-5">
+          <div className="text-base font-bold text-white/40 mb-3">PRESET WORKOUTS</div>
+          <div className="space-y-2">
+            {PRESET_WORKOUTS.map(preset => (
+              <button key={preset.id} onClick={() => applyPreset(preset)}
+                className="w-full bg-white/[0.06] border border-white/[0.1] text-white/70
+                  rounded-2xl px-5 h-14 text-base font-semibold cursor-pointer active:opacity-70 text-left">
+                {preset.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {selected.length > 0 && (
+          <div className="text-base text-blue-300 mb-4 font-semibold">
+            Selected: {selected.map(s => s.charAt(0).toUpperCase() + s.slice(1)).join(', ')} ✓
+          </div>
+        )}
+
+        <button onClick={generate}
+          disabled={selected.length === 0}
+          className="w-full bg-blue-500 text-white rounded-2xl h-14 text-xl font-bold border-none cursor-pointer active:opacity-80 disabled:opacity-40">
+          BUILD MY WORKOUT →
+        </button>
+      </div>
     </div>
   );
 }
 
-// ─── Today's Workout Card (Task 6) ───
-function TodayWorkoutCard({ daily, onNavigate, onOpenLog }) {
+// ─── TODAY Card ───
+function TodayCard({ totalCal, totalProtein, daily, targets, onOpenLog }) {
+  return (
+    <div className="bg-white/[0.05] border border-white/[0.08] rounded-2xl px-5 py-5 mb-4">
+      <div className="text-lg font-bold text-white/60 mb-4">TODAY</div>
+      <div className="grid grid-cols-3 gap-3 mb-5">
+        <div className="text-center">
+          <div className="text-3xl font-bold text-amber-400">{(totalCal || 0).toLocaleString()}</div>
+          <div className="text-base text-white/50 mt-1">cal</div>
+          <div className="text-base text-white/30">of {targets.calories.toLocaleString()}</div>
+          <ProgressBar value={totalCal || 0} max={targets.calories} color="#f59e0b" />
+        </div>
+        <div className="text-center">
+          <div className="text-3xl font-bold text-blue-400">{totalProtein || 0}g</div>
+          <div className="text-base text-white/50 mt-1">protein</div>
+          <div className="text-base text-white/30">of {targets.protein}g</div>
+          <ProgressBar value={totalProtein || 0} max={targets.protein} color="#3b82f6" />
+        </div>
+        <div className="text-center">
+          <div className="text-3xl font-bold text-cyan-400">{daily.water || 0}/{targets.waterBottles}</div>
+          <div className="text-base text-white/50 mt-1">bottles</div>
+          <div className="text-base text-white/30">{(daily.water || 0) * 32} oz</div>
+          <ProgressBar value={daily.water || 0} max={targets.waterBottles} color="#06b6d4" />
+        </div>
+      </div>
+      <div className="flex gap-3">
+        <button onClick={() => onOpenLog?.('I ate ')}
+          className="flex-1 bg-amber-500/20 border border-amber-500/40 text-amber-300
+            rounded-xl h-14 text-base font-bold cursor-pointer active:opacity-70 border-solid">
+          + Log Food
+        </button>
+        <button onClick={() => onOpenLog?.('drank water')}
+          className="flex-1 bg-cyan-500/20 border border-cyan-500/40 text-cyan-300
+            rounded-xl h-14 text-base font-bold cursor-pointer active:opacity-70 border-solid">
+          + Log Water
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ─── Today's Workout Card ───
+function TodayWorkoutCard({ daily, onNavigate, onChooseMuscles }) {
   const schedule = getDaySchedule();
   const workoutType = getTodaysWorkoutType();
 
   if (schedule === 'rest') {
     return (
-      <div className="bg-white/[0.05] border border-white/[0.08] rounded-2xl px-4 py-4 mb-4">
-        <div className="text-[17px] font-semibold mb-1">🌿 Rest Day</div>
-        <div className="text-sm text-white/40">Recovery is part of the program. Hydrate, stretch, sleep well.</div>
+      <div className="bg-white/[0.05] border border-white/[0.08] rounded-2xl px-5 py-5 mb-4">
+        <div className="text-lg font-bold text-white/60 mb-2">TODAY'S WORKOUT</div>
+        <div className="text-xl font-bold mb-1">🌿 Rest Day</div>
+        <div className="text-base text-white/40">Recovery is part of the program. Hydrate, stretch, sleep well.</div>
       </div>
     );
   }
 
   if (schedule === 'cardio') {
+    const logged = (daily.ranMiles || 0) > 0;
     return (
-      <div className="bg-white/[0.05] border border-white/[0.08] rounded-2xl px-4 py-4 mb-4">
-        <div className="text-[17px] font-semibold mb-1">🏃 Cardio Day</div>
-        <div className="text-sm text-white/40 mb-3">
-          {daily.ranMiles > 0 ? `✓ ${daily.ranMiles} miles logged today` : 'Easy run, 30–45 min. Focus on form and breathing.'}
-        </div>
-        <button onClick={() => onOpenLog?.('I ran ')}
-          className="w-full bg-blue-500/15 border border-blue-500/30 text-blue-300 rounded-xl py-3
-            text-[15px] font-semibold cursor-pointer active:opacity-70">
-          {daily.ranMiles > 0 ? '+ Log more miles' : 'Log Run →'}
+      <div className={`border rounded-2xl px-5 py-5 mb-4 ${logged ? 'bg-green-500/[0.04] border-green-500/25' : 'bg-white/[0.05] border-white/[0.08]'}`}>
+        <div className="text-lg font-bold text-white/60 mb-2">TODAY'S WORKOUT</div>
+        <div className="text-xl font-bold mb-1">{logged ? '✓ ' : ''}🏃 Cardio Day</div>
+        <div className="text-base text-white/50 mb-4">{logged ? `${daily.ranMiles} miles logged!` : 'Easy run, 30–45 min. Focus on form.'}</div>
+        <button onClick={() => onNavigate?.('gym')}
+          className="w-full bg-green-500/20 border border-green-500/40 text-green-300
+            rounded-xl h-14 text-base font-bold cursor-pointer active:opacity-70 border-solid">
+          {logged ? 'Log More Miles' : 'Log Run →'}
         </button>
       </div>
     );
   }
 
   if (schedule === 'longrun') {
+    const logged = (daily.ranMiles || 0) > 0;
     return (
-      <div className="bg-white/[0.05] border border-white/[0.08] rounded-2xl px-4 py-4 mb-4">
-        <div className="text-[17px] font-semibold mb-1">🏅 Long Run Day</div>
-        <div className="text-sm text-white/40 mb-3">
-          {daily.ranMiles > 0 ? `✓ ${daily.ranMiles} miles — great work!` : 'Target: 5–8 miles at conversational pace. Fuel up first.'}
-        </div>
-        <button onClick={() => onOpenLog?.('I ran ')}
-          className="w-full bg-blue-500/15 border border-blue-500/30 text-blue-300 rounded-xl py-3
-            text-[15px] font-semibold cursor-pointer active:opacity-70">
-          {daily.ranMiles > 0 ? '+ Log more miles' : 'Log Long Run →'}
+      <div className={`border rounded-2xl px-5 py-5 mb-4 ${logged ? 'bg-green-500/[0.04] border-green-500/25' : 'bg-white/[0.05] border-white/[0.08]'}`}>
+        <div className="text-lg font-bold text-white/60 mb-2">TODAY'S WORKOUT</div>
+        <div className="text-xl font-bold mb-1">{logged ? '✓ ' : ''}🏅 Long Run Day</div>
+        <div className="text-base text-white/50 mb-4">{logged ? `${daily.ranMiles} miles — great work!` : '5–8 miles at conversational pace. Fuel up first.'}</div>
+        <button onClick={() => onNavigate?.('gym')}
+          className="w-full bg-green-500/20 border border-green-500/40 text-green-300
+            rounded-xl h-14 text-base font-bold cursor-pointer active:opacity-70 border-solid">
+          {logged ? 'Log More Miles' : 'Log Long Run →'}
         </button>
       </div>
     );
@@ -544,71 +642,100 @@ function TodayWorkoutCard({ daily, onNavigate, onOpenLog }) {
 
   // Strength day
   const workout = workoutType === 'A' ? WORKOUT_A : WORKOUT_B;
-  const isWorkoutDone = daily.exercises.length >= workout.length;
-  const muscleGroups = workoutType === 'A'
-    ? [['chest', 'Chest'], ['quads', 'Quads'], ['back', 'Back'], ['core', 'Core']]
-    : [['hamstrings', 'Hamstrings'], ['shoulders', 'Shoulders'], ['back', 'Back'], ['legs', 'Legs']];
-  const description = workoutType === 'A'
-    ? 'Compound push & squat movements for balanced upper/lower strength'
-    : 'Hinge & pull movements for posterior chain and shoulder health';
+  const isWorkoutDone = (daily.exercises || []).length >= workout.length;
+  const muscleDesc = workoutType === 'A' ? 'Chest, Back, Quads, Core' : 'Hamstrings, Shoulders, Back';
+  const totalVolume = (daily.exercises || []).reduce((sum, e) => sum + (e.weight || 0) * (e.sets || 3) * (e.reps || 12), 0);
 
   return (
-    <div className={`border rounded-2xl px-4 py-4 mb-4 ${isWorkoutDone ? 'bg-green-500/[0.04] border-green-500/25' : 'bg-white/[0.05] border-white/[0.08]'}`}>
-      <div className="text-[17px] font-semibold mb-2">
-        {isWorkoutDone ? '✓ ' : ''}Workout {workoutType} — {workoutType === 'A' ? 'Push & Squat' : 'Pull & Hinge'}
-        {daily.exercises.length > 0 && !isWorkoutDone && (
-          <span className="text-sm text-amber-400 font-normal ml-2">({daily.exercises.length}/{workout.length} done)</span>
-        )}
-      </div>
-      <div className="flex flex-wrap gap-1.5 mb-2">
-        {muscleGroups.map(([key, label]) => (
-          <span key={key} className="text-[12px] font-semibold px-2 py-0.5 rounded-full"
-            style={{ background: `${MUSCLE_COLORS[key]}25`, color: MUSCLE_COLORS[key] }}>
-            {label}
-          </span>
-        ))}
-      </div>
-      <div className="text-sm text-white/40 mb-3">{description}</div>
-      <div className="flex gap-2">
-        <button onClick={() => onNavigate?.('gym')}
-          className={`flex-1 rounded-xl py-3 text-[15px] font-bold border-none cursor-pointer active:opacity-80
-            ${isWorkoutDone ? 'bg-green-500/20 text-green-300' : 'bg-blue-500 text-white'}`}>
-          {isWorkoutDone ? 'View Workout' : 'Start Workout →'}
-        </button>
-        <button onClick={() => onNavigate?.('gym')}
-          className="flex-1 bg-white/[0.08] text-white/70 rounded-xl py-3 text-[15px] font-semibold
-            border-none cursor-pointer active:opacity-70">
-          Change Focus
-        </button>
-      </div>
-    </div>
-  );
-}
-
-// ─── Quick Log Row ───
-function QuickLogRow({ totalCal, totalProtein, daily, targets, latest, onOpenLog }) {
-  const items = [
-    { icon: '🥗', label: 'Food', status: totalCal > 0 ? `${totalCal} cal` : '—', color: totalCal > targets.calories * 1.1 ? 'text-red-400' : totalCal > 0 ? 'text-amber-400' : 'text-white/30', action: () => onOpenLog?.('I ate ') },
-    { icon: '💧', label: 'Water', status: `${daily.water}/${targets.waterBottles}`, color: daily.water >= targets.waterBottles ? 'text-green-400' : daily.water > 0 ? 'text-blue-400' : 'text-white/30', action: () => onOpenLog?.('drank water') },
-    { icon: '🏃', label: 'Run', status: daily.ranMiles > 0 ? `${daily.ranMiles}mi` : '—', color: daily.ranMiles > 0 ? 'text-green-400' : 'text-white/30', action: () => onOpenLog?.('I ran ') },
-    { icon: '⚖️', label: 'Weight', status: latest?.weight ? `${latest.weight}` : '—', color: latest?.weight ? 'text-white/60' : 'text-white/30', action: () => onOpenLog?.('weight is ') },
-  ];
-  return (
-    <div className="bg-white/[0.05] border border-white/[0.08] rounded-2xl p-3 mb-4">
-      <div className="grid grid-cols-4 gap-2">
-        {items.map(item => (
-          <button key={item.label} onClick={item.action}
-            className="flex flex-col items-center gap-1.5 py-3 bg-white/[0.04] rounded-xl
-              border border-white/[0.05] cursor-pointer active:opacity-70 active:scale-95 transition-all">
-            <span className="text-[24px] leading-none">{item.icon}</span>
-            <span className="text-[13px] font-semibold text-white/80">{item.label}</span>
-            <span className={`text-[12px] font-medium ${item.color}`}>{item.status}</span>
+    <div className={`border rounded-2xl px-5 py-5 mb-4 ${isWorkoutDone ? 'bg-green-500/[0.04] border-green-500/25' : 'bg-white/[0.05] border-white/[0.08]'}`}>
+      <div className="text-lg font-bold text-white/60 mb-2">TODAY'S WORKOUT</div>
+      {isWorkoutDone ? (
+        <>
+          <div className="text-xl font-bold text-green-400 mb-1">✓ Workout {workoutType} Complete!</div>
+          <div className="text-base text-white/50 mb-4">
+            {daily.exercises.length} exercises · {totalVolume.toLocaleString()} lbs volume
+          </div>
+          <button onClick={() => onNavigate?.('gym')}
+            className="w-full bg-green-500/20 border border-green-500/40 text-green-300
+              rounded-xl h-14 text-base font-bold cursor-pointer active:opacity-70 border-solid">
+            View Details
           </button>
-        ))}
-      </div>
+        </>
+      ) : (
+        <>
+          <div className="text-xl font-bold mb-1">Workout {workoutType} — {muscleDesc}</div>
+          <div className="text-base text-white/50 mb-4">
+            {workout.length} exercises · ~25 min
+            {(daily.exercises || []).length > 0 && (
+              <span className="text-amber-400"> · {daily.exercises.length}/{workout.length} done</span>
+            )}
+          </div>
+          <button onClick={() => onNavigate?.('gym')}
+            className="w-full bg-blue-500 text-white rounded-xl h-14 text-lg font-bold
+              border-none cursor-pointer active:opacity-80 mb-3">
+            {(daily.exercises || []).length > 0 ? 'Continue Workout →' : 'Start Workout →'}
+          </button>
+          <button onClick={onChooseMuscles}
+            className="w-full bg-white/[0.08] border border-white/[0.1] text-white/70
+              rounded-xl h-14 text-base font-semibold cursor-pointer active:opacity-70 border-solid">
+            Choose Different Muscles
+          </button>
+        </>
+      )}
     </div>
   );
 }
+
+// ─── This Week ───
+function WeeklyStatusBar({ daily, targets }) {
+  const weekDates = getCurrentWeekDates();
+  const todayStr = getToday();
+  const weekData = weekDates.map(({ dateStr, isToday }) => ({
+    dateStr,
+    data: isToday ? {
+      food: daily.food || [],
+      water: daily.water || 0,
+      exercises: daily.exercises || [],
+      ranMiles: daily.ranMiles || 0,
+    } : loadDayData(dateStr),
+  }));
+
+  const loggedDays = weekData.filter(({ data, dateStr }) =>
+    data && dateStr <= todayStr && (data.food.length > 0 || data.water > 0 || data.exercises.length > 0 || data.ranMiles > 0)
+  ).length;
+
+  return (
+    <div className="bg-white/[0.05] border border-white/[0.08] rounded-2xl px-5 py-4 mb-4">
+      <div className="text-lg font-bold text-white/60 mb-3">THIS WEEK</div>
+      <div className="flex justify-between mb-3 px-1">
+        {weekDates.map(({ dateStr, dayName, isToday, isFuture }, i) => {
+          const dayData = weekData[i].data;
+          const status = isFuture ? 'future' : getDayStatus(dayData, targets);
+          const dotBg = {
+            complete: 'bg-green-500',
+            partial: 'bg-amber-400',
+            empty: 'bg-white/[0.1]',
+            future: 'bg-white/[0.04]',
+          }[status];
+          return (
+            <div key={dateStr} className="flex flex-col items-center gap-1">
+              <span className={`text-base font-semibold ${isToday ? 'text-white' : 'text-white/40'}`}>{dayName}</span>
+              <div className={`w-10 h-10 rounded-full flex items-center justify-center ${dotBg}
+                ${isToday ? 'ring-2 ring-white/60 ring-offset-1 ring-offset-[#0f1117]' : ''}
+                ${isFuture ? 'opacity-25' : ''}`}>
+                {status === 'complete' && <span className="text-white text-sm font-bold">✓</span>}
+                {status === 'partial' && <span className="text-white/80 text-lg leading-none">·</span>}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+      <div className="text-base text-white/40 text-center">{loggedDays} of 7 days logged</div>
+    </div>
+  );
+}
+
+const DISMISSED_KEY = () => `dismissed-reminders-${getToday()}`;
 
 // ─── Main DashboardTab ───
 export function DashboardTab({
@@ -619,28 +746,35 @@ export function DashboardTab({
   settings, updateSettings,
 }) {
   const [showGoalEditor, setShowGoalEditor] = useState(false);
+  const [showMuscleSelector, setShowMuscleSelector] = useState(false);
   const [weightInput, setWeightInput] = useState('');
   const currentWeight = latest?.weight || startWeight;
 
-  // Achievement: all goals met today (show once per day)
-  useEffect(() => {
-    const dow = new Date().getDay();
-    const isRest = dow === 0;
-    const isStrength = [1, 3, 5].includes(dow);
-    const allGoalsMet = (
-      daily.food.length > 0 &&
-      totalProtein >= targets.protein &&
-      daily.water >= targets.waterBottles &&
-      (isRest || (isStrength ? daily.exercises.length >= 1 : daily.ranMiles > 0))
+  if (showGoalEditor && settings && updateSettings) {
+    return (
+      <GoalEditorPage
+        settings={settings}
+        updateSettings={updateSettings}
+        notify={notify}
+        onClose={() => setShowGoalEditor(false)}
+      />
     );
-    if (allGoalsMet) {
-      const key = `achievement-all-goals-${getToday()}`;
-      if (!localStorage.getItem(key)) {
-        localStorage.setItem(key, '1');
-        notify('Perfect day! All goals hit 🎉');
-      }
-    }
-  }, [daily, totalProtein, targets, notify]);
+  }
+
+  if (showMuscleSelector) {
+    return (
+      <MuscleSelectorPage
+        onClose={() => setShowMuscleSelector(false)}
+        onApply={(workout) => {
+          const today = getToday();
+          localStorage.setItem(`ft_custom-workout-${today}`, JSON.stringify(workout));
+          setShowMuscleSelector(false);
+          onNavigate?.('gym');
+          notify('Custom workout ready! Head to Gym tab.');
+        }}
+      />
+    );
+  }
 
   const handleWeighIn = () => {
     const w = parseFloat(weightInput);
@@ -654,66 +788,54 @@ export function DashboardTab({
 
   return (
     <div className="px-4 pb-8" style={{ paddingTop: 'max(env(safe-area-inset-top), 12px)' }}>
-      {/* Goal Banner */}
-      <GoalBanner startWeight={startWeight} goalWeight={goalWeight || 200} weighIns={weighIns} onEdit={() => setShowGoalEditor(true)} />
 
-      {/* Daily Quote */}
-      <div className="mb-4 px-1">
-        <p className="text-[16px] text-white/50 italic leading-relaxed">"{getDailyQuote()}"</p>
-      </div>
+      {/* 1. Goal Banner */}
+      <GoalBanner
+        startWeight={startWeight}
+        goalWeight={goalWeight || 200}
+        weighIns={weighIns}
+        currentWeight={currentWeight}
+        onEdit={() => setShowGoalEditor(true)}
+      />
 
-      {/* Greeting + Weight */}
-      <div className="flex justify-between items-start mb-4">
-        <div>
-          <div className="text-[26px] font-bold leading-tight">{getGreeting()}, {name || 'Jason'}</div>
-          <div className="text-sm text-white/40 mt-0.5">
-            {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}
-          </div>
-        </div>
-        {currentWeight && (
-          <div className="text-right">
-            <div className="text-[26px] font-bold leading-none">{currentWeight}</div>
-            <div className="text-sm text-white/40">lbs</div>
-          </div>
-        )}
-      </div>
+      {/* 2. Daily Quote */}
+      <p className="text-lg italic text-white/50 mb-4 px-1 leading-relaxed">"{getDailyQuote()}"</p>
 
-      {/* Mini weight sparkline — only if 2+ weigh-ins */}
-      <MiniSparkline weighIns={weighIns} />
+      {/* 3. TODAY card */}
+      <TodayCard
+        totalCal={totalCal}
+        totalProtein={totalProtein}
+        daily={daily}
+        targets={targets}
+        onOpenLog={onOpenLog}
+      />
 
-      {/* Scheduled Meals */}
-      <ScheduledMealsBanner daily={daily} addFood={addFood} notify={notify} />
+      {/* 4. Today's Workout */}
+      <TodayWorkoutCard
+        daily={daily}
+        onNavigate={onNavigate}
+        onChooseMuscles={() => setShowMuscleSelector(true)}
+      />
 
-      {/* Reminder */}
-      <ReminderBanner daily={daily} targets={targets} weighIns={weighIns || []} totalCal={totalCal} totalProtein={totalProtein} onNavigate={onNavigate} onOpenLog={onOpenLog} />
-
-      {/* Weekly Status Bar */}
+      {/* 5. This Week */}
       <WeeklyStatusBar daily={daily} targets={targets} />
-
-      {/* Today's Workout */}
-      <TodayWorkoutCard daily={daily} onNavigate={onNavigate} onOpenLog={onOpenLog} />
-
-      {/* Quick Log */}
-      <QuickLogRow totalCal={totalCal} totalProtein={totalProtein} daily={daily} targets={targets} latest={latest} onOpenLog={onOpenLog} />
 
       {/* Wednesday weigh-in */}
       {isWednesday() && !todayLogged && (
-        <div className="bg-amber-500/10 border border-amber-500/30 rounded-2xl px-4 py-4 mb-4">
-          <div className="text-[17px] font-semibold text-amber-400 mb-3">⚖️ Wednesday Weigh-In</div>
-          <div className="flex gap-2">
+        <div className="bg-amber-500/10 border border-amber-500/30 rounded-2xl px-5 py-5 mb-4">
+          <div className="text-xl font-bold text-amber-400 mb-3">⚖️ Wednesday Weigh-In</div>
+          <div className="flex gap-3">
             <input type="text" inputMode="decimal" autoComplete="off" enterKeyHint="done"
               value={weightInput} onChange={e => setWeightInput(e.target.value)}
-              placeholder="Weight (lbs)"
-              className="flex-1 bg-white/[0.08] border border-white/[0.1] rounded-xl px-4 py-3 text-[17px] text-white outline-none placeholder:text-white/30" />
+              onKeyDown={e => e.key === 'Enter' && handleWeighIn()}
+              placeholder="Enter weight (lbs)"
+              className="flex-1 bg-white/[0.08] border border-white/[0.1] rounded-xl px-4 h-14 text-xl text-white outline-none placeholder:text-white/30" />
             <button onClick={handleWeighIn}
-              className="bg-amber-500 text-white font-bold rounded-xl px-5 py-3 border-none cursor-pointer active:scale-95">Log</button>
+              className="bg-amber-500 text-white font-bold rounded-xl px-6 h-14 border-none cursor-pointer active:scale-95 text-base">
+              Log
+            </button>
           </div>
         </div>
-      )}
-
-      {/* Goal editor modal */}
-      {showGoalEditor && settings && updateSettings && (
-        <GoalEditorModal settings={settings} updateSettings={updateSettings} notify={notify} onClose={() => setShowGoalEditor(false)} />
       )}
     </div>
   );

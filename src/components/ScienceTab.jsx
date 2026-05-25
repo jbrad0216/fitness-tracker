@@ -99,9 +99,9 @@ function ExplanationCard({ item, settings, updateSettings, notify }) {
         className="w-full flex items-center gap-3 px-4 py-4 bg-transparent border-none cursor-pointer text-left"
       >
         <div className="flex-1">
-          <div className="text-[16px] font-bold">{item.title}</div>
+          <div className="text-lg font-bold">{item.title}</div>
           {currentVal !== null && (
-            <div className="text-[13px] text-white/40 mt-0.5">Current: {currentVal}{item.settingKey === 'waterBottles' ? ' bottles' : item.settingKey === 'sodiumMg' ? 'mg' : item.settingKey === 'protein' ? 'g' : ' cal'}</div>
+            <div className="text-base text-white/40 mt-0.5">Current: {currentVal}{item.settingKey === 'waterBottles' ? ' bottles' : item.settingKey === 'sodiumMg' ? 'mg' : item.settingKey === 'protein' ? 'g' : ' cal'}</div>
           )}
         </div>
         <span className="text-white/30 text-lg">{open ? '▾' : '›'}</span>
@@ -109,7 +109,7 @@ function ExplanationCard({ item, settings, updateSettings, notify }) {
 
       {open && (
         <div className="border-t border-white/[0.06] px-4 py-4">
-          <p className="text-[14px] text-white/70 leading-relaxed mb-4">{item.body}</p>
+          <p className="text-base text-white/70 leading-relaxed mb-4">{item.body}</p>
 
           {item.links.map(link => (
             <a
@@ -117,7 +117,7 @@ function ExplanationCard({ item, settings, updateSettings, notify }) {
               href={link.url}
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center gap-2 text-[13px] text-blue-400 mb-2 no-underline
+              className="flex items-center gap-2 text-base text-blue-400 mb-2 no-underline
                 bg-blue-500/[0.07] border border-blue-500/20 rounded-xl px-3 py-2.5"
             >
               <span>🔗</span>
@@ -140,19 +140,19 @@ function ExplanationCard({ item, settings, updateSettings, notify }) {
                     autoFocus
                   />
                   <button onClick={handleSave}
-                    className="bg-blue-500 text-white rounded-xl px-4 py-2.5 text-sm font-bold border-none cursor-pointer">
+                    className="bg-blue-500 text-white rounded-xl px-4 py-2.5 text-base font-bold border-none cursor-pointer">
                     Save
                   </button>
                   <button onClick={() => setEditing(false)}
-                    className="bg-white/[0.08] text-white/50 rounded-xl px-3 py-2.5 border-none cursor-pointer text-sm">
+                    className="bg-white/[0.08] text-white/50 rounded-xl px-3 py-2.5 border-none cursor-pointer text-base">
                     ✕
                   </button>
                 </div>
               ) : (
                 <button
                   onClick={() => { setEditVal(String(currentVal || '')); setEditing(true); }}
-                  className="flex items-center gap-2 text-[13px] text-white/50 bg-white/[0.04]
-                    border border-white/[0.08] rounded-xl px-3 py-2.5 cursor-pointer w-full"
+                  className="flex items-center gap-2 text-base text-white/50 bg-white/[0.04]
+                    border border-white/[0.08] rounded-xl px-3 py-3 cursor-pointer w-full"
                 >
                   <span>✏️</span>
                   <span>Edit {item.settingLabel}</span>
@@ -169,13 +169,13 @@ function ExplanationCard({ item, settings, updateSettings, notify }) {
 export function ScienceTab({ settings, updateSettings, notify }) {
   return (
     <div className="px-4 pb-6" style={{ paddingTop: 'max(env(safe-area-inset-top), 16px)' }}>
-      <h2 className="text-[22px] font-bold mb-1">About My Plan</h2>
-      <p className="text-[13px] text-white/40 mb-4">
+      <h2 className="text-2xl font-bold mb-1">About My Plan</h2>
+      <p className="text-base text-white/40 mb-4">
         The science behind your daily targets and workout structure.
       </p>
 
       <div className="bg-blue-500/[0.07] border border-blue-500/20 rounded-2xl px-4 py-3 mb-4">
-        <p className="text-[13px] text-blue-300">
+        <p className="text-base text-blue-300">
           All targets are personalized for Jason: 48yo, 6'1", ~222 lbs → 200 lbs goal, high blood pressure. Tap any item to see the research behind it.
         </p>
       </div>

@@ -174,7 +174,7 @@ export function MoreTab({
           <span className="text-4xl">{item.icon}</span>
           <div className="flex-1">
             <div className="text-[18px] font-semibold">{item.label}</div>
-            <div className="text-sm text-white/50 mt-0.5">{item.desc}</div>
+            <div className="text-base text-white/50 mt-0.5">{item.desc}</div>
           </div>
           <span className="text-white/30 text-2xl font-light">›</span>
         </button>

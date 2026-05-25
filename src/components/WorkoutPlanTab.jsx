@@ -110,24 +110,24 @@ function WeekRow({ weekNum, weekOffset, projectedGoalWeek }) {
       >
         <div className="flex-1">
           <div className="flex items-center gap-2 flex-wrap">
-            <span className="text-[16px] font-bold">
+            <span className="text-lg font-bold">
               Week {weekNum}
-              {isCurrentWeek && <span className="ml-2 text-[12px] text-blue-400 font-semibold bg-blue-500/15 rounded-full px-2 py-0.5">Current</span>}
-              {isGoalWeek && <span className="ml-2 text-[12px] text-amber-400 font-semibold">🎯 Projected Goal</span>}
+              {isCurrentWeek && <span className="ml-2 text-base text-blue-400 font-semibold bg-blue-500/15 rounded-full px-2 py-0.5">Current</span>}
+              {isGoalWeek && <span className="ml-2 text-base text-amber-400 font-semibold">🎯 Projected Goal</span>}
             </span>
           </div>
-          <div className="text-[12px] text-white/40 mt-0.5">{formatWeekRange(weekOffset)}</div>
+          <div className="text-base text-white/40 mt-0.5">{formatWeekRange(weekOffset)}</div>
         </div>
         <div className="text-right shrink-0">
-          <div className="text-[12px] text-white/50">{phaseInfo.label.split(':')[0]}</div>
-          <div className="text-[11px] text-white/30">{phaseInfo.setsReps}</div>
+          <div className="text-base text-white/50">{phaseInfo.label.split(':')[0]}</div>
+          <div className="text-base text-white/30">{phaseInfo.setsReps}</div>
         </div>
         <span className="text-white/30 text-lg ml-1">{expanded ? '▾' : '›'}</span>
       </button>
 
       {expanded && (
         <div className="border-t border-white/[0.06] px-4 py-3">
-          <div className="text-[12px] text-white/40 mb-2 italic">{phaseInfo.desc}</div>
+          <div className="text-base text-white/40 mb-2 italic">{phaseInfo.desc}</div>
           {days.map((day, i) => {
             const isDone = getDayComplete(i);
             const dayDate = new Date(mon);
@@ -136,12 +136,12 @@ function WeekRow({ weekNum, weekOffset, projectedGoalWeek }) {
             return (
               <div key={day.label} className={`flex items-center gap-2 py-1.5 border-b border-white/[0.04] last:border-0
                 ${isToday ? 'bg-blue-500/[0.06] -mx-4 px-4 rounded' : ''}`}>
-                <span className={`text-[13px] font-semibold w-8 shrink-0 ${isToday ? 'text-blue-400' : 'text-white/40'}`}>
+                <span className={`text-base font-semibold w-8 shrink-0 ${isToday ? 'text-blue-400' : 'text-white/40'}`}>
                   {day.label}
                 </span>
-                <span className={`text-[13px] flex-1 ${typeColor(day.type)}`}>{day.detail}</span>
-                {isDone && <span className="text-green-400 text-sm">✓</span>}
-                {isToday && !isDone && <span className="text-blue-400 text-[11px] font-semibold">today</span>}
+                <span className={`text-base flex-1 ${typeColor(day.type)}`}>{day.detail}</span>
+                {isDone && <span className="text-green-400 text-base">✓</span>}
+                {isToday && !isDone && <span className="text-blue-400 text-base font-semibold">today</span>}
               </div>
             );
           })}
@@ -183,8 +183,8 @@ export function WorkoutPlanTab({ weighIns, startWeight, goalWeight }) {
 
   return (
     <div className="px-4 pb-6" style={{ paddingTop: 'max(env(safe-area-inset-top), 16px)' }}>
-      <h2 className="text-[22px] font-bold mb-1">Full Workout Plan</h2>
-      <p className="text-[13px] text-white/40 mb-4">
+      <h2 className="text-2xl font-bold mb-1">Full Workout Plan</h2>
+      <p className="text-base text-white/40 mb-4">
         {lbsToGo > 0 ? `${lbsToGo.toFixed(1)} lbs to goal · ` : ''}
         ~{projectedGoalWeek} weeks projected
       </p>
@@ -193,9 +193,9 @@ export function WorkoutPlanTab({ weighIns, startWeight, goalWeight }) {
       <div className="grid grid-cols-3 gap-2 mb-4">
         {PHASE_CONFIG.map(p => (
           <div key={p.phase} className="bg-white/[0.05] border border-white/[0.08] rounded-2xl px-3 py-3 text-center">
-            <div className="text-[11px] text-white/40 mb-1">Wks {p.weeks}</div>
-            <div className="text-[13px] font-bold text-blue-400">{p.setsReps}</div>
-            <div className="text-[11px] text-white/50 mt-1">Phase {p.phase}</div>
+            <div className="text-base text-white/40 mb-1">Wks {p.weeks}</div>
+            <div className="text-base font-bold text-blue-400">{p.setsReps}</div>
+            <div className="text-base text-white/50 mt-1">Phase {p.phase}</div>
           </div>
         ))}
       </div>
@@ -206,7 +206,7 @@ export function WorkoutPlanTab({ weighIns, startWeight, goalWeight }) {
           <button
             key={w}
             onClick={() => setPlanWeeks(w)}
-            className={`flex-1 py-2.5 rounded-xl text-[14px] font-semibold border cursor-pointer
+            className={`flex-1 h-12 rounded-xl text-base font-semibold border cursor-pointer
               ${planWeeks === w ? 'bg-blue-500 border-blue-400 text-white' : 'bg-white/[0.06] border-white/[0.1] text-white/60'}`}
           >
             {w} wks
@@ -216,7 +216,7 @@ export function WorkoutPlanTab({ weighIns, startWeight, goalWeight }) {
 
       {/* Saturday long run progression */}
       <div className="bg-green-500/[0.06] border border-green-500/20 rounded-2xl px-4 py-3 mb-4">
-        <div className="text-[13px] font-semibold text-green-400 mb-2">Saturday Long Run Progression</div>
+        <div className="text-base font-semibold text-green-400 mb-2">Saturday Long Run Progression</div>
         <div className="grid grid-cols-4 gap-1 text-center">
           {[
             { label: 'Wk 1-2', miles: '2.5 mi' },
@@ -225,8 +225,8 @@ export function WorkoutPlanTab({ weighIns, startWeight, goalWeight }) {
             { label: 'Wk 7+', miles: '4 mi' },
           ].map(r => (
             <div key={r.label} className="bg-green-500/10 rounded-xl py-2">
-              <div className="text-[11px] text-white/40">{r.label}</div>
-              <div className="text-[13px] font-bold text-green-300">{r.miles}</div>
+              <div className="text-base text-white/40">{r.label}</div>
+              <div className="text-base font-bold text-green-300">{r.miles}</div>
             </div>
           ))}
         </div>
