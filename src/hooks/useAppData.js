@@ -28,9 +28,17 @@ export function useWeighIns() {
     });
   }, []);
 
+  const removeWeighIn = useCallback((date) => {
+    setWeighIns(prev => {
+      const next = prev.filter(w => w.date !== date);
+      save('weigh-ins', next);
+      return next;
+    });
+  }, []);
+
   const latest = weighIns.length ? weighIns[weighIns.length - 1] : null;
 
-  return { weighIns, addWeighIn, latest };
+  return { weighIns, addWeighIn, removeWeighIn, latest };
 }
 
 export function useLiftLog() {

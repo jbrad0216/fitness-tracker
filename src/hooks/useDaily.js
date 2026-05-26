@@ -75,7 +75,7 @@ export function useDaily() {
   }, [update]);
 
   const setWater = useCallback((n) => {
-    update(prev => ({ ...prev, water: Math.max(0, Math.min(n, 6)) }));
+    update(prev => ({ ...prev, water: Math.max(0, Math.min(n, 12)) }));
   }, [update]);
 
   const toggleMeditation = useCallback(() => {

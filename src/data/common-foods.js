@@ -147,6 +147,49 @@ export const COMMON_FOODS = [
   // ─── HEB / Grocery (Texas) ───
   { name: 'HEB Meal Simple Chicken', brand: 'HEB', cal: 220, protein: 35, fat: 6, carbs: 6, servingSize: '1 serving' },
   { name: 'Fairlife Milk', brand: 'Fairlife', cal: 120, protein: 13, fat: 5, carbs: 6, servingSize: '8 oz' },
+
+  // ─── More Fast Food ───
+  { name: "McDonald's Small Fries", brand: "McDonald's", cal: 220, protein: 3, fat: 10, carbs: 30, servingSize: '1 small' },
+  { name: "McDonald's Medium Fries", brand: "McDonald's", cal: 320, protein: 4, fat: 15, carbs: 43, servingSize: '1 medium' },
+  { name: "McDonald's 6pc McNuggets", brand: "McDonald's", cal: 270, protein: 15, fat: 16, carbs: 16, servingSize: '6 pieces' },
+  { name: 'Chick-fil-A Deluxe Sandwich', brand: 'Chick-fil-A', cal: 500, protein: 36, fat: 22, carbs: 44, servingSize: '1 sandwich' },
+  { name: 'Chick-fil-A Nuggets 12pc', brand: 'Chick-fil-A', cal: 380, protein: 40, fat: 18, carbs: 18, servingSize: '12 pieces' },
+  { name: 'Taco Bell Burrito Supreme', brand: 'Taco Bell', cal: 400, protein: 17, fat: 16, carbs: 51, servingSize: '1 burrito' },
+  { name: 'Taco Bell Nachos BellGrande', brand: 'Taco Bell', cal: 740, protein: 20, fat: 38, carbs: 80, servingSize: '1 order' },
+  { name: 'Subway Footlong Italian BMT', brand: 'Subway', cal: 820, protein: 40, fat: 34, carbs: 88, servingSize: '12-inch sandwich' },
+  { name: 'Whataburger Jr.', brand: 'Whataburger', cal: 310, protein: 16, fat: 13, carbs: 33, servingSize: '1 burger' },
+  { name: 'Chipotle Chips and Guac', brand: 'Chipotle', cal: 770, protein: 9, fat: 44, carbs: 88, fiber: 14, servingSize: '1 order' },
+  { name: 'Firehouse Hook & Ladder Medium', brand: 'Firehouse Subs', cal: 680, protein: 40, fat: 24, carbs: 68, servingSize: '1 medium sub' },
+
+  // ─── More Chicken Sizes ───
+  { name: 'Chicken Breast 6oz', cal: 248, protein: 46, fat: 5, carbs: 0, servingSize: '6 oz cooked' },
+  { name: 'Chicken Breast 8oz', cal: 330, protein: 62, fat: 7, carbs: 0, servingSize: '8 oz cooked' },
+  { name: 'Ground Beef 4oz', cal: 290, protein: 20, fat: 23, carbs: 0, servingSize: '4 oz 80/20 cooked' },
+  { name: 'Salmon 6oz', cal: 309, protein: 42, fat: 15, carbs: 0, servingSize: '6 oz cooked' },
+  { name: 'Rotisserie Chicken Quarter', cal: 330, protein: 53, fat: 14, carbs: 0, servingSize: '1 quarter (leg+thigh)' },
+
+  // ─── Eggs ───
+  { name: '1 Egg', cal: 72, protein: 6, fat: 5, carbs: 0, servingSize: '1 large egg' },
+  { name: '2 Eggs', cal: 144, protein: 13, fat: 10, carbs: 1, servingSize: '2 large eggs' },
+  { name: '3 Eggs', cal: 216, protein: 19, fat: 14, carbs: 1, servingSize: '3 large eggs' },
+
+  // ─── More Dairy ───
+  { name: 'Whole Milk', cal: 149, protein: 8, fat: 8, carbs: 12, servingSize: '1 cup (8 oz)' },
+  { name: 'Skim Milk', cal: 83, protein: 8, fat: 0, carbs: 12, servingSize: '1 cup (8 oz)' },
+  { name: 'Cheddar Cheese', cal: 113, protein: 7, fat: 9, carbs: 0, servingSize: '1 oz' },
+
+  // ─── More Drinks ───
+  { name: 'Coca-Cola', cal: 140, protein: 0, fat: 0, carbs: 39, servingSize: '12 oz can' },
+  { name: 'Beer', cal: 153, protein: 1, fat: 0, carbs: 13, servingSize: '12 oz regular beer' },
+  { name: 'Wine', cal: 125, protein: 0, fat: 0, carbs: 4, servingSize: '5 oz glass' },
+
+  // ─── More Snacks ───
+  { name: 'Chips', cal: 155, protein: 2, fat: 10, carbs: 15, servingSize: '1 oz bag' },
+
+  // ─── More Prepared ───
+  { name: 'Overnight Oats with Protein', cal: 420, protein: 35, fat: 8, carbs: 55, fiber: 6, servingSize: '1 cup + 1 scoop protein' },
+  { name: 'Chicken and Rice Bowl', cal: 600, protein: 40, fat: 10, carbs: 80, servingSize: '1 meal prep bowl' },
+  { name: 'Chicken Fajita Tacos 3pc', cal: 750, protein: 48, fat: 20, carbs: 75, servingSize: '3 tacos' },
 ];
 
 // Search local food database

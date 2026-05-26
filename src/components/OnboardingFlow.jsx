@@ -37,17 +37,10 @@ const GOALS = [
     detail: 'Cardio emphasis · Sodium tracking · Moderate resistance',
   },
   {
-    id: 'lifestyle',
-    icon: '🌱',
-    label: 'Lifestyle Change',
-    desc: 'I want a sustainable, long-term healthy routine',
-    detail: 'Balanced approach · Habit building · Slower pace',
-  },
-  {
     id: 'custom',
     icon: '✏️',
-    label: 'Custom',
-    desc: 'I want to describe my goal in my own words',
+    label: 'Custom / Other',
+    desc: 'I have a different goal in mind',
     detail: 'Tell us what you want to achieve',
   },
 ];

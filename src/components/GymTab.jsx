@@ -74,7 +74,7 @@ const GOAL_CONTEXT = {
 };
 
 // ─── Per-Set Exercise Card (Task 4) ───
-function ExerciseCard({ ex, isLogged, loggedData, prev, onLog, onSwap, goal }) {
+function ExerciseCard({ ex, isLogged, loggedData, prev, onLog, onSwap, onUnlog, goal }) {
   const numSets = ex.sets || 3;
 
   // Pre-fill weight: last session + 2.5 if they completed all reps, else last weight, else default
@@ -136,6 +136,14 @@ function ExerciseCard({ ex, isLogged, loggedData, prev, onLog, onSwap, goal }) {
             {loggedData ? `${loggedData.weight} lbs × ${loggedData.sets}×${loggedData.reps}` : 'Completed'}
           </div>
         </div>
+        {onUnlog && loggedData?.id && (
+          <button
+            onClick={() => onUnlog(loggedData.id)}
+            className="w-12 h-12 rounded-xl bg-red-500/15 text-red-400 text-xl
+              border-none cursor-pointer flex items-center justify-center active:bg-red-500/25 shrink-0">
+            ×
+          </button>
+        )}
       </div>
     );
   }
@@ -272,7 +280,7 @@ function ExerciseCard({ ex, isLogged, loggedData, prev, onLog, onSwap, goal }) {
                 </button>
               ))}
               <button onClick={() => setShowSwap(false)}
-                className="w-full text-center h-10 text-base text-white/30 bg-transparent border-none cursor-pointer">
+                className="w-full text-center h-12 text-base text-white/30 bg-transparent border-none cursor-pointer">
                 Cancel
               </button>
             </div>
@@ -283,74 +291,247 @@ function ExerciseCard({ ex, isLogged, loggedData, prev, onLog, onSwap, goal }) {
   );
 }
 
-function EquipmentSetup({ onSave }) {
-  const [access, setAccess] = useState(null);
-  const [equipment, setEquipment] = useState({
-    dumbbells: true, barbell: false, pullupBar: false,
-    bench: true, cables: false, resistanceBands: false,
-  });
+const EQUIPMENT_GROUPS = [
+  {
+    group: 'FREE WEIGHTS',
+    items: [
+      { id: 'dumbbells', label: 'Dumbbells' },
+      { id: 'barbell', label: 'Barbell' },
+      { id: 'kettlebells', label: 'Kettlebells' },
+      { id: 'medicineBalls', label: 'Medicine Balls' },
+    ],
+  },
+  {
+    group: 'MACHINES',
+    items: [
+      { id: 'latPulldown', label: 'Lat Pulldown' },
+      { id: 'legPress', label: 'Leg Press' },
+      { id: 'cableMachine', label: 'Cable Machine' },
+      { id: 'smithMachine', label: 'Smith Machine' },
+      { id: 'chestPress', label: 'Chest Press' },
+      { id: 'shoulderPress', label: 'Shoulder Press' },
+      { id: 'legCurl', label: 'Leg Curl' },
+      { id: 'legExtension', label: 'Leg Extension' },
+      { id: 'seatedRow', label: 'Seated Row' },
+      { id: 'hipAbductor', label: 'Hip Abductor' },
+      { id: 'pecFly', label: 'Pec Fly' },
+      { id: 'calfRaise', label: 'Calf Raise Machine' },
+    ],
+  },
+  {
+    group: 'CARDIO',
+    items: [
+      { id: 'treadmill', label: 'Treadmill' },
+      { id: 'rowingMachine', label: 'Rowing Machine' },
+      { id: 'elliptical', label: 'Elliptical' },
+      { id: 'stationaryBike', label: 'Stationary Bike' },
+    ],
+  },
+  {
+    group: 'OTHER',
+    items: [
+      { id: 'pullupBar', label: 'Pull-up Bar' },
+      { id: 'bench', label: 'Bench' },
+      { id: 'resistanceBands', label: 'Resistance Bands' },
+      { id: 'trx', label: 'TRX / Suspension' },
+    ],
+  },
+];
 
-  if (!access) {
+const FULL_GYM_DEFAULTS = {
+  dumbbells: true, barbell: true, kettlebells: true, medicineBalls: false,
+  latPulldown: true, legPress: true, cableMachine: true, smithMachine: true,
+  chestPress: true, shoulderPress: true, legCurl: true, legExtension: true,
+  seatedRow: true, hipAbductor: false, pecFly: true, calfRaise: false,
+  treadmill: true, rowingMachine: true, elliptical: false, stationaryBike: false,
+  pullupBar: true, bench: true, resistanceBands: false, trx: false,
+};
+
+const HOME_GYM_DEFAULTS = {
+  dumbbells: true, barbell: false, kettlebells: false, medicineBalls: false,
+  latPulldown: false, legPress: false, cableMachine: false, smithMachine: false,
+  chestPress: false, shoulderPress: false, legCurl: false, legExtension: false,
+  seatedRow: false, hipAbductor: false, pecFly: false, calfRaise: false,
+  treadmill: false, rowingMachine: false, elliptical: false, stationaryBike: false,
+  pullupBar: true, bench: true, resistanceBands: true, trx: false,
+};
+
+const EMPTY_EQUIPMENT = Object.fromEntries(
+  EQUIPMENT_GROUPS.flatMap(g => g.items.map(i => [i.id, false]))
+);
+
+function AddCustomMachineForm({ onAdd, onClose }) {
+  const [name, setName] = useState('');
+  const [muscle, setMuscle] = useState('Chest');
+  const [weight, setWeight] = useState('');
+
+  const MUSCLES = ['Chest', 'Back', 'Shoulders', 'Arms', 'Legs', 'Core', 'Glutes', 'Calves'];
+
+  return (
+    <div className="fixed inset-0 z-50 bg-[#0f1117]/95 flex flex-col justify-end"
+      style={{ paddingBottom: 'max(env(safe-area-inset-bottom), 16px)' }}>
+      <div className="bg-[#1a1d27] rounded-t-3xl px-5 pt-5 pb-6">
+        <div className="flex items-center justify-between mb-5">
+          <h3 className="text-xl font-bold">Add Custom Machine</h3>
+          <button onClick={onClose}
+            className="w-12 h-12 rounded-xl bg-white/[0.08] text-white/60 border-none cursor-pointer text-xl">
+            ×
+          </button>
+        </div>
+        <div className="space-y-3">
+          <div>
+            <div className="text-base text-white/50 mb-1.5">Machine Name</div>
+            <input type="text" inputMode="text" autoComplete="off"
+              value={name} onChange={e => setName(e.target.value)}
+              placeholder="e.g. Hammer Strength Incline"
+              className="w-full bg-white/[0.08] border border-white/[0.1] rounded-xl px-4 h-14 text-lg text-white
+                outline-none placeholder:text-white/25 focus:border-blue-500/60" />
+          </div>
+          <div>
+            <div className="text-base text-white/50 mb-1.5">Muscle Group</div>
+            <div className="flex flex-wrap gap-2">
+              {MUSCLES.map(m => (
+                <button key={m} onClick={() => setMuscle(m)}
+                  className={`h-12 px-4 rounded-xl text-base font-semibold border-none cursor-pointer
+                    ${muscle === m ? 'bg-blue-500 text-white' : 'bg-white/[0.06] text-white/50'}`}>
+                  {m}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div>
+            <div className="text-base text-white/50 mb-1.5">Current Weight (lbs)</div>
+            <input type="text" inputMode="numeric" autoComplete="off"
+              value={weight} onChange={e => setWeight(e.target.value)}
+              placeholder="e.g. 90"
+              className="w-full bg-white/[0.08] border border-white/[0.1] rounded-xl px-4 h-14 text-lg text-white
+                outline-none placeholder:text-white/25 focus:border-blue-500/60" />
+          </div>
+          <button
+            onClick={() => {
+              if (!name.trim()) return;
+              onAdd({ id: `custom-${Date.now()}`, label: name.trim(), muscle, weight: parseFloat(weight) || 0, isCustom: true });
+              onClose();
+            }}
+            className="w-full bg-blue-500 text-white rounded-2xl h-14 text-lg font-bold border-none cursor-pointer active:opacity-80">
+            ADD MACHINE
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function EquipmentSetup({ onSave }) {
+  const [step, setStep] = useState('quick'); // 'quick' | 'full'
+  const [equipment, setEquipment] = useState(EMPTY_EQUIPMENT);
+  const [customMachines, setCustomMachines] = useState([]);
+  const [showAddMachine, setShowAddMachine] = useState(false);
+
+  const toggle = (id) => setEquipment(e => ({ ...e, [id]: !e[id] }));
+
+  const applyPreset = (preset) => {
+    setEquipment(preset);
+    setStep('full');
+  };
+
+  if (step === 'quick') {
     return (
       <div className="px-4 pb-6" style={{ paddingTop: 'max(env(safe-area-inset-top), 20px)' }}>
         <h2 className="text-2xl font-bold mb-2">Gym Setup</h2>
         <p className="text-base text-white/50 mb-6">What equipment do you have access to?</p>
         {[
-          { id: 'full', label: '🏋️ Full Gym', desc: 'Cables, machines, barbells, everything' },
-          { id: 'home', label: '🏠 Home Setup', desc: 'Dumbbells, bench, pull-up bar' },
-          { id: 'limited', label: '🎽 Minimal', desc: 'Select what you have below' },
+          { id: 'full', label: '🏋️ Full Gym', desc: 'Machines, cables, barbells, everything' },
+          { id: 'home', label: '🏠 Home Setup', desc: 'Dumbbells, bench, pull-up bar, bands' },
+          { id: 'custom', label: '⚙️ Choose My Own', desc: 'Select exactly what you have' },
         ].map(opt => (
           <button key={opt.id} onClick={() => {
-            if (opt.id === 'full') {
-              onSave({ access: 'full', equipment: { dumbbells: true, barbell: true, pullupBar: true, bench: true, cables: true } });
-            } else if (opt.id === 'home') {
-              onSave({ access: 'home', equipment: { dumbbells: true, pullupBar: true, bench: true } });
-            } else {
-              setAccess('limited');
-            }
+            if (opt.id === 'full') applyPreset(FULL_GYM_DEFAULTS);
+            else if (opt.id === 'home') applyPreset(HOME_GYM_DEFAULTS);
+            else setStep('full');
           }}
             className="w-full flex items-center gap-4 bg-white/[0.05] border border-white/[0.08]
-              rounded-2xl px-5 py-5 mb-3 cursor-pointer active:bg-white/[0.08] text-left min-h-[72px]">
+              rounded-2xl px-5 py-5 mb-3 cursor-pointer active:bg-white/[0.08] text-left min-h-[80px]">
             <span className="text-3xl">{opt.label.split(' ')[0]}</span>
             <div>
               <div className="text-lg font-semibold">{opt.label.replace(/^\S+\s/, '')}</div>
               <div className="text-base text-white/50">{opt.desc}</div>
             </div>
+            <span className="text-white/30 text-2xl ml-auto">›</span>
           </button>
         ))}
       </div>
     );
   }
 
-  const equipItems = [
-    { id: 'dumbbells', label: 'Dumbbells' },
-    { id: 'barbell', label: 'Barbell & Rack' },
-    { id: 'pullupBar', label: 'Pull-up Bar' },
-    { id: 'bench', label: 'Bench' },
-    { id: 'cables', label: 'Cable Machine' },
-    { id: 'resistanceBands', label: 'Resistance Bands' },
-  ];
-
   return (
-    <div className="px-4 pb-6" style={{ paddingTop: 'max(env(safe-area-inset-top), 20px)' }}>
-      <h2 className="text-2xl font-bold mb-2">Your Equipment</h2>
-      <p className="text-base text-white/50 mb-5">Select what you have access to:</p>
-      <div className="space-y-2 mb-6">
-        {equipItems.map(item => (
-          <button key={item.id}
-            onClick={() => setEquipment(e => ({ ...e, [item.id]: !e[item.id] }))}
-            className={`w-full flex items-center gap-3 rounded-2xl px-5 h-14 border cursor-pointer text-left
-              ${equipment[item.id]
-                ? 'bg-blue-500/20 border-blue-500/50 text-white'
-                : 'bg-white/[0.04] border-white/[0.08] text-white/50'}`}>
-            <span className="text-xl">{equipment[item.id] ? '✓' : '○'}</span>
-            <span className="text-lg font-semibold">{item.label}</span>
-          </button>
-        ))}
+    <div className="px-4 pb-8 overflow-y-auto" style={{ paddingTop: 'max(env(safe-area-inset-top), 16px)' }}>
+      {showAddMachine && (
+        <AddCustomMachineForm
+          onAdd={(machine) => setCustomMachines(prev => [...prev, machine])}
+          onClose={() => setShowAddMachine(false)}
+        />
+      )}
+
+      <div className="flex items-center gap-3 mb-5">
+        <button onClick={() => setStep('quick')}
+          className="w-12 h-12 rounded-xl bg-white/[0.08] text-white text-xl border-none cursor-pointer
+            flex items-center justify-center">
+          ‹
+        </button>
+        <h2 className="text-2xl font-bold">My Equipment</h2>
       </div>
-      <button onClick={() => onSave({ access: 'limited', equipment })}
-        className="w-full bg-blue-500 text-white rounded-2xl h-14 text-lg font-bold border-none cursor-pointer">
-        Save & Continue
+      <p className="text-base text-white/50 mb-5">Select everything available to you:</p>
+
+      {EQUIPMENT_GROUPS.map(grp => (
+        <div key={grp.group} className="mb-5">
+          <div className="text-base font-bold text-white/40 uppercase tracking-wider mb-2">{grp.group}</div>
+          <div className="grid grid-cols-2 gap-2">
+            {grp.items.map(item => (
+              <button key={item.id} onClick={() => toggle(item.id)}
+                className={`flex items-center gap-2 rounded-xl px-4 h-14 border-solid border cursor-pointer text-left
+                  ${equipment[item.id]
+                    ? 'bg-blue-500/20 border-blue-500/50 text-white'
+                    : 'bg-white/[0.04] border-white/[0.08] text-white/50'}`}>
+                <span className="text-lg">{equipment[item.id] ? '✓' : '○'}</span>
+                <span className="text-base font-semibold">{item.label}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      ))}
+
+      {/* Custom machines */}
+      {customMachines.length > 0 && (
+        <div className="mb-5">
+          <div className="text-base font-bold text-white/40 uppercase tracking-wider mb-2">CUSTOM MACHINES</div>
+          {customMachines.map((m) => (
+            <div key={m.id} className="flex items-center gap-3 bg-blue-500/10 border border-blue-500/30
+              rounded-xl px-4 h-14 mb-2">
+              <span className="text-lg text-blue-400">✓</span>
+              <div className="flex-1">
+                <div className="text-base font-semibold">{m.label}</div>
+                <div className="text-base text-white/40">{m.muscle}{m.weight ? ` · ${m.weight} lbs` : ''}</div>
+              </div>
+              <button onClick={() => setCustomMachines(prev => prev.filter(x => x.id !== m.id))}
+                className="w-12 h-12 rounded-lg bg-red-500/15 text-red-400 text-base border-none cursor-pointer
+                  flex items-center justify-center">
+                ×
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+
+      <button onClick={() => setShowAddMachine(true)}
+        className="w-full bg-white/[0.06] border border-white/[0.1] border-solid text-white/70
+          rounded-2xl h-14 text-base font-semibold cursor-pointer active:opacity-70 mb-5">
+        + Add Custom Machine
+      </button>
+
+      <button onClick={() => onSave({ access: 'custom', equipment, customMachines })}
+        className="w-full bg-blue-500 text-white rounded-2xl h-14 text-lg font-bold border-none cursor-pointer active:opacity-80">
+        SAVE EQUIPMENT
       </button>
     </div>
   );
@@ -853,7 +1034,7 @@ export function GymTab({ daily, addRun, addExercise, removeExercise, getLastLift
               ⏭ Skip — continue schedule
             </button>
             <button onClick={() => setShowSkipMenu(false)}
-              className="w-full bg-transparent border-none text-white/30 h-10 cursor-pointer text-base">
+              className="w-full bg-transparent border-none text-white/30 h-12 cursor-pointer text-base">
               Cancel
             </button>
           </div>
@@ -915,6 +1096,7 @@ export function GymTab({ daily, addRun, addExercise, removeExercise, getLastLift
                 prev={prev}
                 onLog={handleLog}
                 onSwap={handleSwap}
+                onUnlog={(id) => { removeExercise(id); notify(`${effective.name} removed`); }}
                 goal={goal}
               />
             );

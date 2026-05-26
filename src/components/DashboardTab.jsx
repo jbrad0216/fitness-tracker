@@ -139,7 +139,7 @@ function GoalBanner({ startWeight, goalWeight, weighIns, currentWeight, onEdit }
         <span className="text-lg font-bold text-white/70">MY GOAL</span>
         <button onClick={onEdit}
           className="bg-blue-500/20 border border-blue-500/40 text-blue-400 font-bold
-            rounded-xl px-4 h-11 text-base cursor-pointer active:opacity-70 border-solid">
+            rounded-xl px-4 h-12 text-base cursor-pointer active:opacity-70 border-solid">
           Edit Goal
         </button>
       </div>
@@ -168,7 +168,7 @@ function GoalEditorPage({ settings, updateSettings, notify, onClose }) {
     heightFt: String(Math.floor(totalInInit / 12)),
     heightIn: String(totalInInit % 12),
     age: String(settings.age || 48),
-    goalType: settings.goal === 'muscle' ? 'muscle' : settings.goal === 'lifestyle' ? 'lifestyle' : 'lose',
+    goalType: settings.goal === 'muscle' ? 'muscle' : 'lose',
     pace: settings.pace || 'moderate',
   });
 
@@ -185,19 +185,15 @@ function GoalEditorPage({ settings, updateSettings, notify, onClose }) {
   let calories, protein, water, weeksToGoal;
   if (form.goalType === 'lose') {
     calories = Math.max(1200, Math.round(tdee - deficits[form.pace]));
-    protein = Math.round(currentWt * 0.72);
+    protein = Math.round(currentWt * 0.73);
     const lbsToLose = Math.max(0, currentWt - goalWt);
     weeksToGoal = lbsToLose > 0 ? Math.ceil(lbsToLose / rates[form.pace]) : null;
-  } else if (form.goalType === 'muscle') {
+  } else {
     calories = Math.round(Math.min(4000, tdee + 300));
     protein = Math.round(currentWt * 1.0);
     weeksToGoal = null;
-  } else {
-    calories = Math.round(tdee);
-    protein = Math.round(currentWt * 0.7);
-    weeksToGoal = null;
   }
-  water = Math.max(2, Math.min(6, Math.round(currentWt / 2 / 32)));
+  water = Math.max(2, Math.min(8, Math.round(currentWt / 2 / 32)));
 
   let goalDate = null;
   if (weeksToGoal) {
@@ -305,7 +301,6 @@ function GoalEditorPage({ settings, updateSettings, notify, onClose }) {
           options={[
             { value: 'lose', label: 'Lose Fat' },
             { value: 'muscle', label: 'Build Muscle' },
-            { value: 'lifestyle', label: 'Lifestyle' },
           ]}
           onChange={v => setForm(f => ({ ...f, goalType: v }))} />
 
@@ -355,8 +350,8 @@ function GoalEditorPage({ settings, updateSettings, notify, onClose }) {
         <div className="bg-white/[0.04] border border-white/[0.08] rounded-2xl px-5 py-5 mb-6">
           <div className="text-base font-bold text-white/50 mb-3 uppercase tracking-wide">Why These Numbers:</div>
           <div className="space-y-3 text-base text-white/60 leading-relaxed">
-            <p><span className="text-white/80 font-semibold">Calories:</span> Your body burns ~{tdee.toLocaleString()} cal/day.{form.goalType === 'lose' ? ` Minus ${deficits[form.pace]} = ${calories.toLocaleString()} for ~${rates[form.pace]} lb/week loss.` : ' Eating at maintenance.'}</p>
-            <p><span className="text-white/80 font-semibold">Protein:</span> At {Math.round(currentWt)} lbs, {form.goalType === 'lose' ? '0.72' : form.goalType === 'muscle' ? '1.0' : '0.7'}g per lb = {protein}g to {form.goalType === 'lose' ? 'preserve muscle while losing fat' : 'support your goals'}.</p>
+            <p><span className="text-white/80 font-semibold">Calories:</span> Your body burns ~{tdee.toLocaleString()} cal/day.{form.goalType === 'lose' ? ` Minus ${deficits[form.pace]} = ${calories.toLocaleString()} for ~${rates[form.pace]} lb/week loss.` : ' Plus 300 cal surplus for muscle growth.'}</p>
+            <p><span className="text-white/80 font-semibold">Protein:</span> At {Math.round(currentWt)} lbs, {form.goalType === 'lose' ? '0.73' : '1.0'}g per lb = {protein}g to {form.goalType === 'lose' ? 'preserve muscle while losing fat' : 'maximize muscle protein synthesis'}.</p>
             <p><span className="text-white/80 font-semibold">Water:</span> Half your body weight in oz = ~{Math.round(currentWt / 2)} oz, rounded to {water * 32} oz ({water} bottles).</p>
           </div>
         </div>
@@ -553,41 +548,141 @@ function MuscleSelectorPage({ onClose, onApply }) {
 }
 
 // ─── TODAY Card ───
-function TodayCard({ totalCal, totalProtein, daily, targets, onOpenLog }) {
+function TodayCard({ totalCal, totalProtein, daily, targets, onOpenLog, setWater }) {
+  const waterOz = (daily.water || 0) * 32;
+  const targetOz = targets.waterBottles * 32;
+  const waterDone = waterOz >= targetOz;
+
   return (
     <div className="bg-white/[0.05] border border-white/[0.08] rounded-2xl px-5 py-5 mb-4">
       <div className="text-lg font-bold text-white/60 mb-4">TODAY</div>
-      <div className="grid grid-cols-3 gap-3 mb-5">
-        <div className="text-center">
-          <div className="text-3xl font-bold text-amber-400">{(totalCal || 0).toLocaleString()}</div>
-          <div className="text-base text-white/50 mt-1">cal</div>
-          <div className="text-base text-white/30">of {targets.calories.toLocaleString()}</div>
-          <ProgressBar value={totalCal || 0} max={targets.calories} color="#f59e0b" />
+
+      {/* Calories */}
+      <div className="mb-4">
+        <div className="flex justify-between items-baseline mb-1">
+          <span className="text-base text-white/50">Calories</span>
+          <span className="text-base text-white/40">of {targets.calories.toLocaleString()}</span>
         </div>
-        <div className="text-center">
-          <div className="text-3xl font-bold text-blue-400">{totalProtein || 0}g</div>
-          <div className="text-base text-white/50 mt-1">protein</div>
-          <div className="text-base text-white/30">of {targets.protein}g</div>
-          <ProgressBar value={totalProtein || 0} max={targets.protein} color="#3b82f6" />
-        </div>
-        <div className="text-center">
-          <div className="text-3xl font-bold text-cyan-400">{daily.water || 0}/{targets.waterBottles}</div>
-          <div className="text-base text-white/50 mt-1">bottles</div>
-          <div className="text-base text-white/30">{(daily.water || 0) * 32} oz</div>
-          <ProgressBar value={daily.water || 0} max={targets.waterBottles} color="#06b6d4" />
-        </div>
+        <div className="text-4xl font-bold text-amber-400 mb-1">{(totalCal || 0).toLocaleString()}</div>
+        <ProgressBar value={totalCal || 0} max={targets.calories} color="#f59e0b" />
       </div>
-      <div className="flex gap-3">
-        <button onClick={() => onOpenLog?.('I ate ')}
-          className="flex-1 bg-amber-500/20 border border-amber-500/40 text-amber-300
-            rounded-xl h-14 text-base font-bold cursor-pointer active:opacity-70 border-solid">
-          + Log Food
-        </button>
-        <button onClick={() => onOpenLog?.('drank water')}
-          className="flex-1 bg-cyan-500/20 border border-cyan-500/40 text-cyan-300
-            rounded-xl h-14 text-base font-bold cursor-pointer active:opacity-70 border-solid">
-          + Log Water
-        </button>
+
+      {/* Protein */}
+      <div className="mb-4">
+        <div className="flex justify-between items-baseline mb-1">
+          <span className="text-base text-white/50">Protein</span>
+          <span className="text-base text-white/40">of {targets.protein}g</span>
+        </div>
+        <div className="text-4xl font-bold text-blue-400 mb-1">{totalProtein || 0}g</div>
+        <ProgressBar value={totalProtein || 0} max={targets.protein} color="#3b82f6" />
+      </div>
+
+      {/* Water — +/- buttons */}
+      <div className="mb-5">
+        <div className="flex justify-between items-baseline mb-2">
+          <span className="text-base text-white/50">Water</span>
+          {waterDone && <span className="text-green-400 text-base font-bold">✓ Goal reached!</span>}
+        </div>
+        <div className="flex items-center gap-4">
+          <div className="flex-1">
+            <div className="text-4xl font-bold text-cyan-400">
+              {waterOz} <span className="text-2xl">/ {targetOz} oz</span>
+              {waterDone && <span className="text-green-400 text-2xl"> ✓</span>}
+            </div>
+            <ProgressBar value={daily.water || 0} max={targets.waterBottles} color="#06b6d4" />
+          </div>
+          <div className="flex gap-2 shrink-0">
+            <button
+              onClick={() => setWater?.((daily.water || 0) - 1)}
+              disabled={(daily.water || 0) === 0}
+              className="w-14 h-14 rounded-xl bg-white/[0.08] border border-white/[0.1] text-white/70
+                text-2xl font-bold border-solid cursor-pointer active:bg-white/[0.15] disabled:opacity-30">
+              −
+            </button>
+            <button
+              onClick={() => setWater?.((daily.water || 0) + 1)}
+              className="w-14 h-14 rounded-xl bg-cyan-500/20 border border-cyan-500/40 text-cyan-300
+                text-2xl font-bold border-solid cursor-pointer active:bg-cyan-500/30">
+              +
+            </button>
+          </div>
+        </div>
+        <div className="text-base text-white/30 mt-1">+/− 32 oz per tap</div>
+      </div>
+
+      {/* Log Food button */}
+      <button onClick={() => onOpenLog?.()}
+        className="w-full bg-amber-500/20 border border-amber-500/40 text-amber-300
+          rounded-xl h-14 text-lg font-bold cursor-pointer active:opacity-70 border-solid">
+        + Log Food
+      </button>
+    </div>
+  );
+}
+
+// ─── Today's Food Log ───
+function TodayFoodLog({ daily, removeFood, notify }) {
+  const food = daily.food || [];
+  if (food.length === 0) return null;
+
+  const MEAL_ORDER = ['breakfast', 'lunch', 'snack', 'dinner'];
+  const MEAL_LABELS = { breakfast: '🌅 Breakfast', lunch: '☀️ Lunch', snack: '🍿 Snack', dinner: '🌙 Dinner' };
+
+  const byMeal = MEAL_ORDER.reduce((acc, m) => {
+    const items = food.filter(f => f.meal === m);
+    if (items.length > 0) acc[m] = items;
+    return acc;
+  }, {});
+
+  const uncategorized = food.filter(f => !MEAL_ORDER.includes(f.meal));
+
+  const handleDelete = (id, name) => {
+    removeFood(id);
+    notify(`Removed: ${name}`);
+  };
+
+  return (
+    <div className="bg-white/[0.05] border border-white/[0.08] rounded-2xl px-5 py-4 mb-4">
+      <div className="text-lg font-bold text-white/60 mb-3">TODAY'S FOOD</div>
+      {Object.entries(byMeal).map(([meal, items]) => (
+        <div key={meal} className="mb-3">
+          <div className="text-base font-semibold text-white/40 mb-1">{MEAL_LABELS[meal]}</div>
+          {items.map(f => (
+            <div key={f.id} className="flex items-center gap-3 py-2 border-b border-white/[0.05] last:border-0">
+              <div className="flex-1 min-w-0">
+                <div className="text-base font-semibold truncate">{f.name}</div>
+                <div className="text-base text-white/45">{f.cal} cal · {f.protein || 0}g protein</div>
+              </div>
+              <button
+                onClick={() => handleDelete(f.id, f.name)}
+                className="w-12 h-12 rounded-xl bg-red-500/15 text-red-400 text-xl
+                  border-none cursor-pointer flex items-center justify-center active:bg-red-500/25 shrink-0">
+                ×
+              </button>
+            </div>
+          ))}
+        </div>
+      ))}
+      {uncategorized.length > 0 && (
+        <div className="mb-3">
+          {uncategorized.map(f => (
+            <div key={f.id} className="flex items-center gap-3 py-2 border-b border-white/[0.05] last:border-0">
+              <div className="flex-1 min-w-0">
+                <div className="text-base font-semibold truncate">{f.name}</div>
+                <div className="text-base text-white/45">{f.cal} cal · {f.protein || 0}g protein</div>
+              </div>
+              <button
+                onClick={() => handleDelete(f.id, f.name)}
+                className="w-12 h-12 rounded-xl bg-red-500/15 text-red-400 text-xl
+                  border-none cursor-pointer flex items-center justify-center active:bg-red-500/25 shrink-0">
+                ×
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+      <div className="text-base text-white/30 mt-1">
+        {food.length} item{food.length !== 1 ? 's' : ''} · {food.reduce((s, f) => s + (f.cal || 0), 0).toLocaleString()} cal total
       </div>
     </div>
   );
@@ -808,7 +903,11 @@ export function DashboardTab({
         daily={daily}
         targets={targets}
         onOpenLog={onOpenLog}
+        setWater={setWater}
       />
+
+      {/* 3b. Today's Food Log */}
+      <TodayFoodLog daily={daily} removeFood={removeFood} notify={notify} />
 
       {/* 4. Today's Workout */}
       <TodayWorkoutCard

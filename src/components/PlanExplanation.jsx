@@ -1,386 +1,205 @@
 import { useState } from 'react';
-import { Card, CardTitle } from './UI';
 
-// Mifflin-St Jeor BMR for males, returns kcal/day
-function calcBMR(weightLbs, heightStr, age) {
-  const kg = weightLbs / 2.2046;
-  let cm = 185; // default 6'1"
-  if (heightStr) {
-    const m = heightStr.match(/(\d+)'[\s]*(\d+)?/);
-    if (m) cm = Math.round(((parseInt(m[1]) || 0) * 12 + (parseInt(m[2]) || 0)) * 2.54);
-  }
-  return Math.round(10 * kg + 6.25 * cm - 5 * (age || 48) + 5);
+function parseHeightToCm(heightStr) {
+  if (!heightStr) return 185.4; // 6'1"
+  const m = heightStr.match(/(\d+)'[\s]*(\d+)?/);
+  if (m) return ((parseInt(m[1]) || 0) * 12 + (parseInt(m[2]) || 0)) * 2.54;
+  const n = parseFloat(heightStr);
+  return n > 0 ? (n < 10 ? n * 100 : n) : 185.4;
 }
 
-// Activity multiplier based on goal
-function activityFactor(goal) {
-  if (goal === 'muscle') return 1.55;
-  if (goal === 'lifestyle') return 1.375;
-  return 1.55; // moderate active default
+function calcMifflin(weightLbs, heightStr, age) {
+  const kg = weightLbs * 0.453592;
+  const cm = parseHeightToCm(heightStr);
+  const bmr = (10 * kg) + (6.25 * cm) - (5 * age) - 5;
+  return {
+    kg: kg.toFixed(1),
+    cm: cm.toFixed(1),
+    bmr: Math.round(bmr),
+    bmrSteps: `(10 × ${kg.toFixed(1)}) + (6.25 × ${cm.toFixed(1)}) − (5 × ${age}) − 5`,
+    bmrParts: `${Math.round(10 * kg)} + ${Math.round(6.25 * cm)} − ${5 * age} − 5`,
+  };
 }
 
-// Deficit per day based on pace
-function dailyDeficit(pace) {
-  if (pace === 'aggressive') return 750;
-  if (pace === 'gradual') return 250;
-  return 500;
-}
-
-// Surplus for muscle building
-function dailySurplus(pace) {
-  if (pace === 'aggressive') return 300;
-  if (pace === 'gradual') return 100;
-  return 200;
-}
-
-function calcRecommendedCalories(settings) {
-  const bmr = calcBMR(settings.startWeight || 221, settings.height, settings.age || 48);
-  const tdee = Math.round(bmr * activityFactor(settings.goal));
-  if (settings.goal === 'muscle') {
-    return tdee + dailySurplus(settings.pace);
-  }
-  return tdee - dailyDeficit(settings.pace);
-}
-
-function calcRecommendedProtein(settings) {
-  const w = settings.startWeight || 221;
-  if (settings.goal === 'muscle') return Math.round(w * 0.9);
-  if (settings.goal === 'heart-health') return Math.round(w * 0.7);
-  if (settings.goal === 'lifestyle') return Math.round(w * 0.65);
-  return Math.round(w * 0.72); // fat-loss default
-}
-
-function weeksToGoal(settings) {
-  const diff = Math.max(0, (settings.startWeight || 221) - (settings.goalWeight || 200));
-  const deficit = dailyDeficit(settings.pace);
-  const lbsPerWeek = (deficit * 7) / 3500;
-  if (lbsPerWeek <= 0) return 0;
-  return Math.ceil(diff / lbsPerWeek);
-}
-
-function goalDate(weeks) {
+function goalDate(weeksFromNow) {
   const d = new Date();
-  d.setDate(d.getDate() + weeks * 7);
-  return d.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+  d.setDate(d.getDate() + weeksFromNow * 7);
+  return d.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
 }
 
-const GOAL_LABELS = {
-  'fat-loss': 'Lose fat, maintain muscle',
-  'muscle': 'Build muscle and strength',
-  'heart-health': 'Improve heart health',
-  'lifestyle': 'Sustainable lifestyle change',
-  'custom': 'Custom goal',
-};
-
-const PACE_LABELS = {
-  aggressive: 'Aggressive (4–6 weeks focus)',
-  moderate: 'Moderate (8–12 weeks)',
-  gradual: 'Gradual (16–20 weeks)',
-};
-
-function Section({ title, icon, children, editLabel, onEdit }) {
+function SourceLink({ label, url }) {
   return (
-    <div className="border-b border-white/[0.06] pb-5 mb-5">
-      <div className="flex items-center justify-between mb-3">
-        <div className="flex items-center gap-2">
-          <span className="text-xl">{icon}</span>
-          <h3 className="text-[18px] font-bold">{title}</h3>
+    <a href={url} target="_blank" rel="noopener noreferrer"
+      className="text-blue-400 text-base underline">
+      {label} ↗
+    </a>
+  );
+}
+
+function Step({ num, title, children }) {
+  return (
+    <div className="mb-6">
+      <div className="flex items-center gap-3 mb-3">
+        <div className="w-8 h-8 rounded-full bg-blue-500 text-white text-base font-bold
+          flex items-center justify-center shrink-0">
+          {num}
         </div>
-        {onEdit && (
-          <button
-            onClick={onEdit}
-            className="text-base text-blue-400 bg-blue-500/10 border border-blue-500/20
-              rounded-xl px-3 py-2.5 cursor-pointer active:opacity-70 min-h-[48px]"
-          >
-            {editLabel || 'Adjust ✏️'}
-          </button>
-        )}
+        <div className="text-lg font-bold">{title}</div>
       </div>
-      <div className="text-[16px] text-white/75 leading-relaxed space-y-3">
+      <div className="ml-11 text-base text-white/70 leading-relaxed space-y-2">
         {children}
       </div>
     </div>
   );
 }
 
-function SourceLink({ label, url }) {
+function CalcBox({ children }) {
   return (
-    <a
-      href={url}
-      target="_blank"
-      rel="noopener noreferrer"
-      className="inline-flex items-center gap-1 text-blue-400 text-base underline"
-    >
-      {label} ↗
-    </a>
-  );
-}
-
-function InlineEdit({ label, value, onSave, type = 'number' }) {
-  const [editing, setEditing] = useState(false);
-  const [val, setVal] = useState(String(value));
-  if (!editing) return null;
-  return (
-    <div className="mt-3 flex gap-2 items-center">
-      <input
-        type="text"
-        inputMode={type === 'number' ? 'numeric' : 'text'}
-        autoComplete="off"
-        value={val}
-        onChange={e => setVal(e.target.value)}
-        className="flex-1 bg-white/[0.08] border border-white/[0.15] rounded-xl px-3 py-2.5
-          text-[16px] text-white outline-none"
-      />
-      <button
-        onClick={() => { onSave(val); setEditing(false); }}
-        className="bg-blue-500 text-white rounded-xl px-4 py-2.5 font-bold border-none cursor-pointer"
-      >Save</button>
-      <button
-        onClick={() => setEditing(false)}
-        className="bg-white/[0.08] text-white/60 rounded-xl px-3 py-2.5 border-none cursor-pointer"
-      >✕</button>
+    <div className="bg-white/[0.04] border border-white/[0.08] rounded-xl px-4 py-3 font-mono text-base leading-relaxed">
+      {children}
     </div>
   );
 }
 
 export function PlanExplanation({ settings, updateSettings, notify }) {
-  const [editingSection, setEditingSection] = useState(null);
+  const s = settings || {};
+  const wt = s.startWeight || 221;
+  const goalWt = s.goalWeight || 200;
+  const age = s.age || 48;
+  const goal = s.goal || 'fat-loss';
+  const pace = s.pace || 'moderate';
+  const waterBottles = s.waterBottles || 3;
+  const heightStr = s.height || "6'1\"";
 
-  const s = settings;
-  const bmr = calcBMR(s.startWeight || 221, s.height, s.age || 48);
-  const tdee = Math.round(bmr * activityFactor(s.goal));
-  const recCal = calcRecommendedCalories(s);
-  const recProtein = calcRecommendedProtein(s);
-  const weeks = weeksToGoal(s);
-  const estDate = goalDate(weeks);
-  const deficit = s.goal === 'muscle' ? dailySurplus(s.pace) : dailyDeficit(s.pace);
-  const lbsPerWeek = ((dailyDeficit(s.pace) * 7) / 3500).toFixed(1);
-  const isMuscleBuild = s.goal === 'muscle';
-  const totalLbs = Math.max(0, (s.startWeight || 221) - (s.goalWeight || 200));
+  const { kg, cm, bmr, bmrSteps, bmrParts } = calcMifflin(wt, heightStr, age);
+  const activityMult = 1.55;
+  const tdee = Math.round(bmr * activityMult);
 
-  const saveCalories = (val) => {
-    const n = parseInt(val);
-    if (n > 0) { updateSettings({ calories: n }); notify('Calories updated'); }
-    setEditingSection(null);
-  };
-  const saveProtein = (val) => {
-    const n = parseInt(val);
-    if (n > 0) { updateSettings({ protein: n }); notify('Protein updated'); }
-    setEditingSection(null);
-  };
-  const saveWater = (val) => {
-    const n = parseInt(val);
-    if (n > 0 && n <= 6) { updateSettings({ waterBottles: n }); notify('Water target updated'); }
-    setEditingSection(null);
-  };
+  const deficits = { fast: 750, moderate: 500, slow: 250 };
+  const rates = { fast: 1.5, moderate: 1.0, slow: 0.5 };
+  const deficit = deficits[pace] || 500;
+  const lbsPerWeek = rates[pace] || 1.0;
+
+  const isMuscleBuild = goal === 'muscle';
+
+  let calTarget, calExplanation;
+  if (isMuscleBuild) {
+    calTarget = Math.round(tdee + 300);
+    calExplanation = `${tdee} + 300 surplus = ${calTarget.toLocaleString()} cal/day`;
+  } else {
+    calTarget = Math.max(1200, Math.round(tdee - deficit));
+    calExplanation = `${tdee} − ${deficit} = ${calTarget.toLocaleString()}, rounded to ${s.calories || calTarget} cal/day`;
+  }
+
+  const proteinRatio = isMuscleBuild ? 1.0 : 0.73;
+  const protein = Math.round(wt * proteinRatio);
+
+  const halfBodyWeightOz = Math.round(wt / 2);
+  const waterOz = waterBottles * 32;
+
+  const lbsToLose = Math.max(0, wt - goalWt);
+  const weeksToGoal = lbsToLose > 0 && !isMuscleBuild ? Math.ceil(lbsToLose / lbsPerWeek) : null;
+  const estDate = weeksToGoal ? goalDate(weeksToGoal) : null;
 
   return (
-    <div className="px-5 pt-2 pb-8">
-      {/* Profile summary */}
-      <div className="bg-gradient-to-br from-blue-500/10 to-purple-500/10 border border-blue-500/20
-        rounded-2xl px-4 py-4 mb-6">
-        <div className="text-base text-blue-300/80 font-semibold uppercase tracking-wider mb-2">Your Profile</div>
-        <div className="grid grid-cols-2 gap-y-1 text-base text-white/70">
-          <span>Age: <strong className="text-white">{s.age || 48}</strong></span>
-          <span>Height: <strong className="text-white">{s.height || "6'1\""}</strong></span>
-          <span>Current: <strong className="text-white">{s.startWeight || 221} lbs</strong></span>
-          <span>Goal: <strong className="text-white">{s.goalWeight || 200} lbs</strong></span>
-          <span>Goal type: <strong className="text-white">{GOAL_LABELS[s.goal] || s.goal}</strong></span>
-          <span>Pace: <strong className="text-white">{PACE_LABELS[s.pace] || s.pace}</strong></span>
+    <div className="px-5 pt-2 pb-10">
+      {/* Profile card */}
+      <div className="bg-blue-500/10 border border-blue-500/25 rounded-2xl px-4 py-4 mb-6">
+        <div className="text-base font-bold text-blue-300 uppercase tracking-wider mb-2">YOUR PLAN ANALYSIS</div>
+        <div className="text-base text-white/70">
+          Based on: Male, {age} years old, {heightStr}, {wt} lbs<br />
+          Goal: {isMuscleBuild ? 'Build muscle' : `Lose fat — target ${goalWt} lbs`}
+          {!isMuscleBuild && `, ${pace} pace`}
         </div>
       </div>
 
-      <div className="text-base font-bold text-white/30 uppercase tracking-widest mb-4">
-        How we get you there
-      </div>
-
-      {/* Calories */}
-      <Section
-        icon="📊"
-        title={`Daily Calories: ${s.calories} cal`}
-        onEdit={() => setEditingSection(editingSection === 'cal' ? null : 'cal')}
-      >
-        <p>
-          Your estimated maintenance (TDEE) is ~{tdee.toLocaleString()} cal/day, calculated using
-          the Mifflin-St Jeor equation based on your height, weight, age, and activity level.
-          BMR = {bmr.toLocaleString()} cal × activity factor {activityFactor(s.goal)} = {tdee.toLocaleString()} cal.
-        </p>
-        {isMuscleBuild ? (
-          <p>
-            For muscle building, we add {deficit} cal/day above maintenance to provide energy for
-            muscle growth without excessive fat gain.
-          </p>
-        ) : (
-          <p>
-            We subtract {deficit} cal/day to create a deficit targeting ~{lbsPerWeek} lb of fat
-            loss per week. A pound of fat ≈ 3,500 calories, so {deficit} cal/day × 7 = {(deficit * 7).toLocaleString()} cal/week ≈ {lbsPerWeek} lb/week.
-          </p>
-        )}
-        <p className="text-base text-white/50">
-          Recommended based on your profile: <strong className="text-white">{recCal.toLocaleString()} cal</strong>.
-          Your current setting: <strong className="text-white">{s.calories.toLocaleString()} cal</strong>.
-        </p>
-        {editingSection === 'cal' && (
-          <InlineEdit label="Daily Calories" value={s.calories} onSave={saveCalories} />
-        )}
-        <div className="flex flex-wrap gap-3 mt-1">
-          <SourceLink label="Mifflin-St Jeor Equation (PubMed)" url="https://pubmed.ncbi.nlm.nih.gov/15534426/" />
-          <SourceLink label="CDC Weight Loss Guidelines" url="https://www.cdc.gov/healthyweight/losing_weight/index.html" />
-        </div>
-      </Section>
-
-      {/* Protein */}
-      <Section
-        icon="🥩"
-        title={`Daily Protein: ${s.protein}g`}
-        onEdit={() => setEditingSection(editingSection === 'protein' ? null : 'protein')}
-      >
-        <p>
-          {isMuscleBuild
-            ? `Building muscle requires 0.8–1.0g of protein per pound of body weight. At ${s.startWeight || 221} lbs, that's ${Math.round((s.startWeight || 221) * 0.8)}–${Math.round((s.startWeight || 221) * 1.0)}g. High protein intake provides amino acids for muscle protein synthesis.`
-            : `During fat loss, higher protein intake (0.7–1.0g per pound of body weight) preserves muscle mass while you lose fat. At ${s.startWeight || 221} lbs, ${recProtein}g (~${(recProtein / (s.startWeight || 221)).toFixed(2)}g/lb) is the minimum effective dose.`
-          }
-        </p>
-        <p>
-          Higher protein also increases satiety and the thermic effect of food — your body burns
-          more calories just digesting it.
-        </p>
-        <p className="text-base text-white/50">
-          Recommended: <strong className="text-white">{recProtein}g</strong>. Current: <strong className="text-white">{s.protein}g</strong>.
-        </p>
-        {editingSection === 'protein' && (
-          <InlineEdit label="Daily Protein (g)" value={s.protein} onSave={saveProtein} />
-        )}
-        <div className="flex flex-wrap gap-3 mt-1">
-          <SourceLink label="Protein During Caloric Restriction (PubMed)" url="https://pubmed.ncbi.nlm.nih.gov/28698222/" />
-          <SourceLink label="Examine.com Protein Guide" url="https://examine.com/guides/protein-intake/" />
-        </div>
-      </Section>
-
-      {/* Water */}
-      <Section
-        icon="💧"
-        title={`Daily Water: ${s.waterBottles * 32}oz (${s.waterBottles} × 32oz bottles)`}
-        onEdit={() => setEditingSection(editingSection === 'water' ? null : 'water')}
-      >
-        <p>
-          General guideline is roughly half your body weight in ounces. At {s.startWeight || 221} lbs,
-          that's ~{Math.round((s.startWeight || 221) / 2)} oz. We use {s.waterBottles * 32} oz
-          ({s.waterBottles} × 32oz bottles) as the daily target for simplicity.
-        </p>
-        {(s.goal === 'heart-health') && (
-          <p>
-            For blood pressure management, proper hydration is especially important — even mild
-            dehydration can raise blood pressure. Aim to spread your intake throughout the day.
-          </p>
-        )}
-        <p>
-          Proper hydration improves workout performance, reduces false hunger signals, and helps
-          regulate blood pressure.
-        </p>
-        {editingSection === 'water' && (
-          <InlineEdit label="Water bottles (32oz)" value={s.waterBottles} onSave={saveWater} />
-        )}
-        <div className="flex flex-wrap gap-3 mt-1">
-          <SourceLink label="Mayo Clinic: Hydration" url="https://www.mayoclinic.org/healthy-lifestyle/nutrition-and-healthy-eating/in-depth/water/art-20044256" />
-          <SourceLink label="Hydration and Blood Pressure (PubMed)" url="https://pubmed.ncbi.nlm.nih.gov/19344527/" />
-        </div>
-      </Section>
-
-      {/* Running */}
-      <Section icon="🏃" title="Running: 4–5 days/week">
-        <p>
-          {s.goal === 'heart-health'
-            ? 'As someone focused on heart health, cardiovascular exercise is your #1 priority. Running 4–5 times per week at moderate intensity directly reduces blood pressure and improves heart function.'
-            : s.goal === 'muscle'
-            ? 'Running 2–3 days/week maintains cardiovascular fitness without excessively interfering with muscle recovery. Too much cardio can eat into the calorie surplus needed for muscle growth.'
-            : 'Running 4–5 days/week burns additional calories, improves cardiovascular health, and helps maintain the deficit needed for fat loss.'
-          }
-        </p>
-        <p>
-          Saturday long runs build aerobic base progressively:
-          <br /><span className="text-white/50 text-base">Weeks 1–2: 2.5 mi → Weeks 3–4: 3 mi → Weeks 5–6: 3.5 mi → Weeks 7+: 4 mi</span>
-        </p>
-        <div className="flex flex-wrap gap-3 mt-1">
-          <SourceLink label="Exercise and Hypertension (PubMed)" url="https://pubmed.ncbi.nlm.nih.gov/15076798/" />
-          <SourceLink label="AHA Exercise Recommendations" url="https://www.heart.org/en/healthy-living/fitness/fitness-basics/aha-recs-for-physical-activity-in-adults" />
-        </div>
-      </Section>
-
-      {/* Strength training */}
-      <Section icon="🏋️" title="Strength Training: 3 days/week, Full Body A/B Split">
-        <p>
-          Full-body A/B alternating split because each muscle gets trained 2–3× per week (optimal
-          for strength gains according to research). A/B alternation covers all movement patterns:
-          push, pull, squat, and hinge.
-        </p>
-        <div className="bg-white/[0.04] border border-white/[0.07] rounded-xl p-3 space-y-1.5">
-          <div className="text-base font-bold text-blue-400 mb-1">Workout A — Push & Squat</div>
-          {[
-            'Goblet Squat — quads, glutes, core. Joint-friendly squat pattern.',
-            'DB Bench Press — chest, front delts, triceps. Foundational push.',
-            'Lat Pulldown — back, biceps. Balances pushing movements.',
-            'DB Row — back, rear delts. Unilateral work corrects imbalances.',
-          ].map((t, i) => <div key={i} className="text-base text-white/60">▸ {t}</div>)}
-        </div>
-        <div className="bg-white/[0.04] border border-white/[0.07] rounded-xl p-3 space-y-1.5">
-          <div className="text-base font-bold text-purple-400 mb-1">Workout B — Hinge & Press</div>
-          {[
-            'DB Romanian Deadlift — hamstrings, glutes, lower back. Essential hinge.',
-            'Overhead Press — shoulders, triceps, core. Functional pressing strength.',
-            'Lat Pulldown — back volume. The back benefits from higher frequency.',
-            'DB Reverse Lunge — quads, glutes. Builds single-leg stability.',
-          ].map((t, i) => <div key={i} className="text-base text-white/60">▸ {t}</div>)}
-        </div>
-        <p>
-          {isMuscleBuild
-            ? 'Why 4×6–8? Lower rep ranges with heavier weight maximize mechanical tension — the primary driver of strength and muscle growth. Progressive overload: increase weight by 2.5–5 lbs when you hit the top of the rep range.'
-            : 'Why 3×12? The 8–15 rep range builds both strength and muscle. 12 reps at moderate weight is ideal for beginners — allows focus on form while building work capacity and muscle.'
-          }
-        </p>
-        <div className="flex flex-wrap gap-3 mt-1">
-          <SourceLink label="Training Frequency Meta-Analysis (PubMed)" url="https://pubmed.ncbi.nlm.nih.gov/27102172/" />
-          <SourceLink label="Rep Range and Hypertrophy (PubMed)" url="https://pubmed.ncbi.nlm.nih.gov/28834797/" />
-        </div>
-      </Section>
-
-      {/* Timeline */}
-      {totalLbs > 0 && (
-        <Section icon="📅" title="Your Timeline">
-          <p>
-            At {lbsPerWeek} lbs/week ({deficit} cal/day deficit):
-          </p>
-          <div className="bg-white/[0.04] rounded-xl p-3 space-y-2">
-            {[0.25, 0.5, 0.75, 1.0].map(pct => {
-              const lbs = Math.round(totalLbs * pct);
-              const w = Math.ceil(lbs / parseFloat(lbsPerWeek));
-              const d = new Date();
-              d.setDate(d.getDate() + w * 7);
-              const label = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-              return (
-                <div key={pct} className="flex justify-between text-base">
-                  <span className="text-white/60">Week {w}: -{lbs} lbs → {(s.startWeight || 221) - lbs} lbs</span>
-                  <span className="text-white/40 text-base">{label}</span>
-                </div>
-              );
-            })}
-            <div className="flex justify-between text-lg font-bold border-t border-white/[0.08] pt-2 mt-1">
-              <span className="text-green-400">GOAL: {s.goalWeight || 200} lbs</span>
-              <span className="text-green-400">{estDate}</span>
-            </div>
+      {/* Step 1: Maintenance Calories */}
+      <Step num="1" title="Your Maintenance Calories">
+        <p>Using the <strong className="text-white">Mifflin-St Jeor equation</strong> (the gold standard for estimating metabolic rate):</p>
+        <CalcBox>
+          <div className="text-white/50 text-base mb-1">BMR = (10 × kg) + (6.25 × cm) − (5 × age) − 5</div>
+          <div className="text-white/80">BMR = {bmrSteps}</div>
+          <div className="text-white/60 text-base">    = {bmrParts}</div>
+          <div className="text-white font-bold mt-1">BMR = {bmr.toLocaleString()} cal/day</div>
+          <div className="border-t border-white/[0.08] mt-2 pt-2">
+            <div className="text-white/60 text-base">Activity multiplier: {activityMult} (moderate — exercise 4-5×/week)</div>
+            <div className="text-white font-bold">TDEE = {bmr.toLocaleString()} × {activityMult} = {tdee.toLocaleString()} cal/day</div>
           </div>
-          <p className="text-base text-white/50">
-            Want faster results? <span className="text-white">Aggressive pace</span> (750 cal deficit) reaches the goal in ~{Math.ceil(totalLbs / ((750 * 7) / 3500))} weeks.
-            <br />
-            Prefer slower? <span className="text-white">Gradual pace</span> (250 cal deficit) in ~{Math.ceil(totalLbs / ((250 * 7) / 3500))} weeks.
-          </p>
-        </Section>
+        </CalcBox>
+        <p>You burn approximately <strong className="text-white">{tdee.toLocaleString()} calories per day</strong>.</p>
+        <SourceLink label="Mifflin et al., 1990 (PubMed)" url="https://pubmed.ncbi.nlm.nih.gov/2305711/" />
+      </Step>
+
+      {/* Step 2: Calorie Target */}
+      <Step num="2" title="Your Calorie Target">
+        {isMuscleBuild ? (
+          <>
+            <p>For muscle growth, a modest <strong className="text-white">300 cal/day surplus</strong> provides energy for muscle protein synthesis without excessive fat gain.</p>
+            <CalcBox>
+              <div>{tdee.toLocaleString()} + 300 surplus = <strong className="text-white">{calTarget.toLocaleString()} cal/day</strong></div>
+            </CalcBox>
+          </>
+        ) : (
+          <>
+            <p>A <strong className="text-white">{deficit} cal/day deficit</strong> produces ~{lbsPerWeek} lb fat loss per week.</p>
+            <CalcBox>
+              <div>{tdee.toLocaleString()} − {deficit} = {calTarget.toLocaleString()}, rounded to <strong className="text-white">{(s.calories || calTarget).toLocaleString()} cal/day</strong></div>
+            </CalcBox>
+            <p>3,500 calories ≈ 1 pound of fat. At {deficit} cal/day × 7 = {(deficit * 7).toLocaleString()} cal/week ÷ 3,500 = ~{lbsPerWeek} lb/week.</p>
+            <SourceLink label="Hall et al., 2011 (PubMed)" url="https://pubmed.ncbi.nlm.nih.gov/21872751/" />
+          </>
+        )}
+      </Step>
+
+      {/* Step 3: Protein */}
+      <Step num="3" title="Your Protein Target">
+        {isMuscleBuild ? (
+          <p>Building muscle requires <strong className="text-white">1.0g protein per pound</strong> of body weight to maximize muscle protein synthesis.</p>
+        ) : (
+          <p>During a calorie deficit, <strong className="text-white">0.7–1.0g protein per pound</strong> of body weight preserves muscle mass.</p>
+        )}
+        <CalcBox>
+          <div>{wt} lbs × {proteinRatio}g/lb = <strong className="text-white">{protein}g/day</strong></div>
+        </CalcBox>
+        <p>Your current protein target: <strong className="text-white">{s.protein || protein}g/day</strong>.</p>
+        <SourceLink label="Morton et al., 2018 (PubMed)" url="https://pubmed.ncbi.nlm.nih.gov/28698222/" />
+      </Step>
+
+      {/* Step 4: Water */}
+      <Step num="4" title="Your Water Target">
+        <p>General guideline: half your body weight in ounces.</p>
+        <CalcBox>
+          <div>{wt} ÷ 2 = {halfBodyWeightOz} oz → rounded to <strong className="text-white">{waterOz} oz ({waterBottles} × 32oz bottles)</strong></div>
+        </CalcBox>
+        <p>Adequate hydration supports blood pressure regulation, reduces false hunger signals, and improves workout performance.</p>
+        <SourceLink label="Mayo Clinic — Hydration Guidelines" url="https://www.mayoclinic.org/healthy-lifestyle/nutrition-and-healthy-eating/in-depth/water/art-20044256" />
+      </Step>
+
+      {/* Step 5: Timeline */}
+      {!isMuscleBuild && weeksToGoal && (
+        <Step num="5" title="Your Timeline">
+          <CalcBox>
+            <div className="text-white/70">Weight to lose: {lbsToLose} lbs</div>
+            <div className="text-white/70">Rate: ~{lbsPerWeek} lb/week ({pace} pace)</div>
+            <div className="text-white/70">Estimated: {Math.floor(weeksToGoal / 4)}–{Math.ceil(weeksToGoal / 4) + 1} months</div>
+            <div className="text-white font-bold mt-1">Target date: approximately {estDate}</div>
+          </CalcBox>
+        </Step>
       )}
 
-      <p className="text-base text-white/25 text-center mt-2 leading-relaxed">
-        These calculations are estimates based on population averages. Individual results vary.
-        Track your actual progress and adjust targets in Settings if needed.
-      </p>
+      {/* Verify box */}
+      <div className="bg-white/[0.03] border border-white/[0.06] rounded-2xl px-4 py-4 mt-2">
+        <div className="text-base font-semibold text-white/50 mb-2">Verify these numbers independently:</div>
+        <div className="space-y-1">
+          <SourceLink label="Calorie calculator (calculator.net)" url="https://www.calculator.net/calorie-calculator.html" />
+          <div></div>
+          <SourceLink label="Protein intake guide (examine.com)" url="https://examine.com/guides/protein-intake/" />
+        </div>
+        <p className="text-base text-white/30 mt-3 leading-relaxed">
+          These numbers are calculated using standard clinical formulas and are estimates
+          based on population averages. Adjust in Settings if your results differ.
+        </p>
+      </div>
     </div>
   );
 }

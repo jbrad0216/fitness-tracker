@@ -10,7 +10,6 @@ import { DashboardTab } from './components/DashboardTab';
 import { GymTab } from './components/GymTab';
 import { MoreTab } from './components/MoreTab';
 import { OnboardingFlow } from './components/OnboardingFlow';
-import { BarcodeScanner } from './components/BarcodeScanner';
 
 export default function App() {
   const TAB_ORDER = ['home', 'log', 'gym', 'more'];
@@ -18,8 +17,6 @@ export default function App() {
   const [notification, setNotification] = useState(null);
   const [tabKey, setTabKey] = useState(0);
   const [updateAvailable, setUpdateAvailable] = useState(false);
-  const [showScanner, setShowScanner] = useState(false);
-  const [chatPrefill, setChatPrefill] = useState('');
   const swipeStartX = useRef(null);
   const swipeStartY = useRef(null);
 
@@ -33,7 +30,6 @@ export default function App() {
       if (steps) data.steps = parseInt(steps);
       if (activeCal) data.activeCal = parseInt(activeCal);
       localStorage.setItem('ft_apple-health-today', JSON.stringify({ ...data, date: new Date().toISOString().split('T')[0] }));
-      // Clean URL without reload
       const url = new URL(window.location.href);
       url.search = '';
       window.history.replaceState({}, '', url.toString());
@@ -51,12 +47,10 @@ export default function App() {
   const changeTab = useCallback((t) => {
     setTab(t);
     setTabKey(k => k + 1);
-    if (t !== 'log') setChatPrefill('');
   }, []);
 
-  // Swipe left/right to switch tabs (only for the 4 main tabs)
   const handleTouchStart = useCallback((e) => {
-    if (tab === 'log') return; // don't swipe away from log
+    if (tab === 'log') return;
     swipeStartX.current = e.touches[0].clientX;
     swipeStartY.current = e.touches[0].clientY;
   }, [tab]);
@@ -75,7 +69,7 @@ export default function App() {
   const { settings, updateSettings, resetSettings, loaded: settingsLoaded } = useSettings();
   const { templates, updateExercise, addExercise: addTemplateEx, removeExercise: removeTemplateEx, moveExercise, resetTemplates } = useWorkoutTemplates();
   const daily = useDaily();
-  const { weighIns, addWeighIn, latest } = useWeighIns();
+  const { weighIns, addWeighIn, removeWeighIn, latest } = useWeighIns();
   const { log: liftLog, logLift, getLastLift } = useLiftLog();
 
   const notify = useCallback((msg) => setNotification(msg), []);
@@ -83,7 +77,7 @@ export default function App() {
 
   if (!daily.loaded || !settingsLoaded) {
     return (
-      <div className="min-h-screen flex items-center justify-center text-white/50">
+      <div className="min-h-screen flex items-center justify-center text-white/50 text-lg">
         Loading...
       </div>
     );
@@ -105,12 +99,6 @@ export default function App() {
 
   const isLight = settings.theme === 'light';
 
-  // Open the Log tab and optionally pre-fill the input
-  const openLog = (prefill = '') => {
-    setChatPrefill(prefill);
-    changeTab('log');
-  };
-
   return (
     <div
       className={`min-h-screen max-w-lg mx-auto ${isLight ? 'light-mode' : ''}`}
@@ -122,11 +110,11 @@ export default function App() {
 
       {updateAvailable && (
         <div className="fixed top-0 left-0 right-0 z-50 max-w-lg mx-auto
-          bg-blue-500/95 text-white px-4 py-3 text-sm font-semibold
+          bg-blue-500/95 text-white px-4 py-3 text-base font-semibold
           flex justify-between items-center">
           <span>Update available</span>
           <button onClick={() => window.location.reload()}
-            className="bg-white/20 rounded-lg px-3 py-1 text-xs font-bold border-none cursor-pointer">
+            className="bg-white/20 rounded-lg px-3 py-2 text-sm font-bold border-none cursor-pointer">
             Reload
           </button>
         </div>
@@ -147,16 +135,6 @@ export default function App() {
             daily={{ ...daily.data, totalCal: daily.totalCal, totalProtein: daily.totalProtein }}
             targets={targets}
             addFood={daily.addFood}
-            setWater={daily.setWater}
-            toggleMeditation={daily.toggleMeditation}
-            addRun={daily.addRun}
-            addWeighIn={addWeighIn}
-            addExercise={daily.addExercise}
-            logLift={logLift}
-            getLastLift={getLastLift}
-            removeFood={daily.removeFood}
-            onOpenScanner={() => setShowScanner(true)}
-            initialInput={chatPrefill}
             notify={notify}
           />
         </div>
@@ -164,8 +142,7 @@ export default function App() {
 
       {/* All other tabs */}
       {tab !== 'log' && (
-        <div key={tabKey} className="pb-24 animate-tab-in"
-          style={{ paddingTop: tab === 'home' ? 0 : 0 }}>
+        <div key={tabKey} className="pb-24 animate-tab-in">
 
           {tab === 'home' && (
             <ErrorBoundary>
@@ -180,6 +157,7 @@ export default function App() {
                 removeFood={daily.removeFood}
                 weighIns={weighIns}
                 addWeighIn={addWeighIn}
+                removeWeighIn={removeWeighIn}
                 latest={latest}
                 startWeight={settings.startWeight}
                 goalWeight={settings.goalWeight}
@@ -187,7 +165,7 @@ export default function App() {
                 name={settings.name}
                 notify={notify}
                 onNavigate={changeTab}
-                onOpenLog={openLog}
+                onOpenLog={() => changeTab('log')}
                 settings={settings}
                 updateSettings={updateSettings}
               />
@@ -215,6 +193,7 @@ export default function App() {
               <MoreTab
                 weighIns={weighIns}
                 addWeighIn={addWeighIn}
+                removeWeighIn={removeWeighIn}
                 latest={latest}
                 liftLog={liftLog}
                 startWeight={settings.startWeight}
@@ -233,17 +212,6 @@ export default function App() {
 
       {/* Bottom nav */}
       <BottomNav active={tab} onChange={changeTab} />
-
-      {/* Barcode scanner overlay */}
-      {showScanner && (
-        <BarcodeScanner
-          onScan={(barcode) => {
-            setShowScanner(false);
-            window.__chatHandleBarcode?.(barcode);
-          }}
-          onClose={() => setShowScanner(false)}
-        />
-      )}
     </div>
   );
 }

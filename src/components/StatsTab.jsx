@@ -175,7 +175,7 @@ function InteractiveChart({ weighIns, startWeight, goalWeight }) {
   );
 }
 
-export function StatsTab({ weighIns, addWeighIn, latest, liftLog, startWeight, goalWeight, notify }) {
+export function StatsTab({ weighIns, addWeighIn, removeWeighIn, latest, liftLog, startWeight, goalWeight, notify }) {
   const [weightInput, setWeightInput] = useState('');
   const [showDataSettings, setShowDataSettings] = useState(false);
   const [importText, setImportText] = useState('');
@@ -338,17 +338,30 @@ export function StatsTab({ weighIns, addWeighIn, latest, liftLog, startWeight, g
             const diff = prev ? wi.weight - prev.weight : 0;
 
             return (
-              <div key={i}
-                className="flex justify-between py-2 border-b border-white/[0.06] last:border-0">
+              <div key={wi.date}
+                className="flex items-center justify-between py-2 border-b border-white/[0.06] last:border-0">
                 <span className="text-base text-white/50">{formatDateShort(wi.date)}</span>
-                <span className="text-base">
-                  {wi.weight} lbs
-                  {diff !== 0 && (
-                    <span className={`ml-2 text-base ${diff < 0 ? 'text-green-400' : 'text-red-400'}`}>
-                      {diff > 0 ? '+' : ''}{diff.toFixed(1)}
-                    </span>
+                <div className="flex items-center gap-3">
+                  <span className="text-base">
+                    {wi.weight} lbs
+                    {diff !== 0 && (
+                      <span className={`ml-2 text-base ${diff < 0 ? 'text-green-400' : 'text-red-400'}`}>
+                        {diff > 0 ? '+' : ''}{diff.toFixed(1)}
+                      </span>
+                    )}
+                  </span>
+                  {removeWeighIn && (
+                    <button
+                      onClick={() => {
+                        removeWeighIn(wi.date);
+                        notify('Weigh-in removed');
+                      }}
+                      className="w-12 h-12 rounded-lg bg-red-500/15 text-red-400 text-lg
+                        border-none cursor-pointer flex items-center justify-center active:bg-red-500/25">
+                      ×
+                    </button>
                   )}
-                </span>
+                </div>
               </div>
             );
           })}

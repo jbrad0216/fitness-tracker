@@ -45,10 +45,10 @@ function WorkoutEditor({ label, exercises, onUpdate, onRemove, onMove, onAdd }) 
                 <div className="text-base text-white/40">{ex.defaultWeight}lbs · {ex.sets}×{ex.reps}</div>
               </div>
               <div className="flex gap-1 ml-2 shrink-0">
-                <button onClick={() => onMove(i, -1)} disabled={i === 0} className="w-10 h-10 rounded-lg bg-white/[0.05] text-white/50 border-none cursor-pointer text-base disabled:opacity-20">↑</button>
-                <button onClick={() => onMove(i, 1)} disabled={i === exercises.length - 1} className="w-10 h-10 rounded-lg bg-white/[0.05] text-white/50 border-none cursor-pointer text-base disabled:opacity-20">↓</button>
-                <button onClick={() => startEdit(i)} className="w-10 h-10 rounded-lg bg-blue-500/15 text-blue-400 border-none cursor-pointer text-base">✏️</button>
-                <button onClick={() => onRemove(i)} className="w-7 h-7 rounded-lg bg-red-500/15 text-red-400 border-none cursor-pointer text-base">×</button>
+                <button onClick={() => onMove(i, -1)} disabled={i === 0} className="w-12 h-12 rounded-lg bg-white/[0.05] text-white/50 border-none cursor-pointer text-base disabled:opacity-20">↑</button>
+                <button onClick={() => onMove(i, 1)} disabled={i === exercises.length - 1} className="w-12 h-12 rounded-lg bg-white/[0.05] text-white/50 border-none cursor-pointer text-base disabled:opacity-20">↓</button>
+                <button onClick={() => startEdit(i)} className="w-12 h-12 rounded-lg bg-blue-500/15 text-blue-400 border-none cursor-pointer text-base">✏️</button>
+                <button onClick={() => onRemove(i)} className="w-12 h-12 rounded-lg bg-red-500/15 text-red-400 border-none cursor-pointer text-base">×</button>
               </div>
             </div>
           )}
