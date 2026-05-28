@@ -135,6 +135,9 @@ export default function App() {
             daily={{ ...daily.data, totalCal: daily.totalCal, totalProtein: daily.totalProtein }}
             targets={targets}
             addFood={daily.addFood}
+            addExercise={daily.addExercise}
+            logLift={logLift}
+            getLastLift={getLastLift}
             notify={notify}
           />
         </div>
@@ -155,6 +158,7 @@ export default function App() {
                 addRun={daily.addRun}
                 addFood={daily.addFood}
                 removeFood={daily.removeFood}
+                updateFood={daily.updateFood}
                 weighIns={weighIns}
                 addWeighIn={addWeighIn}
                 removeWeighIn={removeWeighIn}
@@ -177,8 +181,10 @@ export default function App() {
               <GymTab
                 daily={daily.data}
                 addRun={daily.addRun}
+                addRunEntry={daily.addRunEntry}
                 addExercise={daily.addExercise}
                 removeExercise={daily.removeExercise}
+                setWorkoutCalories={daily.setWorkoutCalories}
                 getLastLift={getLastLift}
                 logLift={logLift}
                 templates={templates}
@@ -204,6 +210,7 @@ export default function App() {
                 templates={templates}
                 workoutOps={{ updateExercise, addExercise: addTemplateEx, removeExercise: removeTemplateEx, moveExercise, resetTemplates }}
                 notify={notify}
+                onNavigate={changeTab}
               />
             </ErrorBoundary>
           )}

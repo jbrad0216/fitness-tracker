@@ -82,8 +82,12 @@ export const COMMON_FOODS = [
   { name: 'Impossible Whopper', brand: 'Burger King', cal: 630, protein: 25, fat: 34, carbs: 58, fiber: 4, servingSize: '1 burger' },
 
   // ─── Chipotle ───
-  { name: 'Chipotle Chicken Burrito', brand: 'Chipotle', cal: 900, protein: 51, fat: 32, carbs: 106, fiber: 10, servingSize: '1 burrito (typical build)' },
-  { name: 'Chipotle Chicken Bowl', brand: 'Chipotle', cal: 740, protein: 56, fat: 22, carbs: 78, fiber: 14, servingSize: '1 bowl (rice+beans+chicken)' },
+  { name: 'Chipotle Chicken Burrito', brand: 'Chipotle', cal: 1045, protein: 55, fat: 35, carbs: 120, fiber: 10, servingSize: '1 burrito' },
+  { name: 'Chipotle Chicken Burrito (extra protein)', brand: 'Chipotle', cal: 1100, protein: 65, fat: 37, carbs: 121, fiber: 10, servingSize: '1 burrito + double chicken' },
+  { name: 'Chipotle Chicken Bowl', brand: 'Chipotle', cal: 740, protein: 55, fat: 22, carbs: 78, fiber: 14, servingSize: '1 bowl (rice+beans+chicken)' },
+  { name: 'Chipotle Chicken Bowl (extra protein)', brand: 'Chipotle', cal: 795, protein: 65, fat: 24, carbs: 79, fiber: 14, servingSize: '1 bowl + double chicken' },
+  { name: 'Chipotle Chips and Guacamole', brand: 'Chipotle', cal: 770, protein: 7, fat: 43, carbs: 89, fiber: 12, servingSize: '1 bag chips + guac' },
+  { name: 'Chipotle Chicken Quesadilla', brand: 'Chipotle', cal: 830, protein: 48, fat: 43, carbs: 68, fiber: 4, servingSize: '1 quesadilla' },
   { name: 'Chipotle Chicken Tacos', brand: 'Chipotle', cal: 500, protein: 34, fat: 18, carbs: 52, servingSize: '3 tacos' },
   { name: 'Chipotle Steak Bowl', brand: 'Chipotle', cal: 760, protein: 54, fat: 24, carbs: 79, fiber: 14, servingSize: '1 bowl' },
   { name: 'Chipotle Veggie Bowl', brand: 'Chipotle', cal: 620, protein: 18, fat: 18, carbs: 90, fiber: 20, servingSize: '1 bowl' },

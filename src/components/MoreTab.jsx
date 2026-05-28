@@ -1,9 +1,183 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { StatsTab } from './StatsTab';
 import { SettingsTab } from './SettingsTab';
 import { PlanExplanation } from './PlanExplanation';
 import { ErrorBoundary } from './UI';
-import { load } from '../data/storage';
+import { load, save } from '../data/storage';
+
+// ─── Machine Management for More → My Equipment ───
+const MACHINE_MUSCLES = ['Chest', 'Back', 'Shoulders', 'Arms', 'Legs', 'Core', 'Full Body'];
+
+function compressPhoto(file, callback) {
+  const reader = new FileReader();
+  reader.onload = (ev) => {
+    const img = new Image();
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      const scale = Math.min(200 / img.width, 200 / img.height, 1);
+      canvas.width = Math.round(img.width * scale);
+      canvas.height = Math.round(img.height * scale);
+      canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+      callback(canvas.toDataURL('image/jpeg', 0.7));
+    };
+    img.src = ev.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+function MachineForm({ existing, onSave, onClose }) {
+  const [name, setName] = useState(existing?.name || '');
+  const [muscles, setMuscles] = useState(existing?.muscleGroups || []);
+  const [startWeight, setStartWeight] = useState(String(existing?.startingWeight || ''));
+  const [photo, setPhoto] = useState(existing?.photo || null);
+  const fileRef = useRef(null);
+
+  const toggleMuscle = (m) =>
+    setMuscles(prev => prev.includes(m) ? prev.filter(x => x !== m) : [...prev, m]);
+
+  const handlePhoto = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    compressPhoto(file, setPhoto);
+  };
+
+  const inputCls = "w-full bg-white/[0.08] border border-white/[0.1] rounded-xl px-4 h-14 text-lg text-white outline-none focus:border-blue-500/60 placeholder:text-white/25";
+
+  return (
+    <div className="fixed inset-0 z-50 bg-[#0f1117] overflow-y-auto"
+      style={{ paddingTop: 'max(env(safe-area-inset-top), 16px)', paddingBottom: 'max(env(safe-area-inset-bottom), 32px)' }}>
+      <div className="flex items-center gap-3 px-4 mb-6">
+        <button onClick={onClose}
+          className="w-12 h-12 rounded-xl bg-white/[0.08] text-white text-2xl border-none cursor-pointer flex items-center justify-center">
+          ‹
+        </button>
+        <h1 className="text-2xl font-bold">{existing ? 'EDIT MACHINE' : 'ADD MACHINE'}</h1>
+      </div>
+      <div className="px-4 space-y-4">
+        <div>
+          <div className="text-base font-semibold text-white/60 mb-2">Machine Name</div>
+          <input type="text" inputMode="text" autoComplete="off"
+            value={name} onChange={e => setName(e.target.value)}
+            placeholder="e.g. Chest Press Machine" className={inputCls} />
+        </div>
+        <div>
+          <div className="text-base font-semibold text-white/60 mb-2">Muscle Group(s)</div>
+          <div className="flex flex-wrap gap-2">
+            {MACHINE_MUSCLES.map(m => (
+              <button key={m} onClick={() => toggleMuscle(m)}
+                className={`h-12 px-4 rounded-xl text-base font-semibold border-none cursor-pointer
+                  ${muscles.includes(m) ? 'bg-blue-500 text-white' : 'bg-white/[0.06] text-white/50'}`}>
+                {m}
+              </button>
+            ))}
+          </div>
+        </div>
+        <div>
+          <div className="text-base font-semibold text-white/60 mb-2">Starting Weight (lbs)</div>
+          <input type="text" inputMode="numeric" autoComplete="off"
+            value={startWeight} onChange={e => setStartWeight(e.target.value)}
+            placeholder="e.g. 90" className={inputCls} />
+        </div>
+        <div>
+          <div className="text-base font-semibold text-white/60 mb-2">Machine Photo (optional)</div>
+          {photo ? (
+            <div className="relative inline-block">
+              <img src={photo} alt="Machine" className="w-24 h-24 rounded-xl object-cover" />
+              <button onClick={() => setPhoto(null)}
+                className="absolute -top-2 -right-2 w-8 h-8 rounded-full bg-red-500 text-white text-sm border-none cursor-pointer">×</button>
+            </div>
+          ) : (
+            <button onClick={() => fileRef.current?.click()}
+              className="w-full bg-white/[0.06] border border-white/[0.1] border-solid text-white/60 rounded-xl h-14 text-base font-semibold cursor-pointer active:opacity-70">
+              📸 Take Photo
+            </button>
+          )}
+          <input ref={fileRef} type="file" accept="image/*" capture="environment" onChange={handlePhoto} className="hidden" />
+        </div>
+        <button onClick={() => {
+          if (!name.trim()) return;
+          onSave({
+            id: existing?.id || `machine-${Date.now()}`,
+            name: name.trim(),
+            muscleGroups: muscles.length > 0 ? muscles : ['Full Body'],
+            startingWeight: parseFloat(startWeight) || 0,
+            photo,
+            lastWeight: existing?.lastWeight || (parseFloat(startWeight) || 0),
+          });
+        }} disabled={!name.trim()}
+          className="w-full bg-blue-500 text-white rounded-2xl h-14 text-lg font-bold border-none cursor-pointer active:opacity-80 disabled:opacity-40">
+          {existing ? 'SAVE CHANGES' : 'ADD MACHINE'}
+        </button>
+        <button onClick={onClose}
+          className="w-full bg-transparent text-white/40 h-12 text-base border-none cursor-pointer">
+          Cancel
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function EquipmentPage() {
+  const [machines, setMachines] = useState(() => load('machines', []));
+  const [editingMachine, setEditingMachine] = useState(null);
+  const [showAddForm, setShowAddForm] = useState(false);
+
+  const saveMachines = (next) => {
+    save('machines', next);
+    setMachines(next);
+  };
+
+  const handleSave = (machine) => {
+    const idx = machines.findIndex(m => m.id === machine.id);
+    const next = idx >= 0
+      ? machines.map(m => m.id === machine.id ? machine : m)
+      : [...machines, machine];
+    saveMachines(next);
+    setShowAddForm(false);
+    setEditingMachine(null);
+  };
+
+  const handleDelete = (id) => saveMachines(machines.filter(m => m.id !== id));
+
+  if (showAddForm || editingMachine) {
+    return <MachineForm existing={editingMachine} onSave={handleSave} onClose={() => { setShowAddForm(false); setEditingMachine(null); }} />;
+  }
+
+  return (
+    <div className="px-5 py-3 pb-28">
+      <button onClick={() => setShowAddForm(true)}
+        className="w-full bg-blue-500 text-white rounded-2xl h-14 text-lg font-bold border-none cursor-pointer active:opacity-80 mb-4">
+        + Add Machine
+      </button>
+      {machines.length === 0 ? (
+        <div className="text-center py-10 text-white/30">
+          <div className="text-4xl mb-3">🏋️</div>
+          <div className="text-lg">No machines yet.</div>
+          <div className="text-base mt-1">Add weight machines you have access to.</div>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {machines.map(m => (
+            <div key={m.id} className="bg-white/[0.05] border border-white/[0.08] rounded-2xl px-4 py-3 flex items-center gap-3">
+              {m.photo && <img src={m.photo} alt={m.name} className="w-12 h-12 rounded-xl object-cover shrink-0" />}
+              <div className="flex-1 min-w-0">
+                <div className="text-base font-bold truncate">{m.name}</div>
+                <div className="text-base text-white/40">{m.muscleGroups?.join(', ')}</div>
+                {m.lastWeight > 0 && <div className="text-base text-white/30">Last: {m.lastWeight} lbs</div>}
+              </div>
+              <div className="flex gap-2 shrink-0">
+                <button onClick={() => setEditingMachine(m)}
+                  className="w-10 h-10 rounded-lg bg-white/[0.06] text-white/50 text-base border-none cursor-pointer">✎</button>
+                <button onClick={() => handleDelete(m.id)}
+                  className="w-10 h-10 rounded-lg bg-red-500/15 text-red-400 text-base border-none cursor-pointer">×</button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
 
 function BackButton({ onBack }) {
   return (
@@ -131,25 +305,9 @@ export function MoreTab({
   startWeight, goalWeight,
   settings, updateSettings, resetSettings,
   templates, workoutOps,
-  notify,
+  notify, onNavigate,
 }) {
   const [subPage, setSubPage] = useState(null);
-
-  if (subPage === 'plan') {
-    return (
-      <div>
-        <BackButton onBack={() => setSubPage(null)} />
-        <h2 className="text-2xl font-bold px-5 mb-4">My Plan</h2>
-        <ErrorBoundary>
-          <PlanExplanation
-            settings={settings}
-            updateSettings={updateSettings}
-            notify={notify}
-          />
-        </ErrorBoundary>
-      </div>
-    );
-  }
 
   if (subPage === 'progress') {
     return (
@@ -172,6 +330,22 @@ export function MoreTab({
     );
   }
 
+  if (subPage === 'plan') {
+    return (
+      <div>
+        <BackButton onBack={() => setSubPage(null)} />
+        <h2 className="text-2xl font-bold px-5 mb-4">My Plan</h2>
+        <ErrorBoundary>
+          <PlanExplanation
+            settings={settings}
+            updateSettings={updateSettings}
+            notify={notify}
+          />
+        </ErrorBoundary>
+      </div>
+    );
+  }
+
   if (subPage === 'history') {
     return (
       <div>
@@ -179,6 +353,18 @@ export function MoreTab({
         <h2 className="text-2xl font-bold px-5 mb-2">Workout History</h2>
         <ErrorBoundary>
           <WorkoutHistoryPage />
+        </ErrorBoundary>
+      </div>
+    );
+  }
+
+  if (subPage === 'equipment') {
+    return (
+      <div>
+        <BackButton onBack={() => setSubPage(null)} />
+        <h2 className="text-2xl font-bold px-5 mb-4">My Equipment</h2>
+        <ErrorBoundary>
+          <EquipmentPage />
         </ErrorBoundary>
       </div>
     );
@@ -213,15 +399,16 @@ export function MoreTab({
   }
 
   const items = [
+    { id: 'progress', label: 'Progress', desc: 'Weight chart, streak tracker, week comparison' },
     { id: 'plan', label: 'My Plan', desc: 'Calorie, protein, and water targets with the math explained' },
-    { id: 'progress', label: 'Progress', desc: 'Weight chart, streak tracker, personal records' },
     { id: 'history', label: 'Workout History', desc: 'Past workouts with exercises and weights used' },
-    { id: 'settings', label: 'Settings', desc: 'Profile, targets, equipment, data export & import' },
+    { id: 'equipment', label: 'My Equipment', desc: 'Manage your weight machines and gym gear' },
+    { id: 'settings', label: 'Settings', desc: 'Profile, targets, data export & import' },
     { id: 'about', label: 'About', desc: 'Version info and data sources' },
   ];
 
   return (
-    <div className="px-5 pb-4" style={{ paddingTop: 'max(env(safe-area-inset-top), 20px)' }}>
+    <div className="px-5 pb-28" style={{ paddingTop: 'max(env(safe-area-inset-top), 20px)' }}>
       <h2 className="text-2xl font-bold mb-5">More</h2>
       {items.map(item => (
         <button

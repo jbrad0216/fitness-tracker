@@ -3,6 +3,21 @@ import { formatDateShort, getToday } from '../data/constants';
 import { exportAllData, importAllData, load } from '../data/storage';
 import { Card, CardTitle, Input, Button, StatBox } from './UI';
 
+function getDayLogged(offsetDays) {
+  const d = new Date();
+  d.setDate(d.getDate() - offsetDays);
+  const key = `daily-${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  const day = load(key, null);
+  return !!(day && day.food && day.food.length > 0);
+}
+
+function getDayData(offsetDays) {
+  const d = new Date();
+  d.setDate(d.getDate() - offsetDays);
+  const key = `daily-${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  return load(key, null);
+}
+
 function getStreak() {
   let streak = 0;
   const d = new Date();
@@ -19,6 +34,57 @@ function getStreak() {
     streak++;
   }
   return streak;
+}
+
+function getBestStreak() {
+  let best = 0, current = 0;
+  for (let i = 0; i < 365; i++) {
+    if (getDayLogged(i)) {
+      current++;
+      if (current > best) best = current;
+    } else {
+      current = 0;
+    }
+  }
+  return best;
+}
+
+function getWeekComparison() {
+  let thisW = { cal: 0, protein: 0, days: 0 };
+  let lastW = { cal: 0, protein: 0, days: 0 };
+  let thisWt = null, lastWt = null;
+
+  for (let i = 0; i < 7; i++) {
+    const day = getDayData(i);
+    if (day && day.food && day.food.length > 0) {
+      thisW.cal += day.food.reduce((s, f) => s + (f.cal || 0), 0);
+      thisW.protein += day.food.reduce((s, f) => s + (f.protein || 0), 0);
+      thisW.days++;
+    }
+    if (i === 0 && day?.exercises?.length > 0) thisWt = (day.workoutCalories || 0);
+    const lastDay = getDayData(i + 7);
+    if (lastDay && lastDay.food && lastDay.food.length > 0) {
+      lastW.cal += lastDay.food.reduce((s, f) => s + (f.cal || 0), 0);
+      lastW.protein += lastDay.food.reduce((s, f) => s + (f.protein || 0), 0);
+      lastW.days++;
+    }
+  }
+
+  // Calories burned this week from runs and workouts
+  let burnedCal = 0;
+  for (let i = 0; i < 7; i++) {
+    const day = getDayData(i);
+    if (day) {
+      if (Array.isArray(day.runLog)) {
+        burnedCal += day.runLog.reduce((s, r) => s + (r.calories || 0), 0);
+      } else if (day.ranMiles > 0) {
+        burnedCal += Math.round(day.ranMiles * 100);
+      }
+      if (day.workoutCalories) burnedCal += day.workoutCalories;
+    }
+  }
+
+  return { thisW, lastW, burnedCal };
 }
 
 function getWeeklyAverages() {
@@ -185,11 +251,21 @@ export function StatsTab({ weighIns, addWeighIn, removeWeighIn, latest, liftLog,
   const weightToGo = currentWeight - goalWeight;
 
   const streak = useMemo(() => getStreak(), []);
+  const bestStreak = useMemo(() => getBestStreak(), []);
   const weeklyAvg = useMemo(() => getWeeklyAverages(), []);
+  const weekComparison = useMemo(() => getWeekComparison(), []);
   const projection = useMemo(() => projectGoalDate(weighIns, goalWeight), [weighIns, goalWeight]);
   const prs = useMemo(() => getPersonalRecords(liftLog), [liftLog]);
   const workoutHistory = useMemo(() => getWorkoutHistory(45), []);
   const [showAllWorkouts, setShowAllWorkouts] = useState(false);
+
+  // Last 14 days streak dots
+  const last14 = useMemo(() => {
+    return Array.from({ length: 14 }, (_, i) => ({
+      logged: getDayLogged(13 - i),
+      dayLabel: ['S','M','T','W','T','F','S'][(new Date(Date.now() - (13 - i) * 86400000)).getDay()],
+    }));
+  }, []);
 
   const handleWeighIn = () => {
     const w = parseFloat(weightInput);
@@ -224,38 +300,87 @@ export function StatsTab({ weighIns, addWeighIn, removeWeighIn, latest, liftLog,
 
   return (
     <div className="px-5 pt-2 pb-4">
-      {/* Streak + Weekly Summary */}
+      {/* Streak Tracker */}
       <Card>
-        <div className="flex justify-around text-center">
+        <div className="flex justify-around text-center mb-4">
           <div>
-            <div className="text-2xl font-bold text-amber-400">{streak}</div>
-            <div className="text-base text-white/50">day streak 🔥</div>
+            <div className="text-2xl font-bold text-amber-400">{streak} 🔥</div>
+            <div className="text-base text-white/50">current streak</div>
           </div>
           <div className="w-px bg-white/[0.08]" />
-          {weeklyAvg ? (
-            <>
-              <div>
-                <div className="text-xl font-bold">{weeklyAvg.cal}</div>
-                <div className="text-base text-white/50">avg cal/day</div>
-              </div>
-              <div className="w-px bg-white/[0.08]" />
-              <div>
-                <div className="text-xl font-bold">{weeklyAvg.protein}g</div>
-                <div className="text-base text-white/50">avg protein/day</div>
-              </div>
-            </>
-          ) : (
-            <div className="flex-1 flex items-center justify-center">
-              <span className="text-base text-white/30">Log food to see averages</span>
-            </div>
-          )}
+          <div>
+            <div className="text-2xl font-bold text-white/70">{bestStreak}</div>
+            <div className="text-base text-white/50">best streak</div>
+          </div>
         </div>
-        {weeklyAvg && (
-          <p className="text-base text-white/25 text-center mt-2">
-            Based on {weeklyAvg.days} day{weeklyAvg.days !== 1 ? 's' : ''} this week
-          </p>
+        <div className="text-base text-white/40 mb-2">Last 14 days:</div>
+        <div className="flex justify-between">
+          {last14.map((d, i) => (
+            <div key={i} className="flex flex-col items-center gap-1">
+              <div className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px]
+                ${d.logged ? 'bg-green-500' : 'bg-white/[0.08]'}`}>
+                {d.logged ? '●' : '○'}
+              </div>
+              <span className="text-[10px] text-white/30">{d.dayLabel}</span>
+            </div>
+          ))}
+        </div>
+      </Card>
+
+      {/* This Week vs Last Week */}
+      <Card>
+        <CardTitle>This Week vs Last Week</CardTitle>
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <div className="text-base font-bold text-white/50 mb-2">This Week</div>
+            {weekComparison.thisW.days > 0 ? (
+              <>
+                <div className="text-lg font-bold">{Math.round(weekComparison.thisW.cal / Math.max(weekComparison.thisW.days, 1)).toLocaleString()} cal/day</div>
+                <div className="text-base text-white/50">{Math.round(weekComparison.thisW.protein / Math.max(weekComparison.thisW.days, 1))}g protein/day</div>
+                <div className="text-base text-white/40">{weekComparison.thisW.days}/7 days logged</div>
+              </>
+            ) : <div className="text-base text-white/30">No data yet</div>}
+          </div>
+          <div>
+            <div className="text-base font-bold text-white/50 mb-2">Last Week</div>
+            {weekComparison.lastW.days > 0 ? (
+              <>
+                <div className="text-lg font-bold">{Math.round(weekComparison.lastW.cal / Math.max(weekComparison.lastW.days, 1)).toLocaleString()} cal/day</div>
+                <div className="text-base text-white/50">{Math.round(weekComparison.lastW.protein / Math.max(weekComparison.lastW.days, 1))}g protein/day</div>
+                <div className="text-base text-white/40">{weekComparison.lastW.days}/7 days logged</div>
+              </>
+            ) : <div className="text-base text-white/30">No data yet</div>}
+          </div>
+        </div>
+        {weekComparison.burnedCal > 0 && (
+          <div className="mt-3 pt-3 border-t border-white/[0.06] flex justify-between items-center">
+            <span className="text-base text-white/60">Calories burned this week</span>
+            <span className="text-lg font-bold text-orange-400">~{weekComparison.burnedCal.toLocaleString()} cal</span>
+          </div>
         )}
       </Card>
+
+      {/* Weekly averages */}
+      {weeklyAvg && (
+        <Card>
+          <div className="flex justify-around text-center">
+            <div>
+              <div className="text-xl font-bold">{weeklyAvg.cal}</div>
+              <div className="text-base text-white/50">avg cal/day</div>
+            </div>
+            <div className="w-px bg-white/[0.08]" />
+            <div>
+              <div className="text-xl font-bold">{weeklyAvg.protein}g</div>
+              <div className="text-base text-white/50">avg protein/day</div>
+            </div>
+            <div className="w-px bg-white/[0.08]" />
+            <div>
+              <div className="text-xl font-bold">{weeklyAvg.days}/7</div>
+              <div className="text-base text-white/50">days logged</div>
+            </div>
+          </div>
+        </Card>
+      )}
 
       {/* Weight Chart */}
       <Card>

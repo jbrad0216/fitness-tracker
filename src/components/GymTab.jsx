@@ -1,10 +1,19 @@
 import { useState, useEffect, useRef } from 'react';
 import { getTodaysWorkoutType, getDaySchedule, getToday } from '../data/constants';
 import { getExerciseInfo, MUSCLE_COLORS, ALTERNATIVE_EXERCISES } from '../data/exercises';
+import { load, save } from '../data/storage';
 
-const EQUIPMENT_KEY = 'ft_equipment-setup';
+const MACHINES_KEY = 'machines';
 const SWAPS_KEY = () => `ft_exercise-swaps-${getToday()}`;
 
+function loadMachines() {
+  return load(MACHINES_KEY, []);
+}
+function saveMachines(machines) {
+  save(MACHINES_KEY, machines);
+}
+
+// ─── Rest Timer ───
 function RestTimer({ onDismiss }) {
   const [seconds, setSeconds] = useState(90);
   const [running, setRunning] = useState(true);
@@ -73,11 +82,9 @@ const GOAL_CONTEXT = {
   lifestyle: 'Functional movements that build practical, everyday strength.',
 };
 
-// ─── Per-Set Exercise Card (Task 4) ───
+// ─── Per-Set Exercise Card ───
 function ExerciseCard({ ex, isLogged, loggedData, prev, onLog, onSwap, onUnlog, goal }) {
   const numSets = ex.sets || 3;
-
-  // Pre-fill weight: last session + 2.5 if they completed all reps, else last weight, else default
   const recommended = prev
     ? (prev.reps >= (ex.reps || 12) ? prev.weight + 2.5 : prev.weight)
     : ex.defaultWeight;
@@ -90,14 +97,11 @@ function ExerciseCard({ ex, isLogged, loggedData, prev, onLog, onSwap, onUnlog, 
 
   const info = getExerciseInfo(ex.name);
   const completedCount = setsCompleted.length;
-  const allDone = completedCount >= numSets;
 
   const weightDiff = prev ? (parseFloat(weight) - prev.weight) : 0;
   const progressText = prev
-    ? (weightDiff > 0
-      ? `↑ +${weightDiff.toFixed(1)} lbs — getting stronger!`
-      : weightDiff < 0
-        ? `↓ ${Math.abs(weightDiff).toFixed(1)} lbs lighter today — that's OK`
+    ? (weightDiff > 0 ? `↑ +${weightDiff.toFixed(1)} lbs — getting stronger!`
+      : weightDiff < 0 ? `↓ ${Math.abs(weightDiff).toFixed(1)} lbs lighter today — that's OK`
         : 'Same weight as last time')
     : null;
   const progressColor = prev
@@ -125,7 +129,6 @@ function ExerciseCard({ ex, isLogged, loggedData, prev, onLog, onSwap, onUnlog, 
     setShowSwap(false);
   };
 
-  // Collapsed state after logging
   if (isLogged) {
     return (
       <div className="bg-green-500/[0.06] border border-green-500/25 rounded-2xl px-5 py-4 mb-3 flex items-center gap-3">
@@ -150,7 +153,6 @@ function ExerciseCard({ ex, isLogged, loggedData, prev, onLog, onSwap, onUnlog, 
 
   return (
     <div className="bg-white/[0.05] border border-white/[0.08] rounded-2xl mb-4 overflow-hidden">
-      {/* Header */}
       <div className="px-5 pt-5 pb-3">
         <div className="flex items-start justify-between mb-2">
           <div className="flex-1">
@@ -163,13 +165,9 @@ function ExerciseCard({ ex, isLogged, loggedData, prev, onLog, onSwap, onUnlog, 
             )}
           </div>
           <div className="text-right ml-3">
-            <div className="text-base text-white/40">
-              {completedCount}/{numSets} sets
-            </div>
+            <div className="text-base text-white/40">{completedCount}/{numSets} sets</div>
           </div>
         </div>
-
-        {/* Recommended weight */}
         <div className="text-lg font-bold text-white/80 mt-2">
           Recommended: {recommended} lbs × {numSets} sets of {ex.reps || 12}
         </div>
@@ -183,7 +181,6 @@ function ExerciseCard({ ex, isLogged, loggedData, prev, onLog, onSwap, onUnlog, 
         )}
       </div>
 
-      {/* "How To" expandable */}
       <div className="px-5 pb-3">
         <button onClick={() => setShowInfo(v => !v)}
           className="flex items-center gap-2 text-base text-amber-400 font-semibold
@@ -219,7 +216,6 @@ function ExerciseCard({ ex, isLogged, loggedData, prev, onLog, onSwap, onUnlog, 
         )}
       </div>
 
-      {/* Weight / Reps inputs */}
       <div className="px-5 pb-3">
         <div className="text-base font-semibold text-white/50 mb-2">Log your set:</div>
         <div className="flex gap-3">
@@ -238,7 +234,6 @@ function ExerciseCard({ ex, isLogged, loggedData, prev, onLog, onSwap, onUnlog, 
         </div>
       </div>
 
-      {/* Per-set DONE buttons */}
       <div className="px-5 pb-4 space-y-2">
         {Array.from({ length: numSets }, (_, i) => {
           const done = setsCompleted.includes(i);
@@ -257,7 +252,6 @@ function ExerciseCard({ ex, isLogged, loggedData, prev, onLog, onSwap, onUnlog, 
         })}
       </div>
 
-      {/* Swap exercise */}
       {info?.alternatives?.length > 0 && (
         <div className="px-5 pb-4">
           <button onClick={() => setShowSwap(v => !v)}
@@ -291,252 +285,411 @@ function ExerciseCard({ ex, isLogged, loggedData, prev, onLog, onSwap, onUnlog, 
   );
 }
 
-const EQUIPMENT_GROUPS = [
-  {
-    group: 'FREE WEIGHTS',
-    items: [
-      { id: 'dumbbells', label: 'Dumbbells' },
-      { id: 'barbell', label: 'Barbell' },
-      { id: 'kettlebells', label: 'Kettlebells' },
-      { id: 'medicineBalls', label: 'Medicine Balls' },
-    ],
-  },
-  {
-    group: 'MACHINES',
-    items: [
-      { id: 'latPulldown', label: 'Lat Pulldown' },
-      { id: 'legPress', label: 'Leg Press' },
-      { id: 'cableMachine', label: 'Cable Machine' },
-      { id: 'smithMachine', label: 'Smith Machine' },
-      { id: 'chestPress', label: 'Chest Press' },
-      { id: 'shoulderPress', label: 'Shoulder Press' },
-      { id: 'legCurl', label: 'Leg Curl' },
-      { id: 'legExtension', label: 'Leg Extension' },
-      { id: 'seatedRow', label: 'Seated Row' },
-      { id: 'hipAbductor', label: 'Hip Abductor' },
-      { id: 'pecFly', label: 'Pec Fly' },
-      { id: 'calfRaise', label: 'Calf Raise Machine' },
-    ],
-  },
-  {
-    group: 'CARDIO',
-    items: [
-      { id: 'treadmill', label: 'Treadmill' },
-      { id: 'rowingMachine', label: 'Rowing Machine' },
-      { id: 'elliptical', label: 'Elliptical' },
-      { id: 'stationaryBike', label: 'Stationary Bike' },
-    ],
-  },
-  {
-    group: 'OTHER',
-    items: [
-      { id: 'pullupBar', label: 'Pull-up Bar' },
-      { id: 'bench', label: 'Bench' },
-      { id: 'resistanceBands', label: 'Resistance Bands' },
-      { id: 'trx', label: 'TRX / Suspension' },
-    ],
-  },
-];
+// ─── Machine Management ───
+const MACHINE_MUSCLE_GROUPS = ['Chest', 'Back', 'Shoulders', 'Arms', 'Legs', 'Core', 'Full Body'];
 
-const FULL_GYM_DEFAULTS = {
-  dumbbells: true, barbell: true, kettlebells: true, medicineBalls: false,
-  latPulldown: true, legPress: true, cableMachine: true, smithMachine: true,
-  chestPress: true, shoulderPress: true, legCurl: true, legExtension: true,
-  seatedRow: true, hipAbductor: false, pecFly: true, calfRaise: false,
-  treadmill: true, rowingMachine: true, elliptical: false, stationaryBike: false,
-  pullupBar: true, bench: true, resistanceBands: false, trx: false,
-};
+function compressPhoto(file, callback) {
+  const reader = new FileReader();
+  reader.onload = (ev) => {
+    const img = new Image();
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      const scale = Math.min(200 / img.width, 200 / img.height, 1);
+      canvas.width = Math.round(img.width * scale);
+      canvas.height = Math.round(img.height * scale);
+      canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+      callback(canvas.toDataURL('image/jpeg', 0.7));
+    };
+    img.src = ev.target.result;
+  };
+  reader.readAsDataURL(file);
+}
 
-const HOME_GYM_DEFAULTS = {
-  dumbbells: true, barbell: false, kettlebells: false, medicineBalls: false,
-  latPulldown: false, legPress: false, cableMachine: false, smithMachine: false,
-  chestPress: false, shoulderPress: false, legCurl: false, legExtension: false,
-  seatedRow: false, hipAbductor: false, pecFly: false, calfRaise: false,
-  treadmill: false, rowingMachine: false, elliptical: false, stationaryBike: false,
-  pullupBar: true, bench: true, resistanceBands: true, trx: false,
-};
+function AddMachineForm({ onAdd, onClose, editMachine }) {
+  const [name, setName] = useState(editMachine?.name || '');
+  const [muscles, setMuscles] = useState(editMachine?.muscleGroups || []);
+  const [startWeight, setStartWeight] = useState(String(editMachine?.startingWeight || ''));
+  const [photo, setPhoto] = useState(editMachine?.photo || null);
+  const fileRef = useRef(null);
 
-const EMPTY_EQUIPMENT = Object.fromEntries(
-  EQUIPMENT_GROUPS.flatMap(g => g.items.map(i => [i.id, false]))
-);
+  const toggleMuscle = (m) =>
+    setMuscles(prev => prev.includes(m) ? prev.filter(x => x !== m) : [...prev, m]);
 
-function AddCustomMachineForm({ onAdd, onClose }) {
-  const [name, setName] = useState('');
-  const [muscle, setMuscle] = useState('Chest');
-  const [weight, setWeight] = useState('');
+  const handlePhoto = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    compressPhoto(file, setPhoto);
+  };
 
-  const MUSCLES = ['Chest', 'Back', 'Shoulders', 'Arms', 'Legs', 'Core', 'Glutes', 'Calves'];
+  const handleAdd = () => {
+    if (!name.trim()) return;
+    onAdd({
+      id: editMachine?.id || `machine-${Date.now()}`,
+      name: name.trim(),
+      muscleGroups: muscles.length > 0 ? muscles : ['Full Body'],
+      startingWeight: parseFloat(startWeight) || 0,
+      photo,
+      lastWeight: editMachine?.lastWeight || (parseFloat(startWeight) || 0),
+    });
+  };
 
   return (
-    <div className="fixed inset-0 z-50 bg-[#0f1117]/95 flex flex-col justify-end"
-      style={{ paddingBottom: 'max(env(safe-area-inset-bottom), 16px)' }}>
-      <div className="bg-[#1a1d27] rounded-t-3xl px-5 pt-5 pb-6">
-        <div className="flex items-center justify-between mb-5">
-          <h3 className="text-xl font-bold">Add Custom Machine</h3>
-          <button onClick={onClose}
-            className="w-12 h-12 rounded-xl bg-white/[0.08] text-white/60 border-none cursor-pointer text-xl">
-            ×
-          </button>
+    <div className="fixed inset-0 z-50 bg-[#0f1117] overflow-y-auto"
+      style={{ paddingTop: 'max(env(safe-area-inset-top), 16px)', paddingBottom: 'max(env(safe-area-inset-bottom), 32px)' }}>
+      <div className="flex items-center gap-3 px-4 mb-6">
+        <button onClick={onClose}
+          className="w-12 h-12 rounded-xl bg-white/[0.08] text-white text-2xl border-none cursor-pointer flex items-center justify-center">
+          ‹
+        </button>
+        <h1 className="text-2xl font-bold">{editMachine ? 'EDIT MACHINE' : 'ADD MACHINE'}</h1>
+      </div>
+
+      <div className="px-4 space-y-4">
+        <div>
+          <div className="text-base font-semibold text-white/60 mb-2">Machine Name</div>
+          <input type="text" inputMode="text" autoComplete="off"
+            value={name} onChange={e => setName(e.target.value)}
+            placeholder="e.g. Chest Press Machine"
+            className="w-full bg-white/[0.08] border border-white/[0.1] rounded-xl px-4 h-14 text-lg text-white outline-none focus:border-blue-500/60 placeholder:text-white/25" />
         </div>
-        <div className="space-y-3">
-          <div>
-            <div className="text-base text-white/50 mb-1.5">Machine Name</div>
-            <input type="text" inputMode="text" autoComplete="off"
-              value={name} onChange={e => setName(e.target.value)}
-              placeholder="e.g. Hammer Strength Incline"
-              className="w-full bg-white/[0.08] border border-white/[0.1] rounded-xl px-4 h-14 text-lg text-white
-                outline-none placeholder:text-white/25 focus:border-blue-500/60" />
+
+        <div>
+          <div className="text-base font-semibold text-white/60 mb-2">Muscle Group(s)</div>
+          <div className="flex flex-wrap gap-2">
+            {MACHINE_MUSCLE_GROUPS.map(m => (
+              <button key={m} onClick={() => toggleMuscle(m)}
+                className={`h-12 px-4 rounded-xl text-base font-semibold border-none cursor-pointer active:scale-95 transition-all
+                  ${muscles.includes(m) ? 'bg-blue-500 text-white' : 'bg-white/[0.06] text-white/50'}`}>
+                {m}
+              </button>
+            ))}
           </div>
-          <div>
-            <div className="text-base text-white/50 mb-1.5">Muscle Group</div>
-            <div className="flex flex-wrap gap-2">
-              {MUSCLES.map(m => (
-                <button key={m} onClick={() => setMuscle(m)}
-                  className={`h-12 px-4 rounded-xl text-base font-semibold border-none cursor-pointer
-                    ${muscle === m ? 'bg-blue-500 text-white' : 'bg-white/[0.06] text-white/50'}`}>
-                  {m}
-                </button>
-              ))}
+        </div>
+
+        <div>
+          <div className="text-base font-semibold text-white/60 mb-2">Starting Weight (lbs)</div>
+          <input type="text" inputMode="numeric" autoComplete="off"
+            value={startWeight} onChange={e => setStartWeight(e.target.value)}
+            placeholder="e.g. 90"
+            className="w-full bg-white/[0.08] border border-white/[0.1] rounded-xl px-4 h-14 text-lg text-white outline-none focus:border-blue-500/60 placeholder:text-white/25" />
+        </div>
+
+        {/* Photo capture */}
+        <div>
+          <div className="text-base font-semibold text-white/60 mb-2">Machine Photo (optional)</div>
+          {photo ? (
+            <div className="relative inline-block">
+              <img src={photo} alt="Machine" className="w-24 h-24 rounded-xl object-cover" />
+              <button onClick={() => setPhoto(null)}
+                className="absolute -top-2 -right-2 w-8 h-8 rounded-full bg-red-500 text-white text-sm border-none cursor-pointer">
+                ×
+              </button>
             </div>
-          </div>
-          <div>
-            <div className="text-base text-white/50 mb-1.5">Current Weight (lbs)</div>
-            <input type="text" inputMode="numeric" autoComplete="off"
-              value={weight} onChange={e => setWeight(e.target.value)}
-              placeholder="e.g. 90"
-              className="w-full bg-white/[0.08] border border-white/[0.1] rounded-xl px-4 h-14 text-lg text-white
-                outline-none placeholder:text-white/25 focus:border-blue-500/60" />
-          </div>
-          <button
-            onClick={() => {
-              if (!name.trim()) return;
-              onAdd({ id: `custom-${Date.now()}`, label: name.trim(), muscle, weight: parseFloat(weight) || 0, isCustom: true });
-              onClose();
-            }}
-            className="w-full bg-blue-500 text-white rounded-2xl h-14 text-lg font-bold border-none cursor-pointer active:opacity-80">
-            ADD MACHINE
-          </button>
+          ) : (
+            <button onClick={() => fileRef.current?.click()}
+              className="w-full bg-white/[0.06] border border-white/[0.1] border-solid text-white/60
+                rounded-xl h-14 text-base font-semibold cursor-pointer active:opacity-70">
+              📸 Take Photo
+            </button>
+          )}
+          <input ref={fileRef} type="file" accept="image/*" capture="environment"
+            onChange={handlePhoto} className="hidden" />
         </div>
+
+        <button
+          onClick={handleAdd}
+          disabled={!name.trim()}
+          className="w-full bg-blue-500 text-white rounded-2xl h-14 text-lg font-bold border-none cursor-pointer active:opacity-80 disabled:opacity-40">
+          {editMachine ? 'SAVE CHANGES' : 'ADD MACHINE'}
+        </button>
+        <button onClick={onClose}
+          className="w-full bg-transparent text-white/40 h-12 text-base border-none cursor-pointer">
+          Cancel
+        </button>
       </div>
     </div>
   );
 }
 
-function EquipmentSetup({ onSave }) {
-  const [step, setStep] = useState('quick'); // 'quick' | 'full'
-  const [equipment, setEquipment] = useState(EMPTY_EQUIPMENT);
-  const [customMachines, setCustomMachines] = useState([]);
+// ─── Machine Workout Modal (Task 3) ───
+const FOCUS_AREAS_LIST = [
+  { id: 'Chest', label: 'Chest' },
+  { id: 'Back', label: 'Back' },
+  { id: 'Shoulders', label: 'Shoulders' },
+  { id: 'Arms', label: 'Arms' },
+  { id: 'Legs', label: 'Legs' },
+  { id: 'Core', label: 'Core' },
+  { id: 'Full Body', label: 'Full Body' },
+];
+
+const FOCUS_EXERCISE_MAP = {
+  Chest: [
+    { name: 'Chest Press Machine', sets: 3, reps: 12, defaultWeight: 90 },
+    { name: 'DB Bench Press', sets: 3, reps: 12, defaultWeight: 30 },
+    { name: 'Pec Fly', sets: 3, reps: 12, defaultWeight: 50 },
+    { name: 'Push-up', sets: 3, reps: 15, defaultWeight: 0 },
+  ],
+  Back: [
+    { name: 'Lat Pulldown', sets: 3, reps: 12, defaultWeight: 85 },
+    { name: 'Seated Row', sets: 3, reps: 12, defaultWeight: 80 },
+    { name: 'DB Row (each arm)', sets: 3, reps: 12, defaultWeight: 25 },
+    { name: 'Cable Row', sets: 3, reps: 12, defaultWeight: 70 },
+  ],
+  Shoulders: [
+    { name: 'Shoulder Press Machine', sets: 3, reps: 12, defaultWeight: 60 },
+    { name: 'Overhead Press', sets: 3, reps: 12, defaultWeight: 27.5 },
+    { name: 'Lateral Raise', sets: 3, reps: 15, defaultWeight: 12 },
+  ],
+  Arms: [
+    { name: 'DB Curl', sets: 3, reps: 12, defaultWeight: 20 },
+    { name: 'Tricep Pushdown', sets: 3, reps: 12, defaultWeight: 40 },
+    { name: 'Hammer Curl', sets: 3, reps: 12, defaultWeight: 20 },
+  ],
+  Legs: [
+    { name: 'Leg Press', sets: 3, reps: 12, defaultWeight: 180 },
+    { name: 'Leg Curl', sets: 3, reps: 12, defaultWeight: 60 },
+    { name: 'Leg Extension', sets: 3, reps: 12, defaultWeight: 60 },
+    { name: 'Goblet Squat', sets: 3, reps: 12, defaultWeight: 30 },
+  ],
+  Core: [
+    { name: 'Plank', sets: 3, reps: 45, defaultWeight: 0 },
+    { name: 'Dead Bug', sets: 3, reps: 10, defaultWeight: 0 },
+    { name: 'Cable Crunch', sets: 3, reps: 15, defaultWeight: 40 },
+  ],
+  'Full Body': [
+    { name: 'DB Romanian Deadlift', sets: 3, reps: 12, defaultWeight: 25 },
+    { name: 'Goblet Squat', sets: 3, reps: 12, defaultWeight: 30 },
+    { name: 'Push-up', sets: 3, reps: 15, defaultWeight: 0 },
+  ],
+};
+
+function MachineWorkoutModal({ machines, onApply, onClose, onMachinesChanged }) {
+  const [view, setView] = useState(machines.length === 0 ? 'machines' : 'build');
+  const [selected, setSelected] = useState([]);
+  const [generated, setGenerated] = useState(null);
+  const [editMachine, setEditMachine] = useState(null);
   const [showAddMachine, setShowAddMachine] = useState(false);
 
-  const toggle = (id) => setEquipment(e => ({ ...e, [id]: !e[id] }));
+  const toggleFocus = (id) =>
+    setSelected(prev =>
+      prev.includes(id) ? prev.filter(x => x !== id) : prev.length < 3 ? [...prev, id] : prev
+    );
 
-  const applyPreset = (preset) => {
-    setEquipment(preset);
-    setStep('full');
+  const handleAddMachine = (machine) => {
+    const current = loadMachines();
+    const idx = current.findIndex(m => m.id === machine.id);
+    let next;
+    if (idx >= 0) {
+      next = current.map(m => m.id === machine.id ? machine : m);
+    } else {
+      next = [...current, machine];
+    }
+    saveMachines(next);
+    onMachinesChanged(next);
+    setShowAddMachine(false);
+    setEditMachine(null);
   };
 
-  if (step === 'quick') {
+  const handleDeleteMachine = (id) => {
+    const next = machines.filter(m => m.id !== id);
+    saveMachines(next);
+    onMachinesChanged(next);
+  };
+
+  const generateWorkout = () => {
+    const exercises = [];
+    const usedNames = new Set();
+
+    // First, use actual machines matching the selected focus areas
+    const matchingMachines = machines.filter(m =>
+      m.muscleGroups.some(mg => selected.includes(mg))
+    );
+
+    matchingMachines.forEach(machine => {
+      if (exercises.length >= 5) return;
+      const exName = machine.name;
+      if (!usedNames.has(exName)) {
+        exercises.push({
+          name: exName,
+          sets: 3,
+          reps: 12,
+          defaultWeight: machine.lastWeight || machine.startingWeight || 0,
+        });
+        usedNames.add(exName);
+      }
+    });
+
+    // Fill remainder with generic exercises
+    selected.forEach(area => {
+      (FOCUS_EXERCISE_MAP[area] || []).forEach(ex => {
+        if (exercises.length >= 5) return;
+        if (!usedNames.has(ex.name)) {
+          exercises.push(ex);
+          usedNames.add(ex.name);
+        }
+      });
+    });
+
+    setGenerated(exercises.slice(0, 5));
+  };
+
+  if (showAddMachine || editMachine) {
     return (
-      <div className="px-4 pb-6" style={{ paddingTop: 'max(env(safe-area-inset-top), 20px)' }}>
-        <h2 className="text-2xl font-bold mb-2">Gym Setup</h2>
-        <p className="text-base text-white/50 mb-6">What equipment do you have access to?</p>
-        {[
-          { id: 'full', label: '🏋️ Full Gym', desc: 'Machines, cables, barbells, everything' },
-          { id: 'home', label: '🏠 Home Setup', desc: 'Dumbbells, bench, pull-up bar, bands' },
-          { id: 'custom', label: '⚙️ Choose My Own', desc: 'Select exactly what you have' },
-        ].map(opt => (
-          <button key={opt.id} onClick={() => {
-            if (opt.id === 'full') applyPreset(FULL_GYM_DEFAULTS);
-            else if (opt.id === 'home') applyPreset(HOME_GYM_DEFAULTS);
-            else setStep('full');
-          }}
-            className="w-full flex items-center gap-4 bg-white/[0.05] border border-white/[0.08]
-              rounded-2xl px-5 py-5 mb-3 cursor-pointer active:bg-white/[0.08] text-left min-h-[80px]">
-            <span className="text-3xl">{opt.label.split(' ')[0]}</span>
-            <div>
-              <div className="text-lg font-semibold">{opt.label.replace(/^\S+\s/, '')}</div>
-              <div className="text-base text-white/50">{opt.desc}</div>
-            </div>
-            <span className="text-white/30 text-2xl ml-auto">›</span>
+      <AddMachineForm
+        editMachine={editMachine || undefined}
+        onAdd={handleAddMachine}
+        onClose={() => { setShowAddMachine(false); setEditMachine(null); }}
+      />
+    );
+  }
+
+  if (generated) {
+    return (
+      <div className="fixed inset-0 z-50 bg-[#0f1117] overflow-y-auto"
+        style={{ paddingTop: 'max(env(safe-area-inset-top), 16px)', paddingBottom: 'max(env(safe-area-inset-bottom), 32px)' }}>
+        <div className="flex items-center gap-3 px-4 mb-5">
+          <button onClick={() => setGenerated(null)}
+            className="w-12 h-12 rounded-xl bg-white/[0.08] text-white text-2xl border-none cursor-pointer flex items-center justify-center">
+            ‹
           </button>
-        ))}
+          <h1 className="text-2xl font-bold">TODAY'S WORKOUT</h1>
+        </div>
+        <div className="px-4">
+          <div className="text-base text-white/50 mb-4">
+            {selected.join(', ')} · {generated.length} exercises
+          </div>
+          {generated.map((ex, i) => (
+            <div key={i} className="bg-white/[0.05] border border-white/[0.08] rounded-2xl px-5 py-4 mb-3">
+              <div className="text-xl font-bold">{ex.name}</div>
+              <div className="text-base text-white/50">{ex.sets}×{ex.reps}{ex.defaultWeight ? ` @ ${ex.defaultWeight} lbs` : ''}</div>
+            </div>
+          ))}
+          <button onClick={() => onApply(generated)}
+            className="w-full bg-green-500 text-white rounded-2xl h-14 text-xl font-bold border-none cursor-pointer active:opacity-80 mt-2">
+            BUILD MY WORKOUT →
+          </button>
+          <button onClick={() => setGenerated(null)}
+            className="w-full bg-white/[0.06] text-white/50 rounded-2xl h-12 text-base border-none cursor-pointer mt-2">
+            Try Different Areas
+          </button>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="px-4 pb-8 overflow-y-auto" style={{ paddingTop: 'max(env(safe-area-inset-top), 16px)' }}>
-      {showAddMachine && (
-        <AddCustomMachineForm
-          onAdd={(machine) => setCustomMachines(prev => [...prev, machine])}
-          onClose={() => setShowAddMachine(false)}
-        />
-      )}
-
-      <div className="flex items-center gap-3 mb-5">
-        <button onClick={() => setStep('quick')}
-          className="w-12 h-12 rounded-xl bg-white/[0.08] text-white text-xl border-none cursor-pointer
-            flex items-center justify-center">
-          ‹
+    <div className="fixed inset-0 z-50 bg-[#0f1117] overflow-y-auto"
+      style={{ paddingTop: 'max(env(safe-area-inset-top), 16px)', paddingBottom: 'max(env(safe-area-inset-bottom), 32px)' }}>
+      <div className="flex items-center justify-between px-4 mb-4">
+        <h2 className="text-2xl font-bold">Customize Workout</h2>
+        <button onClick={onClose}
+          className="w-12 h-12 rounded-xl bg-white/[0.08] text-white/60 border-none cursor-pointer text-xl flex items-center justify-center">
+          ✕
         </button>
-        <h2 className="text-2xl font-bold">My Equipment</h2>
       </div>
-      <p className="text-base text-white/50 mb-5">Select everything available to you:</p>
 
-      {EQUIPMENT_GROUPS.map(grp => (
-        <div key={grp.group} className="mb-5">
-          <div className="text-base font-bold text-white/40 uppercase tracking-wider mb-2">{grp.group}</div>
-          <div className="grid grid-cols-2 gap-2">
-            {grp.items.map(item => (
-              <button key={item.id} onClick={() => toggle(item.id)}
-                className={`flex items-center gap-2 rounded-xl px-4 h-14 border-solid border cursor-pointer text-left
-                  ${equipment[item.id]
-                    ? 'bg-blue-500/20 border-blue-500/50 text-white'
-                    : 'bg-white/[0.04] border-white/[0.08] text-white/50'}`}>
-                <span className="text-lg">{equipment[item.id] ? '✓' : '○'}</span>
-                <span className="text-base font-semibold">{item.label}</span>
+      {/* Tabs */}
+      <div className="flex px-4 gap-2 mb-5">
+        {[
+          { id: 'build', label: 'Build Workout' },
+          { id: 'machines', label: 'My Machines' },
+        ].map(t => (
+          <button key={t.id} onClick={() => setView(t.id)}
+            className={`flex-1 h-12 rounded-xl text-base font-semibold border-none cursor-pointer transition-all
+              ${view === t.id ? 'bg-blue-500 text-white' : 'bg-white/[0.06] text-white/50'}`}>
+            {t.label}
+          </button>
+        ))}
+      </div>
+
+      {view === 'build' && (
+        <div className="px-4">
+          <p className="text-base text-white/50 mb-4">Select 1–3 focus areas:</p>
+          <div className="flex flex-wrap gap-2 mb-5">
+            {FOCUS_AREAS_LIST.map(area => (
+              <button key={area.id} onClick={() => toggleFocus(area.id)}
+                className={`h-14 px-5 rounded-2xl text-base font-bold border cursor-pointer active:scale-95 transition-all
+                  ${selected.includes(area.id)
+                    ? 'bg-blue-500 border-blue-400 text-white'
+                    : 'bg-white/[0.06] border-white/[0.1] text-white/60'}`}
+                style={{ borderStyle: 'solid' }}>
+                {area.label}
               </button>
             ))}
           </div>
-        </div>
-      ))}
 
-      {/* Custom machines */}
-      {customMachines.length > 0 && (
-        <div className="mb-5">
-          <div className="text-base font-bold text-white/40 uppercase tracking-wider mb-2">CUSTOM MACHINES</div>
-          {customMachines.map((m) => (
-            <div key={m.id} className="flex items-center gap-3 bg-blue-500/10 border border-blue-500/30
-              rounded-xl px-4 h-14 mb-2">
-              <span className="text-lg text-blue-400">✓</span>
-              <div className="flex-1">
-                <div className="text-base font-semibold">{m.label}</div>
-                <div className="text-base text-white/40">{m.muscle}{m.weight ? ` · ${m.weight} lbs` : ''}</div>
-              </div>
-              <button onClick={() => setCustomMachines(prev => prev.filter(x => x.id !== m.id))}
-                className="w-12 h-12 rounded-lg bg-red-500/15 text-red-400 text-base border-none cursor-pointer
-                  flex items-center justify-center">
-                ×
-              </button>
+          {selected.length > 0 && machines.length > 0 && (
+            <div className="bg-white/[0.04] border border-white/[0.08] rounded-2xl px-4 py-3 mb-4">
+              <div className="text-base font-semibold text-white/50 mb-2">Your machines for these areas:</div>
+              {machines
+                .filter(m => m.muscleGroups.some(mg => selected.includes(mg)))
+                .map(m => (
+                  <div key={m.id} className="flex items-center gap-2 py-1">
+                    <span className="text-green-400 text-base">✓</span>
+                    <span className="text-base text-white/70">{m.name}</span>
+                    <span className="text-base text-white/30">— {m.muscleGroups.join(', ')}</span>
+                  </div>
+                ))}
             </div>
-          ))}
+          )}
+
+          <button onClick={generateWorkout} disabled={selected.length === 0}
+            className="w-full bg-blue-500 text-white rounded-2xl h-14 text-lg font-bold
+              border-none cursor-pointer active:opacity-80 mt-2 disabled:opacity-40">
+            GENERATE WORKOUT ({selected.length}/3 areas)
+          </button>
         </div>
       )}
 
-      <button onClick={() => setShowAddMachine(true)}
-        className="w-full bg-white/[0.06] border border-white/[0.1] border-solid text-white/70
-          rounded-2xl h-14 text-base font-semibold cursor-pointer active:opacity-70 mb-5">
-        + Add Custom Machine
-      </button>
+      {view === 'machines' && (
+        <div className="px-4">
+          <button onClick={() => setShowAddMachine(true)}
+            className="w-full bg-blue-500 text-white rounded-2xl h-14 text-lg font-bold border-none cursor-pointer active:opacity-80 mb-4">
+            + Add Machine
+          </button>
 
-      <button onClick={() => onSave({ access: 'custom', equipment, customMachines })}
-        className="w-full bg-blue-500 text-white rounded-2xl h-14 text-lg font-bold border-none cursor-pointer active:opacity-80">
-        SAVE EQUIPMENT
-      </button>
+          {machines.length === 0 ? (
+            <div className="text-center py-8 text-white/30">
+              <div className="text-4xl mb-3">🏋️</div>
+              <div className="text-lg">No machines added yet</div>
+              <div className="text-base mt-1">Tap "+ Add Machine" to get started</div>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {machines.map(m => (
+                <div key={m.id}
+                  className="bg-white/[0.05] border border-white/[0.08] rounded-2xl px-4 py-3 flex items-center gap-3">
+                  {m.photo && (
+                    <img src={m.photo} alt={m.name} className="w-12 h-12 rounded-xl object-cover shrink-0" />
+                  )}
+                  <div className="flex-1 min-w-0">
+                    <div className="text-base font-bold truncate">{m.name}</div>
+                    <div className="text-base text-white/40">{m.muscleGroups.join(', ')}</div>
+                    {m.lastWeight > 0 && (
+                      <div className="text-base text-white/30">Last: {m.lastWeight} lbs</div>
+                    )}
+                  </div>
+                  <div className="flex gap-2 shrink-0">
+                    <button onClick={() => setEditMachine(m)}
+                      className="w-10 h-10 rounded-lg bg-white/[0.06] text-white/50 text-base border-none cursor-pointer">
+                      ✎
+                    </button>
+                    <button onClick={() => handleDeleteMachine(m.id)}
+                      className="w-10 h-10 rounded-lg bg-red-500/15 text-red-400 text-base border-none cursor-pointer">
+                      ×
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }
 
+// ─── Week Calendar ───
 const DAY_LABELS = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
 
 function getWeekDays() {
@@ -680,133 +833,142 @@ function WeekCalendar({ selectedIdx, onSelect, templates }) {
   );
 }
 
-// ─── Custom Workout Modal ───
-const FOCUS_AREAS = [
-  { id: 'chest', label: 'Chest', group: 'Upper' },
-  { id: 'back', label: 'Back', group: 'Upper' },
-  { id: 'shoulders', label: 'Shoulders', group: 'Upper' },
-  { id: 'arms', label: 'Arms', group: 'Upper' },
-  { id: 'quads', label: 'Quads', group: 'Lower' },
-  { id: 'hamstrings', label: 'Hamstrings', group: 'Lower' },
-  { id: 'glutes', label: 'Glutes', group: 'Lower' },
-  { id: 'core', label: 'Core', group: 'Core' },
-];
+// ─── Workout Completion Summary with Calories ───
+function WorkoutCompletionSummary({ exercises, workoutType, startTime, workoutCalories, onSaveCalories }) {
+  const totalVolume = exercises.reduce((sum, e) => sum + (e.weight || 0) * (e.sets || 3) * (e.reps || 12), 0);
+  const minutes = startTime ? Math.round((Date.now() - startTime) / 60000) : null;
+  const estimatedCal = minutes ? Math.round(minutes * 6) : 150;
+  const [calInput, setCalInput] = useState(String(workoutCalories ?? estimatedCal));
+  const [saved, setSaved] = useState(!!workoutCalories);
 
-const FOCUS_EXERCISE_MAP = {
-  chest: [
-    { name: 'DB Bench Press', sets: 3, reps: 12, defaultWeight: 30 },
-    { name: 'Push-up', sets: 3, reps: 15, defaultWeight: 0 },
-  ],
-  back: [
-    { name: 'Lat Pulldown', sets: 3, reps: 12, defaultWeight: 85 },
-    { name: 'DB Row (each arm)', sets: 3, reps: 12, defaultWeight: 25 },
-  ],
-  shoulders: [
-    { name: 'Overhead Press', sets: 3, reps: 12, defaultWeight: 27.5 },
-    { name: 'Lateral Raise', sets: 3, reps: 15, defaultWeight: 12 },
-  ],
-  arms: [
-    { name: 'DB Curl', sets: 3, reps: 12, defaultWeight: 20 },
-    { name: 'Tricep Dip', sets: 3, reps: 12, defaultWeight: 0 },
-  ],
-  quads: [
-    { name: 'Goblet Squat', sets: 3, reps: 12, defaultWeight: 30 },
-    { name: 'Bulgarian Split Squat', sets: 3, reps: 10, defaultWeight: 20 },
-  ],
-  hamstrings: [
-    { name: 'DB Romanian Deadlift', sets: 3, reps: 12, defaultWeight: 25 },
-    { name: 'Leg Curl', sets: 3, reps: 12, defaultWeight: 60 },
-  ],
-  glutes: [
-    { name: 'DB Reverse Lunge (each)', sets: 3, reps: 10, defaultWeight: 20 },
-    { name: 'Hip Thrust', sets: 3, reps: 12, defaultWeight: 25 },
-  ],
-  core: [
-    { name: 'Plank', sets: 3, reps: 45, defaultWeight: 0 },
-    { name: 'Dead Bug', sets: 3, reps: 10, defaultWeight: 0 },
-  ],
-};
-
-function CustomWorkoutModal({ onApply, onClose }) {
-  const [selected, setSelected] = useState([]);
-  const [generated, setGenerated] = useState(null);
-
-  const toggle = (id) =>
-    setSelected(prev =>
-      prev.includes(id) ? prev.filter(x => x !== id) : prev.length < 3 ? [...prev, id] : prev
-    );
-
-  const generate = () => {
-    const exercises = [];
-    const usedNames = new Set();
-    selected.forEach(area => {
-      (FOCUS_EXERCISE_MAP[area] || []).slice(0, 2).forEach(ex => {
-        if (!usedNames.has(ex.name)) {
-          exercises.push(ex);
-          usedNames.add(ex.name);
-        }
-      });
-    });
-    setGenerated(exercises.slice(0, 5));
+  const handleSave = () => {
+    onSaveCalories(parseInt(calInput) || estimatedCal);
+    setSaved(true);
   };
 
-  const groups = ['Upper', 'Lower', 'Core'];
+  return (
+    <div className="bg-green-500/[0.08] border border-green-500/30 rounded-2xl px-5 py-5 mb-4 text-center">
+      <div className="text-4xl mb-2">🎉</div>
+      <div className="text-2xl font-bold text-green-400 mb-2">WORKOUT COMPLETE!</div>
+      <div className="text-lg text-white/70 mb-1">
+        {exercises.length} exercises · {exercises.reduce((s, e) => s + (e.sets || 3), 0)} total sets
+        {minutes ? ` · ~${minutes} min` : ''}
+      </div>
+      {totalVolume > 0 && (
+        <div className="text-xl font-bold text-white/60 mt-2">
+          Total volume: {totalVolume.toLocaleString()} lbs lifted
+        </div>
+      )}
+      <div className="mt-4 bg-white/[0.05] border border-white/[0.08] rounded-xl px-4 py-3">
+        <div className="text-base text-white/50 mb-2">
+          Calories burned: ~{estimatedCal} cal estimated
+          {minutes ? ` (${minutes} min × 6 cal/min)` : ''}
+        </div>
+        <div className="flex gap-2 items-center">
+          <input type="text" inputMode="numeric" autoComplete="off"
+            value={calInput} onChange={e => setCalInput(e.target.value)}
+            className="flex-1 bg-white/[0.08] border border-white/[0.1] rounded-xl px-4 h-12 text-lg text-white outline-none focus:border-blue-500/50" />
+          <span className="text-base text-white/40">cal</span>
+          <button onClick={handleSave}
+            className={`h-12 px-4 rounded-xl text-base font-bold border-none cursor-pointer active:opacity-70
+              ${saved ? 'bg-green-500/20 text-green-400' : 'bg-blue-500 text-white'}`}>
+            {saved ? '✓ Saved' : 'Save'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Enhanced Run Logging ───
+function RunLogPanel({ daily, addRunEntry, notify }) {
+  const [miles, setMiles] = useState('');
+  const [time, setTime] = useState('');
+  const [calories, setCalories] = useState('');
+  const [show, setShow] = useState(false);
+
+  const milesNum = parseFloat(miles) || 0;
+  const estimatedCal = milesNum > 0 ? Math.round(milesNum * 100) : 0;
+
+  const handleLog = () => {
+    if (!milesNum || milesNum <= 0) return;
+    const calNum = parseInt(calories) || 0;
+    const timeNum = parseInt(time) || 0;
+    addRunEntry(milesNum, timeNum || null, calNum || null);
+    notify(`${milesNum}mi logged${timeNum ? ` · ${timeNum} min` : ''}${calNum ? ` · ${calNum} cal` : ` · ~${estimatedCal} cal`}`);
+    setMiles(''); setTime(''); setCalories('');
+    setShow(false);
+  };
+
+  const runLog = daily.runLog || [];
+  const totalCal = runLog.reduce((s, r) => s + (r.calories || 0), 0);
 
   return (
-    <div className="fixed inset-0 z-50 bg-[#0f1117]/98 flex flex-col overflow-y-auto"
-      style={{ paddingTop: 'max(env(safe-area-inset-top), 16px)', paddingBottom: 'max(env(safe-area-inset-bottom), 16px)' }}>
-      <div className="flex items-center justify-between px-4 mb-4">
-        <h2 className="text-2xl font-bold">Customize Workout</h2>
-        <button onClick={onClose}
-          className="w-12 h-12 rounded-xl bg-white/[0.08] text-white/60 border-none cursor-pointer text-xl flex items-center justify-center">
-          ✕
-        </button>
-      </div>
+    <div className="bg-white/[0.05] border border-white/[0.08] rounded-2xl px-5 py-4 mb-4">
+      <div className="text-lg font-semibold mb-2">🏃 Run</div>
 
-      {!generated ? (
-        <div className="px-4">
-          <p className="text-base text-white/50 mb-5">Select 2–3 focus areas:</p>
-          {groups.map(grp => (
-            <div key={grp} className="mb-5">
-              <div className="text-base text-white/40 font-bold uppercase mb-3">{grp}</div>
-              <div className="flex flex-wrap gap-2">
-                {FOCUS_AREAS.filter(a => a.group === grp).map(area => (
-                  <button key={area.id} onClick={() => toggle(area.id)}
-                    className={`h-14 px-5 rounded-2xl text-base font-bold border cursor-pointer active:scale-95 transition-all
-                      ${selected.includes(area.id)
-                        ? 'bg-blue-500 border-blue-400 text-white'
-                        : 'bg-white/[0.06] border-white/[0.1] text-white/60'}`}
-                    style={{ borderStyle: 'solid' }}>
-                    {area.label}
-                  </button>
-                ))}
-              </div>
+      {runLog.length > 0 && (
+        <div className="mb-3 space-y-1">
+          {runLog.map((r, i) => (
+            <div key={i} className="flex justify-between text-base">
+              <span className="text-green-400">✓ {r.miles}mi</span>
+              <span className="text-white/40">
+                {r.minutes ? `${r.minutes} min · ` : ''}~{r.calories} cal
+              </span>
             </div>
           ))}
-          <button onClick={generate} disabled={selected.length < 2}
-            className="w-full bg-blue-500 text-white rounded-2xl h-14 text-lg font-bold
-              border-none cursor-pointer active:opacity-80 mt-2 disabled:opacity-40">
-            Generate Workout ({selected.length}/3 areas)
-          </button>
+          <div className="text-base text-white/30 pt-1 border-t border-white/[0.06]">
+            Total: {daily.ranMiles}mi · ~{totalCal} cal burned
+          </div>
+        </div>
+      )}
+
+      {show ? (
+        <div className="space-y-3">
+          <div className="grid grid-cols-3 gap-2">
+            <div>
+              <div className="text-base text-white/50 mb-1">Miles</div>
+              <input type="text" inputMode="decimal" autoComplete="off"
+                value={miles} onChange={e => setMiles(e.target.value)}
+                placeholder="2.0"
+                className="w-full bg-white/[0.08] border border-white/[0.1] rounded-xl px-3 h-14 text-lg text-white outline-none focus:border-blue-500/50 placeholder:text-white/25" />
+            </div>
+            <div>
+              <div className="text-base text-white/50 mb-1">Time (min)</div>
+              <input type="text" inputMode="numeric" autoComplete="off"
+                value={time} onChange={e => setTime(e.target.value)}
+                placeholder="22"
+                className="w-full bg-white/[0.08] border border-white/[0.1] rounded-xl px-3 h-14 text-lg text-white outline-none focus:border-blue-500/50 placeholder:text-white/25" />
+            </div>
+            <div>
+              <div className="text-base text-white/50 mb-1">Cal (opt.)</div>
+              <input type="text" inputMode="numeric" autoComplete="off"
+                value={calories} onChange={e => setCalories(e.target.value)}
+                placeholder={estimatedCal > 0 ? String(estimatedCal) : '~auto'}
+                className="w-full bg-white/[0.08] border border-white/[0.1] rounded-xl px-3 h-14 text-lg text-white outline-none focus:border-blue-500/50 placeholder:text-white/25" />
+            </div>
+          </div>
+          {milesNum > 0 && !calories && (
+            <div className="text-base text-white/40">
+              Estimated: ~{estimatedCal} cal burned (100 cal/mile)
+            </div>
+          )}
+          <div className="flex gap-2">
+            <button onClick={handleLog}
+              className="flex-1 bg-green-500 text-white rounded-xl h-14 text-base font-bold border-none cursor-pointer active:scale-95">
+              LOG RUN
+            </button>
+            <button onClick={() => setShow(false)}
+              className="w-14 h-14 bg-white/[0.08] text-white/50 rounded-xl border-none cursor-pointer text-base">
+              ✕
+            </button>
+          </div>
         </div>
       ) : (
-        <div className="px-4">
-          <p className="text-base text-white/50 mb-3">Custom workout for today:</p>
-          {generated.map((ex, i) => (
-            <div key={i} className="bg-white/[0.05] border border-white/[0.08] rounded-2xl px-5 py-4 mb-3">
-              <div className="text-xl font-bold">{ex.name}</div>
-              <div className="text-base text-white/50">{ex.sets}×{ex.reps} @ {ex.defaultWeight} lbs</div>
-            </div>
-          ))}
-          <button onClick={() => { localStorage.setItem(`ft_custom-workout-${getToday()}`, JSON.stringify(generated)); onApply(generated); }}
-            className="w-full bg-green-500 text-white rounded-2xl h-14 text-lg font-bold border-none cursor-pointer active:opacity-80 mt-2">
-            Apply This Workout Today
-          </button>
-          <button onClick={() => setGenerated(null)}
-            className="w-full bg-white/[0.08] text-white/50 rounded-2xl h-12 text-base border-none cursor-pointer mt-2">
-            Try Different Areas
-          </button>
-        </div>
+        <button onClick={() => setShow(true)}
+          className="w-full bg-white/[0.08] text-white/60 rounded-xl h-14 text-base font-semibold border-none cursor-pointer active:opacity-70">
+          {runLog.length > 0 ? '+ Log Another Run' : '+ Log Run'}
+        </button>
       )}
     </div>
   );
@@ -824,36 +986,14 @@ function loadOverrides() {
 }
 function saveOverrides(overrides) { localStorage.setItem(getWeekKey(), JSON.stringify(overrides)); }
 
-// ─── Workout Completion Summary ───
-function WorkoutCompletionSummary({ exercises, workoutType, startTime }) {
-  const totalVolume = exercises.reduce((sum, e) => sum + (e.weight || 0) * (e.sets || 3) * (e.reps || 12), 0);
-  const minutes = startTime ? Math.round((Date.now() - startTime) / 60000) : null;
-
-  return (
-    <div className="bg-green-500/[0.08] border border-green-500/30 rounded-2xl px-5 py-5 mb-4 text-center">
-      <div className="text-4xl mb-2">🎉</div>
-      <div className="text-2xl font-bold text-green-400 mb-2">WORKOUT COMPLETE!</div>
-      <div className="text-lg text-white/70 mb-1">
-        {exercises.length} exercises · {exercises.reduce((s, e) => s + (e.sets || 3), 0)} total sets
-        {minutes ? ` · ~${minutes} min` : ''}
-      </div>
-      {totalVolume > 0 && (
-        <div className="text-xl font-bold text-white/60 mt-2">
-          Total volume: {totalVolume.toLocaleString()} lbs lifted
-        </div>
-      )}
-    </div>
-  );
-}
-
-export function GymTab({ daily, addRun, addExercise, removeExercise, getLastLift, logLift, templates, notify, goal }) {
+// ─── Main GymTab ───
+export function GymTab({ daily, addRun, addRunEntry, addExercise, removeExercise, getLastLift, logLift, setWorkoutCalories, templates, notify, goal }) {
   const [showTimer, setShowTimer] = useState(false);
-  const [runInput, setRunInput] = useState('');
-  const [showRunInput, setShowRunInput] = useState(false);
   const [selectedDayIdx, setSelectedDayIdx] = useState(null);
   const [showCustomize, setShowCustomize] = useState(false);
   const [showSkipMenu, setShowSkipMenu] = useState(false);
   const [overrides, setOverrides] = useState(loadOverrides);
+  const [machines, setMachines] = useState(loadMachines);
   const [workoutStartTime] = useState(() => Date.now());
   const [customWorkout, setCustomWorkout] = useState(() => {
     try {
@@ -865,22 +1005,9 @@ export function GymTab({ daily, addRun, addExercise, removeExercise, getLastLift
     try { return JSON.parse(localStorage.getItem(SWAPS_KEY()) || '{}'); } catch { return {}; }
   });
 
-  const equipmentSetup = (() => {
-    try { return JSON.parse(localStorage.getItem(EQUIPMENT_KEY) || ''); } catch { return null; }
-  })();
-
   const schedule = getDaySchedule();
   const workoutType = getTodaysWorkoutType();
   const exercises = workoutType === 'A' ? (templates?.A || []) : workoutType === 'B' ? (templates?.B || []) : [];
-
-  if (!equipmentSetup) {
-    return (
-      <EquipmentSetup onSave={(setup) => {
-        localStorage.setItem(EQUIPMENT_KEY, JSON.stringify(setup));
-        window.location.reload();
-      }} />
-    );
-  }
 
   const todayKey = getToday();
   const todayOverride = overrides[todayKey];
@@ -924,15 +1051,6 @@ export function GymTab({ daily, addRun, addExercise, removeExercise, getLastLift
     notify(`${name} — ${weight} lbs × ${sets}×${reps} logged`);
   };
 
-  const handleLogRun = () => {
-    const miles = parseFloat(runInput);
-    if (!miles || miles <= 0) return;
-    addRun(miles);
-    setRunInput('');
-    setShowRunInput(false);
-    notify(`${miles}mi logged`);
-  };
-
   const activeExercises = customWorkout || exercises;
   const allDone = (schedule === 'strength' || !!customWorkout) && activeExercises.length > 0 &&
     activeExercises.every(ex => daily.exercises.some(e => e.name === getEffectiveExercise(ex).name));
@@ -946,11 +1064,17 @@ export function GymTab({ daily, addRun, addExercise, removeExercise, getLastLift
   const { text: schedLabel, color: schedColor } = scheduleLabels[schedule] || scheduleLabels.rest;
 
   return (
-    <div className="px-4 pb-6" style={{ paddingTop: 'max(env(safe-area-inset-top), 16px)' }}>
+    <div className="px-4 pb-28" style={{ paddingTop: 'max(env(safe-area-inset-top), 16px)' }}>
       {showCustomize && (
-        <CustomWorkoutModal
-          onApply={(workout) => { setCustomWorkout(workout); setShowCustomize(false); }}
+        <MachineWorkoutModal
+          machines={machines}
+          onApply={(workout) => {
+            localStorage.setItem(`ft_custom-workout-${getToday()}`, JSON.stringify(workout));
+            setCustomWorkout(workout);
+            setShowCustomize(false);
+          }}
           onClose={() => setShowCustomize(false)}
+          onMachinesChanged={setMachines}
         />
       )}
 
@@ -990,33 +1114,7 @@ export function GymTab({ daily, addRun, addExercise, removeExercise, getLastLift
       {showTimer && <RestTimer onDismiss={() => setShowTimer(false)} />}
 
       {/* Run logging */}
-      <div className="bg-white/[0.05] border border-white/[0.08] rounded-2xl px-5 py-4 mb-4">
-        <div className="text-lg font-semibold mb-3">🏃 Run</div>
-        {daily.ranMiles > 0 ? (
-          <div className="text-green-400 text-lg font-semibold">✓ {daily.ranMiles} miles today</div>
-        ) : showRunInput ? (
-          <div className="flex gap-2">
-            <input type="text" inputMode="decimal" autoComplete="off" enterKeyHint="done"
-              value={runInput} onChange={e => setRunInput(e.target.value)}
-              onKeyDown={e => e.key === 'Enter' && handleLogRun()}
-              placeholder="Miles"
-              className="flex-1 bg-white/[0.08] border border-white/[0.1] rounded-xl px-4 h-14 text-xl text-white outline-none placeholder:text-white/30" />
-            <button onClick={handleLogRun}
-              className="bg-green-500 text-white rounded-xl px-6 h-14 text-base font-bold border-none cursor-pointer active:scale-95">
-              Log
-            </button>
-            <button onClick={() => setShowRunInput(false)}
-              className="bg-white/[0.08] text-white/50 rounded-xl px-4 h-14 border-none cursor-pointer text-base">
-              ✕
-            </button>
-          </div>
-        ) : (
-          <button onClick={() => setShowRunInput(true)}
-            className="w-full bg-white/[0.08] text-white/60 rounded-xl h-14 text-base font-semibold border-none cursor-pointer active:opacity-70">
-            + Log Run
-          </button>
-        )}
-      </div>
+      <RunLogPanel daily={daily} addRunEntry={addRunEntry || addRun} notify={notify} />
 
       {/* Skip menu */}
       {showSkipMenu && (
@@ -1079,6 +1177,8 @@ export function GymTab({ daily, addRun, addExercise, removeExercise, getLastLift
               exercises={daily.exercises}
               workoutType={workoutType}
               startTime={workoutStartTime}
+              workoutCalories={daily.workoutCalories}
+              onSaveCalories={setWorkoutCalories || (() => {})}
             />
           )}
 
@@ -1113,13 +1213,26 @@ export function GymTab({ daily, addRun, addExercise, removeExercise, getLastLift
         </div>
       )}
 
-      {/* Equipment reset */}
-      <div className="mt-6 text-center">
-        <button onClick={() => { localStorage.removeItem(EQUIPMENT_KEY); window.location.reload(); }}
-          className="text-base text-white/25 bg-transparent border-none cursor-pointer">
-          Change equipment setup
-        </button>
-      </div>
+      {/* My Machines quick access */}
+      {machines.length > 0 && (
+        <div className="mt-4 bg-white/[0.03] border border-white/[0.06] rounded-2xl px-5 py-3">
+          <div className="text-base text-white/40 font-semibold mb-2">MY MACHINES ({machines.length})</div>
+          <div className="flex flex-wrap gap-2">
+            {machines.slice(0, 4).map(m => (
+              <span key={m.id} className="text-base text-white/50 bg-white/[0.05] px-3 py-1 rounded-lg">
+                {m.name}
+              </span>
+            ))}
+            {machines.length > 4 && (
+              <span className="text-base text-white/30 px-3 py-1">+{machines.length - 4} more</span>
+            )}
+          </div>
+          <button onClick={() => setShowCustomize(true)}
+            className="text-base text-blue-400 bg-transparent border-none cursor-pointer mt-2 font-semibold">
+            Manage machines →
+          </button>
+        </div>
+      )}
     </div>
   );
 }

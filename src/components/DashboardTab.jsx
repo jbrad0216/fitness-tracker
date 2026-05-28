@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { isWednesday, getToday, getTodaysWorkoutType, getDaySchedule, WORKOUT_A, WORKOUT_B } from '../data/constants';
 import { load, save } from '../data/storage';
 
+const FAVORITE_FOODS_KEY = 'favorite-foods';
+
 // ─── Daily Quotes ───
 const DAILY_QUOTES = [
   "The only bad workout is the one that didn't happen.",
@@ -107,7 +109,7 @@ function ProgressBar({ value, max, color }) {
 }
 
 // ─── Goal Banner ───
-function GoalBanner({ startWeight, goalWeight, weighIns, currentWeight, onEdit }) {
+function GoalBanner({ startWeight, goalWeight, weighIns, currentWeight, pace, onEdit }) {
   if (!startWeight || !goalWeight || startWeight <= goalWeight) return null;
   const curWt = currentWeight || startWeight;
   const totalToLose = startWeight - goalWeight;
@@ -115,14 +117,9 @@ function GoalBanner({ startWeight, goalWeight, weighIns, currentWeight, onEdit }
   const pct = Math.min(Math.max(lostSoFar / totalToLose, 0), 1);
   const lbsLeft = Math.max(curWt - goalWeight, 0);
 
-  const sorted = [...(weighIns || [])].sort((a, b) => a.date.localeCompare(b.date));
-  let weeksLeft = Math.ceil(lbsLeft / 1.0);
-  if (sorted.length >= 2) {
-    const first = sorted[0], last = sorted[sorted.length - 1];
-    const weeksElapsed = Math.max((new Date(last.date) - new Date(first.date)) / (7 * 86400000), 1);
-    const weeklyRate = (first.weight - last.weight) / weeksElapsed;
-    if (weeklyRate > 0 && lbsLeft > 0) weeksLeft = Math.ceil(lbsLeft / weeklyRate);
-  }
+  // Always use pace setting so changing pace immediately updates the timeline
+  const weeklyRate = pace === 'fast' ? 1.5 : pace === 'slow' ? 0.5 : 1.0;
+  const weeksLeft = lbsLeft > 0 ? Math.ceil(lbsLeft / weeklyRate) : 0;
 
   let goalDate = null;
   if (weeksLeft > 0) {
@@ -158,7 +155,7 @@ function GoalBanner({ startWeight, goalWeight, weighIns, currentWeight, onEdit }
   );
 }
 
-// ─── Goal Editor — Full Screen (Task 2) ───
+// ─── Goal Editor — Full Screen ───
 function GoalEditorPage({ settings, updateSettings, notify, onClose }) {
   const heightCmInit = parseHeightToCm(settings.height || "6'1\"");
   const totalInInit = Math.round(heightCmInit / 2.54);
@@ -308,9 +305,9 @@ function GoalEditorPage({ settings, updateSettings, notify, onClose }) {
           <PillRow label="My Pace"
             value={form.pace}
             options={[
-              { value: 'fast', label: 'Fast (4-8 wk)' },
-              { value: 'moderate', label: 'Moderate (12 wk)' },
-              { value: 'slow', label: 'Slow (20 wk)' },
+              { value: 'fast', label: 'Fast (1.5 lb/wk)' },
+              { value: 'moderate', label: 'Moderate (1 lb/wk)' },
+              { value: 'slow', label: 'Slow (0.5 lb/wk)' },
             ]}
             onChange={v => setForm(f => ({ ...f, pace: v }))} />
         )}
@@ -369,7 +366,185 @@ function GoalEditorPage({ settings, updateSettings, notify, onClose }) {
   );
 }
 
-// ─── Muscle Selector (Task 3) ───
+// ─── Edit Food Modal ───
+function EditFoodModal({ food, onSave, onClose, notify }) {
+  const [form, setForm] = useState({
+    name: food.name || '',
+    cal: String(food.cal || 0),
+    protein: String(food.protein || 0),
+    fat: String(food.fat || 0),
+    carbs: String(food.carbs || 0),
+    fiber: String(food.fiber || 0),
+    meal: food.meal || 'breakfast',
+  });
+  const [showNewNamePrompt, setShowNewNamePrompt] = useState(false);
+  const [newFoodName, setNewFoodName] = useState('');
+
+  const MEALS = [
+    { key: 'breakfast', label: 'Breakfast' },
+    { key: 'lunch', label: 'Lunch' },
+    { key: 'dinner', label: 'Dinner' },
+    { key: 'snack', label: 'Snack' },
+  ];
+
+  const inputClass = "w-full bg-white/[0.08] border border-white/[0.1] rounded-xl px-4 h-14 text-lg text-white outline-none focus:border-blue-500/60";
+
+  const handleSaveChanges = () => {
+    onSave(food.id, {
+      name: form.name,
+      cal: parseInt(form.cal) || 0,
+      protein: parseInt(form.protein) || 0,
+      fat: parseInt(form.fat) || 0,
+      carbs: parseInt(form.carbs) || 0,
+      fiber: parseInt(form.fiber) || 0,
+      meal: form.meal,
+    });
+    notify('Food updated');
+    onClose();
+  };
+
+  const handleSaveFavorite = () => {
+    const favorites = load(FAVORITE_FOODS_KEY, []);
+    const entry = {
+      id: `fav-${Date.now()}`,
+      name: form.name,
+      cal: parseInt(form.cal) || 0,
+      protein: parseInt(form.protein) || 0,
+      fat: parseInt(form.fat) || 0,
+      carbs: parseInt(form.carbs) || 0,
+      fiber: parseInt(form.fiber) || 0,
+    };
+    const deduped = favorites.filter(f => f.name.toLowerCase() !== entry.name.toLowerCase());
+    save(FAVORITE_FOODS_KEY, [entry, ...deduped]);
+    notify(`Saved "${entry.name}" as favorite`);
+    onClose();
+  };
+
+  const handleSaveAsNew = () => {
+    if (!newFoodName.trim()) return;
+    const favorites = load(FAVORITE_FOODS_KEY, []);
+    const entry = {
+      id: `fav-${Date.now()}`,
+      name: newFoodName.trim(),
+      cal: parseInt(form.cal) || 0,
+      protein: parseInt(form.protein) || 0,
+      fat: parseInt(form.fat) || 0,
+      carbs: parseInt(form.carbs) || 0,
+      fiber: parseInt(form.fiber) || 0,
+    };
+    save(FAVORITE_FOODS_KEY, [...favorites, entry]);
+    notify(`Saved "${entry.name}" as new favorite`);
+    setShowNewNamePrompt(false);
+    onClose();
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 bg-[#0f1117] overflow-y-auto"
+      style={{ paddingTop: 'max(env(safe-area-inset-top), 16px)', paddingBottom: 'max(env(safe-area-inset-bottom), 32px)' }}>
+      <div className="flex items-center gap-3 px-4 mb-6">
+        <button onClick={onClose}
+          className="w-12 h-12 rounded-xl bg-white/[0.08] text-white text-2xl border-none cursor-pointer flex items-center justify-center active:opacity-70">
+          ‹
+        </button>
+        <h1 className="text-2xl font-bold">EDIT FOOD</h1>
+      </div>
+
+      <div className="px-4 space-y-4">
+        <div>
+          <div className="text-base font-semibold text-white/60 mb-2">Name</div>
+          <input type="text" inputMode="text" autoComplete="off"
+            value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
+            className={inputClass} />
+        </div>
+
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <div className="text-base font-semibold text-white/60 mb-2">Calories</div>
+            <input type="text" inputMode="numeric" autoComplete="off"
+              value={form.cal} onChange={e => setForm(f => ({ ...f, cal: e.target.value }))}
+              className={inputClass} />
+          </div>
+          <div>
+            <div className="text-base font-semibold text-white/60 mb-2">Protein (g)</div>
+            <input type="text" inputMode="numeric" autoComplete="off"
+              value={form.protein} onChange={e => setForm(f => ({ ...f, protein: e.target.value }))}
+              className={inputClass} />
+          </div>
+        </div>
+
+        <div className="grid grid-cols-3 gap-2">
+          {[
+            { k: 'fat', label: 'Fat (g)' },
+            { k: 'carbs', label: 'Carbs (g)' },
+            { k: 'fiber', label: 'Fiber (g)' },
+          ].map(({ k, label }) => (
+            <div key={k}>
+              <div className="text-base text-white/50 mb-2">{label}</div>
+              <input type="text" inputMode="numeric" autoComplete="off"
+                value={form[k]} onChange={e => setForm(f => ({ ...f, [k]: e.target.value }))}
+                className="w-full bg-white/[0.08] border border-white/[0.1] rounded-xl px-3 h-14 text-base text-white outline-none focus:border-blue-500/60" />
+            </div>
+          ))}
+        </div>
+
+        <div>
+          <div className="text-base font-semibold text-white/60 mb-2">Meal</div>
+          <div className="flex gap-2">
+            {MEALS.map(m => (
+              <button key={m.key} onClick={() => setForm(f => ({ ...f, meal: m.key }))}
+                className={`flex-1 h-12 rounded-xl text-base font-semibold border-none cursor-pointer active:scale-95 transition-all
+                  ${form.meal === m.key ? 'bg-blue-500 text-white' : 'bg-white/[0.06] text-white/50'}`}>
+                {m.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="pt-2 space-y-3">
+          <button onClick={handleSaveChanges}
+            className="w-full bg-green-500 text-white rounded-2xl h-14 text-lg font-bold border-none cursor-pointer active:opacity-80">
+            Save Changes
+          </button>
+          <button onClick={handleSaveFavorite}
+            className="w-full bg-blue-500 text-white rounded-2xl h-14 text-lg font-bold border-none cursor-pointer active:opacity-80">
+            Save as Favorite ☆
+          </button>
+          <button onClick={() => setShowNewNamePrompt(true)}
+            className="w-full bg-white/[0.08] border border-white/[0.1] text-white/70 rounded-2xl h-14 text-lg font-semibold border-solid cursor-pointer active:opacity-70">
+            Save as New Food
+          </button>
+          <button onClick={onClose}
+            className="w-full bg-transparent text-white/40 h-12 text-base border-none cursor-pointer">
+            Cancel
+          </button>
+        </div>
+
+        {showNewNamePrompt && (
+          <div className="bg-white/[0.06] border border-white/[0.1] rounded-2xl px-4 py-4">
+            <div className="text-base font-semibold text-white/60 mb-2">New food name:</div>
+            <input type="text" inputMode="text" autoComplete="off"
+              value={newFoodName}
+              onChange={e => setNewFoodName(e.target.value)}
+              placeholder={`${form.name} — variation`}
+              className={inputClass} />
+            <div className="flex gap-2 mt-3">
+              <button onClick={handleSaveAsNew}
+                className="flex-1 bg-green-500 text-white rounded-xl h-12 text-base font-bold border-none cursor-pointer active:opacity-80">
+                Save
+              </button>
+              <button onClick={() => setShowNewNamePrompt(false)}
+                className="flex-1 bg-white/[0.08] text-white/50 rounded-xl h-12 text-base border-none cursor-pointer">
+                Cancel
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ─── Muscle Selector ───
 const MUSCLE_GROUPS = [
   { id: 'chest', label: 'Chest', group: 'UPPER BODY' },
   { id: 'shoulders', label: 'Shoulders', group: 'UPPER BODY' },
@@ -621,7 +796,7 @@ function TodayCard({ totalCal, totalProtein, daily, targets, onOpenLog, setWater
 }
 
 // ─── Today's Food Log ───
-function TodayFoodLog({ daily, removeFood, notify }) {
+function TodayFoodLog({ daily, removeFood, onEditFood, notify }) {
   const food = daily.food || [];
   if (food.length === 0) return null;
 
@@ -636,49 +811,42 @@ function TodayFoodLog({ daily, removeFood, notify }) {
 
   const uncategorized = food.filter(f => !MEAL_ORDER.includes(f.meal));
 
-  const handleDelete = (id, name) => {
+  const handleDelete = (e, id, name) => {
+    e.stopPropagation();
     removeFood(id);
     notify(`Removed: ${name}`);
   };
 
+  const renderFoodItem = (f) => (
+    <div key={f.id}
+      className="flex items-center gap-3 py-2 border-b border-white/[0.05] last:border-0 cursor-pointer active:bg-white/[0.03] rounded-lg"
+      onClick={() => onEditFood?.(f)}>
+      <div className="flex-1 min-w-0">
+        <div className="text-base font-semibold truncate">{f.name}</div>
+        <div className="text-base text-white/45">{f.cal} cal · {f.protein || 0}g protein</div>
+      </div>
+      <button
+        onClick={(e) => handleDelete(e, f.id, f.name)}
+        className="w-12 h-12 rounded-xl bg-red-500/15 text-red-400 text-xl
+          border-none cursor-pointer flex items-center justify-center active:bg-red-500/25 shrink-0">
+        ×
+      </button>
+    </div>
+  );
+
   return (
     <div className="bg-white/[0.05] border border-white/[0.08] rounded-2xl px-5 py-4 mb-4">
-      <div className="text-lg font-bold text-white/60 mb-3">TODAY'S FOOD</div>
+      <div className="text-lg font-bold text-white/60 mb-1">TODAY'S FOOD</div>
+      <div className="text-base text-white/30 mb-3">Tap any item to edit</div>
       {Object.entries(byMeal).map(([meal, items]) => (
         <div key={meal} className="mb-3">
           <div className="text-base font-semibold text-white/40 mb-1">{MEAL_LABELS[meal]}</div>
-          {items.map(f => (
-            <div key={f.id} className="flex items-center gap-3 py-2 border-b border-white/[0.05] last:border-0">
-              <div className="flex-1 min-w-0">
-                <div className="text-base font-semibold truncate">{f.name}</div>
-                <div className="text-base text-white/45">{f.cal} cal · {f.protein || 0}g protein</div>
-              </div>
-              <button
-                onClick={() => handleDelete(f.id, f.name)}
-                className="w-12 h-12 rounded-xl bg-red-500/15 text-red-400 text-xl
-                  border-none cursor-pointer flex items-center justify-center active:bg-red-500/25 shrink-0">
-                ×
-              </button>
-            </div>
-          ))}
+          {items.map(renderFoodItem)}
         </div>
       ))}
       {uncategorized.length > 0 && (
         <div className="mb-3">
-          {uncategorized.map(f => (
-            <div key={f.id} className="flex items-center gap-3 py-2 border-b border-white/[0.05] last:border-0">
-              <div className="flex-1 min-w-0">
-                <div className="text-base font-semibold truncate">{f.name}</div>
-                <div className="text-base text-white/45">{f.cal} cal · {f.protein || 0}g protein</div>
-              </div>
-              <button
-                onClick={() => handleDelete(f.id, f.name)}
-                className="w-12 h-12 rounded-xl bg-red-500/15 text-red-400 text-xl
-                  border-none cursor-pointer flex items-center justify-center active:bg-red-500/25 shrink-0">
-                ×
-              </button>
-            </div>
-          ))}
+          {uncategorized.map(renderFoodItem)}
         </div>
       )}
       <div className="text-base text-white/30 mt-1">
@@ -830,18 +998,17 @@ function WeeklyStatusBar({ daily, targets }) {
   );
 }
 
-const DISMISSED_KEY = () => `dismissed-reminders-${getToday()}`;
-
 // ─── Main DashboardTab ───
 export function DashboardTab({
   daily, totalCal, totalProtein,
-  addFood, removeFood, setWater, toggleMeditation, addRun,
+  addFood, removeFood, updateFood, setWater, toggleMeditation, addRun,
   weighIns, addWeighIn, latest, startWeight, goalWeight, targets, name,
   notify, onNavigate, onOpenLog,
   settings, updateSettings,
 }) {
   const [showGoalEditor, setShowGoalEditor] = useState(false);
   const [showMuscleSelector, setShowMuscleSelector] = useState(false);
+  const [editingFood, setEditingFood] = useState(null);
   const [weightInput, setWeightInput] = useState('');
   const currentWeight = latest?.weight || startWeight;
 
@@ -852,6 +1019,17 @@ export function DashboardTab({
         updateSettings={updateSettings}
         notify={notify}
         onClose={() => setShowGoalEditor(false)}
+      />
+    );
+  }
+
+  if (editingFood) {
+    return (
+      <EditFoodModal
+        food={editingFood}
+        onSave={(id, updates) => updateFood?.(id, updates)}
+        onClose={() => setEditingFood(null)}
+        notify={notify}
       />
     );
   }
@@ -882,7 +1060,7 @@ export function DashboardTab({
   const todayLogged = weighIns?.find(w => w.date === getToday());
 
   return (
-    <div className="px-4 pb-8" style={{ paddingTop: 'max(env(safe-area-inset-top), 12px)' }}>
+    <div className="px-4 pb-28" style={{ paddingTop: 'max(env(safe-area-inset-top), 12px)' }}>
 
       {/* 1. Goal Banner */}
       <GoalBanner
@@ -890,6 +1068,7 @@ export function DashboardTab({
         goalWeight={goalWeight || 200}
         weighIns={weighIns}
         currentWeight={currentWeight}
+        pace={settings?.pace}
         onEdit={() => setShowGoalEditor(true)}
       />
 
@@ -907,7 +1086,12 @@ export function DashboardTab({
       />
 
       {/* 3b. Today's Food Log */}
-      <TodayFoodLog daily={daily} removeFood={removeFood} notify={notify} />
+      <TodayFoodLog
+        daily={daily}
+        removeFood={removeFood}
+        onEditFood={setEditingFood}
+        notify={notify}
+      />
 
       {/* 4. Today's Workout */}
       <TodayWorkoutCard
